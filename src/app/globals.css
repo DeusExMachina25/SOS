@@ -1,0 +1,367 @@
+@import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Alfa+Slab+One&family=Amatic+SC&family=Anton&family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Lobster&family=Merriweather&family=Montserrat:wght@300;400;500;600;700;900&family=Oswald&family=Pacifico&family=Permanent+Marker&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Righteous&family=Special+Elite&family=Courier+Prime&display=swap');
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════
+   PREMIUM CINEMATIC DESIGN TOKENS
+════════════════════════════════════════════════════════*/
+:root,
+[data-theme="dark"] {
+  /* Ultra-Deep Backgrounds */
+  --bg-base:      #050505;
+  --bg-surface:   rgba(20, 20, 25, 0.4);
+  --bg-surface-2: rgba(30, 30, 40, 0.6);
+  --bg-overlay:   rgba(5, 5, 5, 0.85);
+
+  /* Sophisticated Brand Colors */
+  --color-primary:       #B388FF;
+  --color-primary-deep:  #651FFF;
+  --color-primary-pale:  rgba(179, 136, 255, 0.1);
+  --color-secondary:     #EAE6D7;
+  --color-gold:          #E5C07B;
+  --color-teal:          #4DB6AC;
+  --color-coral:         #FF8A65;
+  --color-cyan:          #80DEEA;
+  --color-pink:          #FF80AB;
+
+  /* Typography Colors */
+  --text-primary:  #FFFFFF;
+  --text-muted:    #9E9E9E;
+  --text-faint:    rgba(255, 255, 255, 0.3);
+
+  /* Delicate Glass Borders */
+  --border:        rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.15);
+
+  --dot-color:     rgba(255, 255, 255, 0.02);
+  --cursor-color:  #FFFFFF;
+}
+
+[data-theme="light"] {
+  --bg-base:      #FDFCF9;
+  --bg-surface:   rgba(240, 238, 230, 0.6);
+  --bg-surface-2: rgba(220, 218, 210, 0.8);
+  --bg-overlay:   rgba(253, 252, 249, 0.85);
+
+  --color-primary:       #651FFF;
+  --color-primary-deep:  #311B92;
+  --color-primary-pale:  rgba(101, 31, 255, 0.08);
+  --color-secondary:     #2C2C2C;
+  --color-gold:          #C29B42;
+  --color-teal:          #00897B;
+  --color-coral:         #E64A19;
+  --color-cyan:          #0097A7;
+  --color-pink:          #D81B60;
+
+  --text-primary:  #121212;
+  --text-muted:    #757575;
+  --text-faint:    rgba(18, 18, 18, 0.4);
+
+  --border:        rgba(0, 0, 0, 0.06);
+  --border-strong: rgba(0, 0, 0, 0.15);
+
+  --dot-color:     rgba(0, 0, 0, 0.03);
+  --cursor-color:  #121212;
+}
+
+@theme inline {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════
+   BASE & NOISE OVERLAY
+════════════════════════════════════════════════════════*/
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--bg-base);
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Montserrat', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+  transition: background-color 0.6s cubic-bezier(0.22, 1, 0.36, 1), color 0.6s ease;
+  position: relative;
+}
+
+/* Cinematic Noise Texture */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Ambient Glows */
+.ambient-glow-1, .ambient-glow-2 {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.4;
+}
+.ambient-glow-1 {
+  width: 600px;
+  height: 600px;
+  background: var(--color-primary-pale);
+  top: -10%;
+  left: -10%;
+}
+.ambient-glow-2 {
+  width: 500px;
+  height: 500px;
+  background: rgba(128, 222, 234, 0.05);
+  bottom: -20%;
+  right: -10%;
+}
+
+@media (hover: none) {
+  body { cursor: auto; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   TYPOGRAPHY UTILITIES
+════════════════════════════════════════════════════════*/
+/* Extreme Contrast Typography */
+.font-display  { font-family: 'Playfair Display', serif; }
+.font-script   { font-family: 'Dancing Script', cursive; }
+.font-mono-sos { 
+  font-family: 'Courier Prime', monospace; 
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.font-editorial {
+  font-family: 'Abril Fatface', serif;
+  letter-spacing: -0.02em;
+}
+
+/* ═══════════════════════════════════════════════════════
+   GLASSMORPHISM & PREMIUM BORDERS
+════════════════════════════════════════════════════════*/
+.glass-panel {
+  background: var(--bg-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  border-radius: 24px;
+}
+
+.border-organic {
+  border-radius: 45px 15px 40px 12px / 12px 40px 15px 45px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   NARRATIVE BOX (Ultra-Premium Redesign)
+════════════════════════════════════════════════════════*/
+.narrative-box {
+  width: 480px;
+  padding: 3rem;
+  background: var(--bg-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  color: var(--text-primary);
+  box-shadow: 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle internal glow line */
+.narrative-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+}
+
+.narrative-box h3 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 2.8rem;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+.narrative-box p {
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
+  line-height: 1.8;
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+.narrative-remark {
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  display: block;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════
+   CUSTOM CURSOR (Magnetic Feel)
+════════════════════════════════════════════════════════*/
+.cursor-dot,
+.cursor-ring {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+}
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--text-primary);
+  transition: opacity 0.3s, transform 0.1s ease-out;
+}
+.cursor-ring {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
+              height 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
+              background 0.3s, border-color 0.3s;
+}
+.cursor-ring.hovering {
+  width: 60px;
+  height: 60px;
+  background: rgba(255,255,255,0.05);
+  border-color: transparent;
+  backdrop-filter: blur(4px);
+}
+
+/* ═══════════════════════════════════════════════════════
+   NAVBAR (Minimal Glass)
+════════════════════════════════════════════════════════*/
+.sos-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 3rem;
+  background: transparent;
+  transition: background 0.4s;
+}
+.sos-nav.scrolled {
+  background: var(--bg-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-num {
+  font-family: 'Courier Prime', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-faint);
+  transition: color 0.3s;
+}
+.nav-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.3s;
+  position: relative;
+  padding: 4px 0;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0%;
+  height: 1px;
+  background: var(--text-primary);
+  transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.nav-link:hover { color: var(--text-primary); }
+.nav-link:hover::after, .nav-link.active::after { width: 100%; }
+.nav-link:hover .nav-num, .nav-link.active .nav-num { color: var(--color-primary); }
+
+/* ═══════════════════════════════════════════════════════
+   BUTTONS (Tactile & Premium)
+════════════════════════════════════════════════════════*/
+.btn-sos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 100px; /* Pill shape */
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  position: relative;
+  overflow: hidden;
+}
+.btn-sos::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transition: left 0.6s;
+}
+.btn-sos:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--text-primary);
+  transform: translateY(-2px);
+}
+.btn-sos:hover::before {
+  left: 100%;
+}
+.btn-sos-filled {
+  background: var(--text-primary);
+  color: var(--bg-base);
+  border: 1px solid var(--text-primary);
+}
+.btn-sos-filled:hover {
+  background: var(--text-muted);
+  border-color: var(--text-muted);
+  color: var(--bg-base);
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCROLL BAR STYLING
+════════════════════════════════════════════════════════*/
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+::selection {
+  background: var(--color-primary-pale);
+  color: var(--color-primary);
+}
