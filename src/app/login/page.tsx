@@ -1,17 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   Mail, 
   Smartphone, 
-  Fingerprint, 
   ArrowLeft, 
-  CheckCircle2, 
-  ScanFace, 
-  ShieldCheck, 
   Loader2,
   Lock
 } from "lucide-react";
@@ -22,7 +18,16 @@ export default function LoginPage() {
   
   // Unified Client Input (Email or Mobile)
   const [clientInput, setClientInput] = useState("");
-  const [inputType, setInputType] = useState<"phone" | "email" | "unknown">("unknown");
+  
+  // Derive input type directly during render
+  const trimmedInput = clientInput.trim();
+  const inputType = !trimmedInput 
+    ? "unknown" 
+    : trimmedInput.includes("@") 
+      ? "email" 
+      : /^\+?\d[\d\s-()]{7,14}$/.test(trimmedInput) 
+        ? "phone" 
+        : "unknown";
   
   // Verification States
   const [otp, setOtp] = useState("");
@@ -36,27 +41,6 @@ export default function LoginPage() {
   // Status States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
-  // Biometric Scan simulation
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "success" | "error">("idle");
-
-  // Auto-detect input type (email or phone)
-  useEffect(() => {
-    const trimmed = clientInput.trim();
-    if (!trimmed) {
-      setInputType("unknown");
-      return;
-    }
-    
-    if (trimmed.includes("@")) {
-      setInputType("email");
-    } else if (/^\+?\d[\d\s-()]{7,14}$/.test(trimmed)) {
-      setInputType("phone");
-    } else {
-      setInputType("unknown");
-    }
-  }, [clientInput]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -176,20 +160,7 @@ export default function LoginPage() {
     router.push("/dashboard/client");
   };
 
-  const handleBiometricLogin = () => {
-    setError("");
-    setIsScanning(true);
-    setScanStatus("scanning");
-    
-    // Simulate biometric scan (TouchID / Windows Hello / YubiKey)
-    setTimeout(() => {
-      setScanStatus("success");
-      setTimeout(() => {
-        document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-        router.push("/dashboard/client");
-      }, 1000);
-    }, 2200);
-  };
+
 
   const handleExpertLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -350,22 +321,7 @@ export default function LoginPage() {
                   )}
                 </button>
 
-                {/* Divider */}
-                <div className="flex items-center justify-center gap-4 py-1">
-                  <div className="h-px flex-1 bg-[var(--border)]"></div>
-                  <span className="text-[9px] uppercase tracking-widest text-[var(--text-faint)] font-bold">or</span>
-                  <div className="h-px flex-1 bg-[var(--border)]"></div>
-                </div>
 
-                {/* Tactile Biometric Button */}
-                <button 
-                  type="button"
-                  onClick={handleBiometricLogin}
-                  className="w-full border border-[var(--border-strong)] bg-white/[0.02] hover:bg-white/[0.06] text-[var(--text-primary)] font-bold tracking-[0.18em] uppercase text-[9px] py-3.5 rounded-2xl transition-all flex items-center justify-center gap-3 active:scale-95 group/bio"
-                >
-                  <Fingerprint size={16} className="text-[var(--text-muted)] group-hover/bio:text-[var(--color-primary)] transition-colors" />
-                  TouchID / Windows Hello
-                </button>
               </form>
             ) : otpSent ? (
               // OTP VERIFICATION STATE
@@ -476,75 +432,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* BIOMETRIC SCANNING OVERLAY */}
-      <AnimatePresence>
-        {isScanning && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/85 backdrop-blur-md z-[200] flex items-center justify-center p-4"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, y: 10 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 10 }}
-              className="w-full max-w-[340px] glass-panel border border-[var(--border-strong)] p-8 rounded-[40px] text-center flex flex-col items-center justify-center relative overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.8)]"
-            >
-              {/* Scan Laser effect */}
-              {scanStatus === "scanning" && (
-                <div className="absolute inset-x-0 top-0 h-[2px] bg-cyan-400 shadow-[0_0_10px_#22d3ee] animate-[scan_2s_ease-in-out_infinite] z-0 pointer-events-none"></div>
-              )}
 
-              <div className="w-20 h-20 rounded-full border border-white/5 bg-white/[0.02] flex items-center justify-center mb-6 relative z-10">
-                {scanStatus === "scanning" ? (
-                  <motion.div 
-                    animate={{ scale: [1, 1.1, 1] }} 
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                    className="text-cyan-400"
-                  >
-                    <ScanFace size={40} strokeWidth={1.2} />
-                  </motion.div>
-                ) : scanStatus === "success" ? (
-                  <div className="text-emerald-400 animate-bounce">
-                    <ShieldCheck size={40} strokeWidth={1.2} />
-                  </div>
-                ) : (
-                  <Fingerprint size={40} strokeWidth={1.2} className="text-red-400" />
-                )}
-              </div>
-
-              <h4 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-widest mb-2 z-10">
-                {scanStatus === "scanning" ? "Authenticating" : scanStatus === "success" ? "Access Granted" : "Error"}
-              </h4>
-              <p className="text-[11px] text-[var(--text-muted)] font-inter leading-relaxed max-w-[220px] z-10">
-                {scanStatus === "scanning" 
-                  ? "Windows Hello / TouchID hardware confirmation requested..." 
-                  : scanStatus === "success" 
-                  ? "Biometric credentials match. Elevating session." 
-                  : "Scanning failed. Please retry."
-                }
-              </p>
-
-              {scanStatus === "scanning" && (
-                <div className="flex items-center gap-1.5 mt-6 justify-center">
-                  <div className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse"></div>
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse delay-75"></div>
-                  <div className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse delay-150"></div>
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <style jsx global>{`
-        @keyframes scan {
-          0% { top: 0%; }
-          50% { top: 100%; }
-          100% { top: 0%; }
-        }
-      `}</style>
     </div>
   );
 }

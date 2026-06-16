@@ -10,24 +10,47 @@ const NAV_ITEMS = [
   { path: "/", label: "Home", num: "001//" },
   { path: "/platter", label: "Platter", num: "002//" },
   { path: "/us", label: "Us", num: "003//" },
-  { path: "/blog", label: "Blog", num: "004//" },
+  // { path: "/blog", label: "Blog", num: "004//" },
   { path: "/login", label: "Login", num: "005//" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY <= 50) {
+        setVisible(true);
+      } else if (currentScrollY > lastScrollY) {
+        // Scrolling down
+        setVisible(false);
+      } else {
+        // Scrolling up
+        setVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+      setScrolled(currentScrollY > 50);
     };
-    window.addEventListener("scroll", handleScroll);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [lastScrollY]);
 
   return (
-    <nav className={`sos-nav ${scrolled ? 'py-3' : 'py-5'}`}>
+    <nav 
+      className={`sos-nav ${scrolled ? 'py-3 scrolled' : 'py-5'}`}
+      style={{
+        transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s, padding 0.4s, opacity 0.4s ease",
+        transform: visible ? "translateY(0)" : "translateY(-100%)",
+        opacity: visible ? 1 : 0
+      }}
+    >
       <div className="flex items-center gap-2">
         <Link href="/" className="flex items-center">
           <Image 
