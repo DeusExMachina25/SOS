@@ -22,6 +22,40 @@ export const authMiddleware: MiddlewareHandler<Env> = async (c, next) => {
 
   const token = authHeader.split(" ")[1];
   
+  // Test environment mock tokens
+  if (Deno.env.get("DENO_ENV") === "test") {
+    if (token === "mock-client-token") {
+      c.set("user", {
+        id: "11111111-1111-1111-1111-111111111111",
+        email: "client@example.com",
+        phone: "+1234567890",
+        role: "client",
+      });
+      await next();
+      return;
+    }
+    if (token === "mock-expert-token") {
+      c.set("user", {
+        id: "22222222-2222-2222-2222-222222222222",
+        email: "expert@example.com",
+        phone: "+1987654321",
+        role: "expert",
+      });
+      await next();
+      return;
+    }
+    if (token === "mock-admin-token") {
+      c.set("user", {
+        id: "33333333-3333-3333-3333-333333333333",
+        email: "admin@example.com",
+        phone: "+1555555555",
+        role: "admin",
+      });
+      await next();
+      return;
+    }
+  }
+  
   try {
     const { data: { user }, error } = await supabase.auth.getUser(token);
     

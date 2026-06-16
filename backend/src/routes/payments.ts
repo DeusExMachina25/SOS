@@ -2,9 +2,9 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { supabaseAdmin } from "../../db/supabase.ts";
-import { authMiddleware, AuthenticatedUser } from "../middlewares/auth.ts";
+import { authMiddleware, Env } from "../middlewares/auth.ts";
 
-const router = new Hono();
+const router = new Hono<Env>();
 
 router.use("*", authMiddleware);
 
@@ -14,13 +14,12 @@ const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET") || "";
 // POST /api/payments/order - Create Razorpay Order
 const createOrderSchema = z.object({
   session_id: z.string().uuid("Invalid session ID"),
-  amount: z.number().int().positive("Amount must be positive"), // In paise (e.g. 50000 for Rs. 500)
+  amount: z.number().int().positive("Amount must be positive"),
 });
 
 router.post("/order", zValidator("json", createOrderSchema), async (c) => {
   const body = c.req.valid("json");
 
-  // Verify the session exists
   const { data: session, error: fetchError } = await supabaseAdmin
     .from("sessions")
     .select("*")
@@ -32,7 +31,6 @@ router.post("/order", zValidator("json", createOrderSchema), async (c) => {
   }
 
   if (!keyId || !keySecret) {
-    // Development fallback mock order if keys are missing
     console.warn("⚠️ Razorpay keys are not set. Returning mock order ID.");
     return c.json({
       id: `order_mock_${Date.now()}`,
@@ -88,9 +86,7 @@ const verifyPaymentSchema = z.object({
 router.post("/verify", zValidator("json", verifyPaymentSchema), async (c) => {
   const body = c.req.valid("json");
 
-  // Bypass for mock order IDs in local dev
   if (body.razorpay_order_id.startsWith("order_mock_")) {
-    // Update session status to "scheduled" (or "confirmed" if we add a paid status flag)
     const { data: updatedSession, error: updateError } = await supabaseAdmin
       .from("sessions")
       .update({ status: "scheduled" })
@@ -110,7 +106,6 @@ router.post("/verify", zValidator("json", verifyPaymentSchema), async (c) => {
   }
 
   try {
-    // HMAC-SHA256 signature verification using Web Crypto API
     const text = body.razorpay_order_id + "|" + body.razorpay_payment_id;
     const encoder = new TextEncoder();
     const keyBuffer = encoder.encode(keySecret);
@@ -134,10 +129,9 @@ router.post("/verify", zValidator("json", verifyPaymentSchema), async (c) => {
       return c.json({ error: "Invalid payment signature" }, 400);
     }
 
-    // Update session status to confirmed/scheduled upon verification
     const { data: updatedSession, error: updateError } = await supabaseAdmin
       .from("sessions")
-      .update({ status: "scheduled" }) // Standard is scheduled (meaning paid/confirmed)
+      .update({ status: "scheduled" })
       .eq("id", body.session_id)
       .select()
       .single();

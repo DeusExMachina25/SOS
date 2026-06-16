@@ -3,9 +3,9 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { sign } from "hono/jwt";
 import { supabaseAdmin } from "../../db/supabase.ts";
-import { authMiddleware, AuthenticatedUser } from "../middlewares/auth.ts";
+import { authMiddleware, Env } from "../middlewares/auth.ts";
 
-const router = new Hono();
+const router = new Hono<Env>();
 
 router.use("*", authMiddleware);
 
@@ -17,7 +17,7 @@ const generateTokenSchema = z.object({
 });
 
 router.post("/token", zValidator("json", generateTokenSchema), async (c) => {
-  const user = c.get("user") as AuthenticatedUser;
+  const user = c.get("user");
   const { session_id } = c.req.valid("json");
 
   const { data: session, error: sessionError } = await supabaseAdmin
