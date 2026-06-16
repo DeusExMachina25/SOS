@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Eye Following Card</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Pantone 18-3838 TCX - Ultra Violet */
+            --tcx-purple: #5F4B8B;
+            --bg-color: #E5E5EB;
+            --card-width: 320px;
+            --card-height: 440px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-color);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            perspective: 1200px; /* Crucial for 3D effect */
+        }
+
+        /* The 3D Scene Wrapper */
+        .scene {
+            width: var(--card-width);
+            height: var(--card-height);
+            position: relative;
+        }
+
+        /* The Card */
+        .card {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.1),
+                0 1px 3px rgba(0, 0, 0, 0.05),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+            transform-style: preserve-3d;
+            position: relative;
+            overflow: hidden;
+            will-change: transform;
+        }
+
+        /* Dynamic Glare Overlay */
+        .glare {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                circle at 50% 50%, 
+                rgba(255, 255, 255, 0.4) 0%, 
+                rgba(255, 255, 255, 0) 60%
+            );
+            pointer-events: none;
+            z-index: 10;
+            mix-blend-mode: overlay;
+            opacity: 0.6;
+            will-change: background;
+        }
+
+        /* Top Color Section */
+        .card-color {
+            width: 100%;
+            height: 75%;
+            background-color: var(--tcx-purple);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+        }
+
+        /* The Eyes */
+        .eye {
+            width: 80px;
+            height: 80px;
+            background: #ffffff;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 
+                inset 0 8px 15px rgba(0, 0, 0, 0.1),
+                0 4px 10px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Pupils */
+        .pupil {
+            width: 36px;
+            height: 36px;
+            background: #111111;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.5);
+            will-change: transform;
+        }
+
+        /* Catchlight (The white reflection in the eye) */
+        .pupil::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: 10px;
+            height: 10px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+        }
+
+        /* Bottom Text Section (Pantone Styling) */
+        .card-text {
+            width: 100%;
+            height: 25%;
+            padding: 20px 24px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            background: #ffffff;
+        }
+
+        .pantone-brand {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #111;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .pantone-code {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 2px;
+        }
+
+        .pantone-name {
+            font-weight: 400;
+            font-size: 0.85rem;
+            color: #888;
+        }
+        
+        /* Interactive Hint */
+        .hint {
+            position: fixed;
+            bottom: 30px;
+            font-size: 0.9rem;
+            color: #888;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scene">
+        <div class="card" id="card">
+            <div class="glare" id="glare"></div>
+            
+            <div class="card-color">
+                <div class="eye">
+                    <div class="pupil" id="pupil-left"></div>
+                </div>
+                <div class="eye">
+                    <div class="pupil" id="pupil-right"></div>
+                </div>
+            </div>
+
+            <div class="card-text">
+                <div class="pantone-brand">PANTONE&reg;</div>
+                <div class="pantone-code">18-3838 TCX</div>
+                <div class="pantone-name">Ultra Violet</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hint">Move your mouse around</div>
+
+    <script>
+        const card = document.getElementById('card');
+        const glare = document.getElementById('glare');
+        const pupils = [document.getElementById('pupil-left'), document.getElementById('pupil-right')];
+        
+        // Target values based on mouse position
+        let targetX = 0;
+        let targetY = 0;
+
+        // Current values for lerping (smooth animation)
+        let currentX = 0;
+        let currentY = 0;
+        
+        // Track mouse movement
+        window.addEventListener('mousemove', (e) => {
+            // Normalize mouse coordinates from -1 to 1
+            targetX = (e.clientX / window.innerWidth) * 2 - 1;
+            targetY = (e.clientY / window.innerHeight) * 2 - 1;
+        });
+
+        // Touch support for mobile
+        window.addEventListener('touchmove', (e) => {
+            targetX = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+            targetY = (e.touches[0].clientY / window.innerHeight) * 2 - 1;
+        });
+
+        // The animation loop
+        function animate() {
+            // Lerp (Linear Interpolation) for buttery smooth Figma-like movement
+            // 0.1 is the easing factor. Lower = smoother/slower.
+            currentX += (targetX - currentX) * 0.1;
+            currentY += (targetY - currentY) * 0.1;
+
+            // 1. CARD TILT LOGIC
+            // Max tilt angles
+            const maxTiltX = 15; // degrees
+            const maxTiltY = 15; // degrees
+            
+            // Invert Y for correct tilt direction
+            const rotateX = currentY * -maxTiltX; 
+            const rotateY = currentX * maxTiltY;
+            
+            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+
+            // 2. GLARE LOGIC
+            // Move the radial gradient opposite to the tilt to simulate a light source
+            const glareX = (currentX + 1) * 50; // 0% to 100%
+            const glareY = (currentY + 1) * 50; // 0% to 100%
+            glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 60%)`;
+
+            // 3. EYE TRACKING LOGIC
+            // Max distance the pupil can move from the center (Eye radius - Pupil radius)
+            // Eye is 80px (40px radius), Pupil is 36px (18px radius). Max travel = 22px. Let's use 16px to keep it inside the bounds safely.
+            const maxPupilTravel = 16; 
+
+            pupils.forEach(pupil => {
+                // Get the center of the eye relative to the viewport
+                const eyeRect = pupil.parentElement.getBoundingClientRect();
+                const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+                const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+
+                // Mouse position mapped to the actual screen (we use raw target mapping for the eye to look directly at the cursor)
+                // We recreate raw mouse X/Y from the normalized targets
+                const rawMouseX = ((targetX + 1) / 2) * window.innerWidth;
+                const rawMouseY = ((targetY + 1) / 2) * window.innerHeight;
+
+                // Angle between eye and mouse
+                const angle = Math.atan2(rawMouseY - eyeCenterY, rawMouseX - eyeCenterX);
+                
+                // Distance between eye and mouse
+                const dist = Math.hypot(rawMouseX - eyeCenterX, rawMouseY - eyeCenterY);
+                
+                // Map the distance so the pupil doesn't snap to the edge immediately
+                // Smoothly clamp the travel distance based on screen size
+                const travelDist = Math.min(maxPupilTravel, (dist / 200) * maxPupilTravel);
+
+                // Calculate X and Y translation
+                // We use currentX/currentY in a lerped fashion to smooth the eye movement alongside the card
+                const currentRawMouseX = ((currentX + 1) / 2) * window.innerWidth;
+                const currentRawMouseY = ((currentY + 1) / 2) * window.innerHeight;
+                
+                const lerpedAngle = Math.atan2(currentRawMouseY - eyeCenterY, currentRawMouseX - eyeCenterX);
+                const lerpedDist = Math.hypot(currentRawMouseX - eyeCenterX, currentRawMouseY - eyeCenterY);
+                const finalTravel = Math.min(maxPupilTravel, (lerpedDist / 200) * maxPupilTravel);
+
+                const tx = Math.cos(lerpedAngle) * finalTravel;
+                const ty = Math.sin(lerpedAngle) * finalTravel;
+
+                pupil.style.transform = `translate(${tx}px, ${ty}px)`;
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start the loop
+        animate();
+    </script>
+</body>
+</html>

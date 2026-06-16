@@ -8,14 +8,19 @@ export default function ModeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     // Retrieve theme from localStorage or default to dark
     const savedTheme = localStorage.getItem("sos-theme") as "dark" | "light" | null;
     if (savedTheme) {
-      setMode(savedTheme);
       document.documentElement.setAttribute("data-theme", savedTheme);
+      queueMicrotask(() => {
+        setMode(savedTheme);
+        setMounted(true);
+      });
     } else {
       document.documentElement.setAttribute("data-theme", "dark");
+      queueMicrotask(() => {
+        setMounted(true);
+      });
     }
   }, []);
 

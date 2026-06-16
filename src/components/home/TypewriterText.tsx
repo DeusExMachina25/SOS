@@ -17,47 +17,69 @@ interface TypewriterTextProps {
 export default function TypewriterText({ lines, startTyping, style, className = "" }: TypewriterTextProps) {
   const [displayedLines, setDisplayedLines] = useState<string[]>(lines.map(() => ""));
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+
+  const [prevLinesKey, setPrevLinesKey] = useState(() => JSON.stringify(lines));
+  const currentLinesKey = JSON.stringify(lines);
+  if (currentLinesKey !== prevLinesKey) {
+    setPrevLinesKey(currentLinesKey);
+    setDisplayedLines(lines.map(() => ""));
+    setCurrentLineIndex(0);
+    setIsFinished(false);
+  }
 
   useEffect(() => {
     if (!startTyping || isFinished) return;
     
-    setIsTyping(true);
-    let currentCharIndex = 0;
+    let timeout: NodeJS.Timeout;
     
-    const typeChar = () => {
-      if (currentLineIndex >= lines.length) {
-        setIsTyping(false);
-        setIsFinished(true);
-        return;
+    // Instead of restarting the effect on currentLineIndex, we'll keep all state in refs or functional updates 
+    // to avoid the closure stale state problem, OR we can just use a recursive function that tracks its own indices.
+    
+    // We will use a recursive async loop for simpler cleanup
+    let isCancelled = false;
+    
+    const typeText = async () => {
+      for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+        const targetText = lines[lineIdx].text;
+        
+        for (let charIdx = 0; charIdx <= targetText.length; charIdx++) {
+          if (isCancelled) return;
+          
+          setCurrentLineIndex(lineIdx);
+          setDisplayedLines(prev => {
+            const newLines = [...prev];
+            // ensure array is long enough
+            while (newLines.length <= lineIdx) newLines.push("");
+            newLines[lineIdx] = targetText.slice(0, charIdx);
+            return newLines;
+          });
+          
+          if (charIdx < targetText.length) {
+            await new Promise(r => { timeout = setTimeout(r, 60); });
+          }
+        }
+        
+        if (isCancelled) return;
+        await new Promise(r => { timeout = setTimeout(r, 100); });
       }
       
-      const targetText = lines[currentLineIndex].text;
-      
-      if (currentCharIndex < targetText.length) {
-        setDisplayedLines(prev => {
-          const newLines = [...prev];
-          newLines[currentLineIndex] = targetText.slice(0, currentCharIndex + 1);
-          return newLines;
-        });
-        currentCharIndex++;
-        setTimeout(typeChar, 60);
-      } else {
-        setCurrentLineIndex(prev => prev + 1);
-        currentCharIndex = 0;
-        setTimeout(typeChar, 100); // pause between lines
+      if (!isCancelled) {
+        setIsFinished(true);
       }
     };
+
+    typeText();
     
-    const timeout = setTimeout(typeChar, 100);
-    
-    return () => clearTimeout(timeout);
-  }, [startTyping, currentLineIndex, isFinished, lines]);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [startTyping, lines, isFinished]);
 
   return (
     <div 
-      className={`font-display italic text-4xl md:text-5xl lg:text-7xl leading-tight flex flex-wrap gap-x-3 md:gap-x-4 ${className}`}
+      className={`font-display italic text-4xl md:text-5xl lg:text-7xl leading-tight flex flex-col gap-y-2 md:gap-y-4 ${className}`}
       style={style}
     >
       {lines.map((line, idx) => (

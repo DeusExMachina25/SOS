@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import ModeToggle from "../ui/ModeToggle";
 import { useEffect, useState } from "react";
@@ -28,8 +29,15 @@ export default function Navbar() {
   return (
     <nav className={`sos-nav ${scrolled ? 'py-3' : 'py-5'}`}>
       <div className="flex items-center gap-2">
-        <Link href="/" className="font-mono-sos text-lg font-bold text-[var(--color-primary)] tracking-widest">
-          SOS
+        <Link href="/" className="flex items-center">
+          <Image 
+            src="/SOS Logo.png" 
+            alt="SOS Logo" 
+            width={120} 
+            height={40} 
+            className="h-8 md:h-10 w-auto object-contain dark:invert-0 light:invert" 
+            priority
+          />
         </Link>
       </div>
 

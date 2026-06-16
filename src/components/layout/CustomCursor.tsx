@@ -12,10 +12,10 @@ export default function CustomCursor() {
   useEffect(() => {
     // Check if device has touch capability, if so, disable custom cursor
     if (window.matchMedia("(pointer: coarse)").matches) {
-      setIsMobile(true);
+      queueMicrotask(() => setIsMobile(true));
       return;
     } else {
-      setIsMobile(false);
+      queueMicrotask(() => setIsMobile(false));
     }
 
     let mouseX = 0;

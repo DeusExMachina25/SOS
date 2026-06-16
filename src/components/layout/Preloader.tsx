@@ -8,8 +8,6 @@ export default function Preloader() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let start = 0;
-    const end = 100;
     const duration = 1200; // 1.2s ease
     const startTime = performance.now();
 
