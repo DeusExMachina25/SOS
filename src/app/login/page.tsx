@@ -23,13 +23,8 @@ export default function LoginPage() {
   const trimmedInput = clientInput.trim();
   const cleanDigits = trimmedInput.replace(/[\s-()]/g, "");
   const startsWithNumbers = /^\d{6,}/.test(cleanDigits);
-  const hasAtSign = trimmedInput.includes("@");
 
-  const inputType = hasAtSign 
-    ? "email" 
-    : startsWithNumbers 
-      ? "phone" 
-      : "unknown";
+  const inputType = startsWithNumbers ? "phone" : "email";
   
   // Verification States
   const [otp, setOtp] = useState("");
@@ -53,6 +48,12 @@ export default function LoginPage() {
       val = cleanedVal.substring(3).trim();
     } else if (cleanedVal.startsWith("91") && cleanedVal.replace(/\D/g, "").length === 12) {
       val = cleanedVal.substring(2).trim();
+    }
+
+    // If it's a phone number sequence, keep only digits and cap at 10
+    const testDigits = val.replace(/[\s-()]/g, "");
+    if (/^\d{6,}/.test(testDigits)) {
+      val = val.replace(/\D/g, "").slice(0, 10);
     }
     
     setClientInput(val);
@@ -290,11 +291,17 @@ export default function LoginPage() {
                     Email or Mobile Number
                   </label>
                   <div className="flex items-center border-b border-[var(--border)] group-focus-within:border-[var(--text-primary)] transition-colors pb-6">
+                    {inputType === "phone" && (
+                      <span className="font-inter text-lg font-light text-[var(--text-primary)] mr-2 tracking-wide select-none animate-in fade-in slide-in-from-left-2 duration-300">
+                        +91
+                      </span>
+                    )}
                     <input 
                       type="text"
                       required
                       value={clientInput}
                       onChange={handlePhoneChange}
+                      maxLength={inputType === "phone" ? 10 : undefined}
                       className="flex-1 bg-transparent outline-none font-inter text-lg font-light tracking-wide text-[var(--text-primary)] placeholder-[var(--text-faint)]"
                       placeholder="phone number or email"
                     />
