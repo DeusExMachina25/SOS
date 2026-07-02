@@ -23,11 +23,11 @@ const FONTS = [
 ];
 
 const COLORS = [
-  "var(--color-primary)", "var(--color-gold)", "var(--color-teal)",
-  "var(--color-coral)", "var(--color-cyan)", "var(--color-pink)", "#FFFFFF",
-  "#FF3366", "#33FFCC", "#FFCC00", "#9933FF", "#00E5FF", 
-  "#FF3399", "#39FF14", "#FF00FF", "#00FF00", "#FFFF00", 
-  "#FF4500", "#8A2BE2", "#00BFFF", "#FF1493"
+  "var(--color-primary)",
+  "var(--color-orange)",
+  "var(--color-green)",
+  "var(--color-secondary)",
+  "var(--text-primary)"
 ];
 
 interface MorphingLogoProps {

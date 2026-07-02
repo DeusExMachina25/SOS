@@ -44,6 +44,11 @@ CREATE POLICY "Clients can view own sessions."
 ON public.sessions FOR SELECT 
 USING (auth.uid() = client_id);
 
+-- Clients can insert own sessions
+CREATE POLICY "Clients can insert own sessions." 
+ON public.sessions FOR INSERT 
+WITH CHECK (auth.uid() = client_id);
+
 -- Experts can see their assigned sessions
 CREATE POLICY "Experts can view assigned sessions." 
 ON public.sessions FOR SELECT 
@@ -58,3 +63,53 @@ USING (
     SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
   )
 );
+
+
+-- Seeding test expert 'Shravani Reddy'
+-- 1. Insert into auth.users (idempotent setup)
+INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    '789e4567-e89b-12d3-a456-426614174000',
+    'authenticated',
+    'authenticated',
+    'shravani@sos.com',
+    crypt('secure_password123', gen_salt('bf')),
+    now(),
+    '{"provider": "email", "providers": ["email"]}',
+    '{"full_name": "Shravani Reddy", "role": "expert"}',
+    now(),
+    now()
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Insert into public.profiles (idempotent update)
+INSERT INTO public.profiles (
+    id,
+    phone,
+    email,
+    full_name,
+    role
+) VALUES (
+    '789e4567-e89b-12d3-a456-426614174000',
+    '+919876543210',
+    'shravani@sos.com',
+    'Shravani Reddy',
+    'expert'
+)
+ON CONFLICT (id) DO UPDATE SET
+    phone = EXCLUDED.phone,
+    email = EXCLUDED.email,
+    full_name = EXCLUDED.full_name,
+    role = EXCLUDED.role;

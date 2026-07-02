@@ -5,10 +5,10 @@ import gsap from "gsap";
 
 const BOX_COLORS = [
   "bg-[var(--color-primary)]",
-  "bg-[var(--color-cyan)]",
-  "bg-[#ff4081]",
+  "bg-[var(--color-orange)]",
+  "bg-[var(--color-green)]",
   "bg-[var(--text-primary)]",
-  "bg-[#ffff00]",
+  "bg-[var(--color-secondary)]",
 ];
 
 export default function ParallaxBoxes() {

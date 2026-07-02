@@ -59,7 +59,7 @@ function VideoCallContent() {
 
   if (!livekitUrl) {
     return (
-      <div className="h-[80vh] bg-[var(--bg-base)] rounded-3xl overflow-hidden border border-[var(--border)] flex flex-col items-center justify-center p-8 text-center bg-[#1A0030]">
+      <div className="h-[80vh] bg-[var(--bg-base)] rounded-3xl overflow-hidden border border-[var(--border)] flex flex-col items-center justify-center p-8 text-center">
         <p className="text-red-400 font-mono-sos text-sm mb-4">CONFIGURATION ERROR</p>
         <p className="text-xs text-[var(--text-muted)] max-w-md">
           NEXT_PUBLIC_LIVEKIT_URL is not configured in your environment variables.
@@ -93,15 +93,15 @@ function VideoCallContent() {
         </div>
       </header>
 
-      <div className="flex-1 relative w-full h-full bg-[#111] overflow-hidden">
+      <div className="flex-1 relative w-full h-full bg-[var(--bg-base)] overflow-hidden">
         {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-[#1A0030]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-[var(--bg-base)]">
             <p className="text-red-400 font-mono-sos text-sm mb-4">CONNECTION ERROR</p>
             <p className="text-xs text-[var(--text-muted)] max-w-md">{error}</p>
           </div>
         )}
         {!error && !token && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1A0030]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--bg-base)]">
             <div className="w-8 h-8 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mb-4"></div>
             <p className="text-xs text-[var(--text-faint)] font-mono-sos animate-pulse">
               GENERATING SECURE TOKEN...

@@ -69,10 +69,10 @@ function NineDotLoop() {
     }
 
     const segments: Segment[] = [
-      { from: { x: 140, y: 140 }, to: { x: 20, y: 20 }, color: '#EF9F27' },
-      { from: { x: 20, y: 20 }, to: { x: 140, y: 20 }, color: '#5DCAA5' },
-      { from: { x: 140, y: 20 }, to: { x: 20, y: 140 }, color: '#7F77DD' },
-      { from: { x: 20, y: 140 }, to: { x: 20, y: 20 }, color: '#D85A30' },
+      { from: { x: 140, y: 140 }, to: { x: 20, y: 20 }, color: '#FF5B2E' },
+      { from: { x: 20, y: 20 }, to: { x: 140, y: 20 }, color: '#B8CF4F' },
+      { from: { x: 140, y: 20 }, to: { x: 20, y: 140 }, color: '#7C4DFF' },
+      { from: { x: 20, y: 140 }, to: { x: 20, y: 20 }, color: '#2A0089' },
     ];
 
     const ctx = gsap.context(() => {
@@ -143,7 +143,7 @@ function NineDotLoop() {
             <circle key={i} cx={dot.cx} cy={dot.cy} r="4" fill="var(--text-primary)" opacity="0.8" />
           ))}
         </g>
-        <circle ref={pencilRef} id="pencil" r="4" fill="none" stroke="#EF9F27" strokeWidth="2" opacity="0" />
+        <circle ref={pencilRef} id="pencil" r="4" fill="none" stroke="#FF5B2E" strokeWidth="2" opacity="0" />
       </svg>
     </div>
   );

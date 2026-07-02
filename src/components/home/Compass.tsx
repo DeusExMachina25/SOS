@@ -162,7 +162,7 @@ export default function Compass({ tiltMode = '2d', style, className = "" }: Comp
                 height: 0,
                 borderLeft: "8px solid transparent",
                 borderRight: "8px solid transparent",
-                borderBottom: "100px solid var(--color-pink)",
+                borderBottom: "100px solid var(--color-orange)",
                 transformOrigin: "bottom center",
                 left: "calc(50% - 8px)",
                 bottom: "50%",
@@ -187,9 +187,8 @@ export default function Compass({ tiltMode = '2d', style, className = "" }: Comp
             </div>
           </div>
 
-          {/* Pivot */}
           <div 
-            className="absolute w-4 h-4 rounded-full bg-[var(--color-gold)]"
+            className="absolute w-4 h-4 rounded-full bg-[var(--color-green)]"
             style={{
               top: "50%",
               left: "50%",

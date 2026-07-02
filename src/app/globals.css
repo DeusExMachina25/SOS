@@ -5,69 +5,75 @@
 ════════════════════════════════════════════════════════*/
 :root,
 [data-theme="dark"] {
-  /* Ultra-Deep Brutalist Luxury Backgrounds */
-  --bg-base:      #050208; /* Extremely dark deep purple/black */
-  --bg-surface:   rgba(20, 15, 25, 0.4);
-  --bg-surface-2: rgba(30, 25, 35, 0.6);
-  --bg-overlay:   rgba(5, 2, 8, 0.85);
+  /* Softer, Mid-tone Midnight Obsidian Purple (Low contrast glare) */
+  --bg-base:      #0F0D1B; /* Softer obsidian midnight */
+  --bg-surface:   rgba(255, 255, 255, 0.02); /* Clean, subtle glass */
+  --bg-surface-2: rgba(255, 255, 255, 0.04);
+  --bg-overlay:   rgba(15, 13, 27, 0.92);
 
-  /* Sophisticated Brand Colors */
-  --color-primary:       #B388FF;
-  --color-primary-deep:  #651FFF;
-  --color-primary-pale:  rgba(179, 136, 255, 0.05);
-  --color-secondary:     #EAE6D7;
-  --color-gold:          #E5C07B;
-  --color-cyan:          #80DEEA;
+  /* Muted Sophisticated Brands: Softer Pastel Lavender */
+  --color-primary:       #B29BFF; /* Extremely gentle pastel lavender */
+  --color-primary-deep:  #5B3BBF; /* Deep rich purple */
+  --color-primary-pale:  rgba(178, 155, 255, 0.04);
+  --color-secondary:     #EFE7D8; /* White Chocolate */
+  --color-orange:        #FF7A54; /* Softer, muted orange */
+  --color-green:         #C6DB65; /* Muted June Bud */
 
-  /* Typography Colors */
-  --text-primary:  #F4F4F5; /* Off-white */
-  --text-muted:    #888888; /* Soft grays */
-  --text-faint:    rgba(244, 244, 245, 0.2);
+  /* Softer Typography (Reduces halation/glare on dark screens) */
+  --text-primary:  #E3DFEC; /* Softer warm gray-white */
+  --text-muted:    #9A97A2; /* Muted Lavender-Gray */
+  --text-faint:    rgba(227, 223, 236, 0.16);
 
-  /* Delicate Glass Borders */
-  --border:        rgba(255, 255, 255, 0.05);
-  --border-strong: rgba(255, 255, 255, 0.15);
+  /* Delicate Low-Contrast Glass Borders */
+  --border:        rgba(255, 255, 255, 0.05); /* Extremely soft border */
+  --border-strong: rgba(178, 155, 255, 0.12); /* Subtle purple hint */
 
-  --dot-color:     rgba(255, 255, 255, 0.02);
-  --cursor-color:  #FFFFFF;
+  --dot-color:     rgba(178, 155, 255, 0.02);
+  --cursor-color:  #B29BFF;
 
   --bg-aurora-1:   var(--bg-base);
-  --bg-aurora-2:   #311042; /* Deep glowing purple */
-  --bg-aurora-3:   #1a0b2e;
+  --bg-aurora-2:   #1A172E; /* Very deep, low-luminosity purple glow */
+  --bg-aurora-3:   #0F0D1B;
 }
 
 [data-theme="light"] {
-  /* Stark Off-White Brutalist Luxury */
-  --bg-base:      #FDFCFD;
-  --bg-surface:   rgba(240, 235, 245, 0.6);
-  --bg-surface-2: rgba(220, 215, 225, 0.8);
-  --bg-overlay:   rgba(253, 252, 253, 0.85);
+  /* Warm White Chocolate Brutalist Base */
+  --bg-base:      #EFE7D8;
+  --bg-surface:   rgba(255, 255, 255, 0.65);
+  --bg-surface-2: rgba(255, 255, 255, 0.85);
+  --bg-overlay:   rgba(239, 231, 216, 0.85);
 
-  --color-primary:       #651FFF;
-  --color-primary-deep:  #311B92;
-  --color-primary-pale:  rgba(101, 31, 255, 0.04);
-  --color-secondary:     #2C2C2C;
-  --color-gold:          #C29B42;
-  --color-cyan:          #0097A7;
+  --color-primary:       #30009C; /* Rich deep indigo-purple */
+  --color-primary-deep:  #1A0054; /* Deepest dark blue */
+  --color-primary-pale:  rgba(48, 0, 156, 0.05);
+  --color-secondary:     #08051A; /* Near Black */
+  --color-orange:        #FF5B2E; /* Portland Orange */
+  --color-green:         #8B9E30; /* June Bud */
 
-  --text-primary:  #050208;
-  --text-muted:    #888888;
-  --text-faint:    rgba(5, 2, 8, 0.3);
+  --text-primary:  #08051A;
+  --text-muted:    #5B5854;
+  --text-faint:    rgba(8, 5, 26, 0.35);
 
-  --border:        rgba(0, 0, 0, 0.06);
-  --border-strong: rgba(0, 0, 0, 0.15);
+  --border:        rgba(48, 0, 156, 0.06);
+  --border-strong: rgba(48, 0, 156, 0.15);
 
-  --dot-color:     rgba(0, 0, 0, 0.03);
-  --cursor-color:  #121212;
+  --dot-color:     rgba(48, 0, 156, 0.03);
+  --cursor-color:  #30009C;
 
   --bg-aurora-1:   var(--bg-base);
-  --bg-aurora-2:   #e1bee7; /* Soft glowing violet */
-  --bg-aurora-3:   #f3e5f5;
+  --bg-aurora-2:   #E2D9C8; /* Muted warm glow */
+  --bg-aurora-3:   #EFE7D8;
 }
 
 @theme inline {
   --color-background: var(--bg-base);
   --color-foreground: var(--text-primary);
+  --color-primary: var(--color-primary);
+  --color-primary-deep: var(--color-primary-deep);
+  --color-primary-pale: var(--color-primary-pale);
+  --color-secondary: var(--color-secondary);
+  --color-orange: var(--color-orange);
+  --color-green: var(--color-green);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -123,7 +129,7 @@ body::before {
 .ambient-glow-2 {
   width: 500px;
   height: 500px;
-  background: rgba(128, 222, 234, 0.05);
+  background: rgba(255, 91, 46, 0.05);
   bottom: -20%;
   right: -10%;
 }
@@ -388,7 +394,7 @@ body::before {
    ANIMATED EMBOSSED TEXT
 ════════════════════════════════════════════════════════*/
 .text-embossed {
-  background: linear-gradient(110deg, #b388ff, #80deea, #ff8a65, #e5c07b, #b388ff);
+  background: linear-gradient(110deg, #7C4DFF, #FF5B2E, #B8CF4F, #EFE7D8, #7C4DFF);
   background-size: 200% auto;
   color: transparent;
   -webkit-background-clip: text;
@@ -495,3 +501,25 @@ body::before {
 .react-resizable-handle:hover::after {
   border-color: var(--color-primary);
 }
+
+/* Platter Pricing Selector Panel Animations */
+@keyframes fadeSwitch {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-switch {
+  animation: fadeSwitch 0.28s ease forwards;
+}
+
+.font-special-elite {
+  font-family: 'Special Elite', serif;
+}
+
+
