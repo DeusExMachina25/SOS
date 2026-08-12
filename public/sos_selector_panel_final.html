@@ -1,0 +1,209 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+
+.wrap{font-family:'DM Sans',sans-serif;background:#f8f7f5;padding:36px 32px 44px;max-width:780px}
+
+.top-eyebrow{font-size:10px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:#b8965a;margin-bottom:6px}
+.top-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:#0e0e0d;letter-spacing:-0.015em;line-height:1;margin-bottom:4px}
+.top-sub{font-size:12px;font-weight:300;color:#8c8a86;margin-bottom:28px}
+
+.tier-switcher{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:0.5px solid rgba(0,0,0,0.13);border-radius:10px;overflow:hidden;margin-bottom:20px;background:#eee9e2}
+
+.t-btn{background:none;border:none;border-right:0.5px solid rgba(0,0,0,0.1);padding:16px 18px 14px;text-align:left;cursor:pointer;position:relative;transition:background 0.22s}
+.t-btn:last-child{border-right:none}
+.t-btn:hover{background:rgba(255,255,255,0.5)}
+.t-btn.active{background:#ffffff}
+.t-btn-num{font-size:9px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:#b8965a;display:block;margin-bottom:3px}
+.t-btn-name{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:300;color:#0e0e0d;display:block;line-height:1.1;margin-bottom:5px}
+.t-btn-price{font-size:11px;font-weight:400;color:#8c8a86;display:block}
+.t-btn-ink{position:absolute;bottom:0;left:0;height:2px;width:0;transition:width 0.35s cubic-bezier(0.4,0,0.2,1)}
+.t-btn.active .t-btn-ink{width:100%}
+.ink-apt{background:#c9a46a}
+.ink-vil{background:#6aaa8c}
+.ink-sit{background:#9c7ec4}
+
+.detail-panel{border-radius:12px;overflow:hidden;transition:background 0.4s cubic-bezier(0.4,0,0.2,1)}
+.dp-apt{background:linear-gradient(145deg,#272420 0%,#3a3228 45%,#2c2720 100%)}
+.dp-vil{background:linear-gradient(145deg,#192920 0%,#213829 45%,#172318 100%)}
+.dp-sit{background:linear-gradient(145deg,#201c2c 0%,#2d2438 45%,#1c1826 100%)}
+
+.dp-topline{height:1px;width:100%;position:relative;overflow:hidden}
+.dp-topline-apt{background:linear-gradient(90deg,transparent 5%,#c9a46a 50%,transparent 95%)}
+.dp-topline-vil{background:linear-gradient(90deg,transparent 5%,#6aaa8c 50%,transparent 95%)}
+.dp-topline-sit{background:linear-gradient(90deg,transparent 5%,#9c7ec4 50%,transparent 95%)}
+
+.dp-inner{padding:32px 32px 30px;display:grid;grid-template-columns:1fr 220px;gap:32px;align-items:start}
+
+.dp-left{}
+.dp-tag{display:inline-block;font-size:9px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;padding:3px 9px;border-radius:2px;margin-bottom:14px}
+.tag-apt{color:#c9a46a;background:rgba(201,164,106,0.15)}
+.tag-vil{color:#6aaa8c;background:rgba(106,170,140,0.15)}
+.tag-sit{color:#9c7ec4;background:rgba(156,126,196,0.15)}
+
+.dp-name{font-family:'Cormorant Garamond',serif;font-size:46px;font-weight:300;color:rgba(255,255,255,0.93);line-height:1;margin-bottom:4px;letter-spacing:-0.02em}
+.dp-scope{font-size:10px;font-weight:400;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:20px;min-height:14px}
+.dp-desc{font-size:13px;font-weight:300;color:rgba(255,255,255,0.55);line-height:1.7;max-width:320px}
+
+.dp-right{display:flex;flex-direction:column;gap:0;padding-top:6px}
+
+.dp-feats{list-style:none;margin-bottom:24px}
+.dp-feats li{font-size:12px;font-weight:300;color:rgba(255,255,255,0.65);padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:10px}
+.dp-feats li:last-child{border-bottom:none}
+.dp-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0}
+
+.dp-price-block{padding-top:16px;border-top:0.5px solid rgba(255,255,255,0.1)}
+.dp-price-amt{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:400;color:rgba(255,255,255,0.93);letter-spacing:-0.01em;line-height:1}
+.dp-price-lbl{font-size:10px;font-weight:300;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-top:3px;margin-bottom:14px}
+.dp-cta{width:100%;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;padding:11px 16px;border-radius:5px;border:0.5px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);cursor:pointer;transition:background 0.18s,border-color 0.18s;text-align:center}
+.dp-cta:hover{background:rgba(255,255,255,0.13);border-color:rgba(255,255,255,0.4)}
+
+.ext-section{margin-top:16px}
+.ext-label{font-size:9px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:#8c8a86;margin-bottom:10px}
+.ext-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ext-card{background:#f0ece6;border-radius:8px;padding:13px 15px;display:flex;align-items:center;justify-content:space-between;border:0.5px solid transparent;transition:border-color 0.2s;cursor:default}
+.ext-card:hover{border-color:#d4b17a}
+.ext-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:400;color:#0e0e0d;line-height:1.1}
+.ext-note{font-size:11px;color:#8c8a86;font-weight:300;margin-top:2px}
+.ext-pct{font-size:15px;font-weight:500;color:#b8965a;letter-spacing:0.01em}
+
+.footer-row{margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.09);display:flex;align-items:center;justify-content:space-between}
+.footer-note{font-size:12px;color:#8c8a86;font-weight:300}
+.footer-cta{font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#0e0e0d;background:none;border:0.5px solid #0e0e0d;padding:10px 22px;border-radius:3px;cursor:pointer;transition:background 0.18s,color 0.18s}
+.footer-cta:hover{background:#0e0e0d;color:#f8f7f5}
+
+.fade{animation:fadeSwitch 0.28s ease}
+@keyframes fadeSwitch{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+
+<div class="wrap">
+  <div class="top-eyebrow">Structure &amp; Consulting</div>
+  <div class="top-title">Investment Architecture</div>
+  <div class="top-sub">Select a tier to explore scope and pricing</div>
+
+  <div class="tier-switcher">
+    <button class="t-btn active" id="btn-apt" onclick="pick('apt')">
+      <span class="t-btn-num">Tier 01</span>
+      <span class="t-btn-name">Apartment</span>
+      <span class="t-btn-price">₹ 2,499 / base</span>
+      <div class="t-btn-ink ink-apt"></div>
+    </button>
+    <button class="t-btn" id="btn-vil" onclick="pick('vil')">
+      <span class="t-btn-num">Tier 02</span>
+      <span class="t-btn-name">Villa</span>
+      <span class="t-btn-price">₹ 4,999 / base</span>
+      <div class="t-btn-ink ink-vil"></div>
+    </button>
+    <button class="t-btn" id="btn-sit" onclick="pick('sit')">
+      <span class="t-btn-num">Tier 03</span>
+      <span class="t-btn-name">Site Plan</span>
+      <span class="t-btn-price">₹ 7,999 / base</span>
+      <div class="t-btn-ink ink-sit"></div>
+    </button>
+  </div>
+
+  <div id="detail" class="detail-panel dp-apt">
+    <div id="dp-line" class="dp-topline dp-topline-apt"></div>
+    <div class="dp-inner">
+      <div class="dp-left">
+        <span id="dp-tag" class="dp-tag tag-apt">Tier 01 — Apartment</span>
+        <div id="dp-name" class="dp-name">Apartment</div>
+        <div id="dp-scope" class="dp-scope">&nbsp;</div>
+        <div id="dp-desc" class="dp-desc">Focused spatial strategy for compact living — optimising flow, material selection, and interior logic within constrained footprints.</div>
+      </div>
+      <div class="dp-right">
+        <ul id="dp-feats" class="dp-feats">
+          <li><span class="dp-dot" style="background:#c9a46a"></span>Spatial optimisation</li>
+          <li><span class="dp-dot" style="background:#c9a46a"></span>Interior flow strategy</li>
+          <li><span class="dp-dot" style="background:#c9a46a"></span>Material selection</li>
+        </ul>
+        <div class="dp-price-block">
+          <div id="dp-price" class="dp-price-amt">₹ 2,499</div>
+          <div class="dp-price-lbl">Base rate / 60 min</div>
+          <button class="dp-cta" id="dp-cta" onclick="sendPrompt('Book a session for the Apartment tier at Second Opinion Studio')">Book Session ↗</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ext-section">
+    <div class="ext-label">Available extensions</div>
+    <div class="ext-grid">
+      <div class="ext-card">
+        <div>
+          <div class="ext-name">Advance Booking</div>
+          <div class="ext-note">Requested during initial scheduling</div>
+        </div>
+        <div class="ext-pct">+40%</div>
+      </div>
+      <div class="ext-card">
+        <div>
+          <div class="ext-name">On-Spot Extension</div>
+          <div class="ext-note">Active session (+30 min)</div>
+        </div>
+        <div class="ext-pct">+60%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-row">
+    <div class="footer-note">Written summary delivered within 48 hours of every session.</div>
+    <button class="footer-cta" onclick="sendPrompt('I want to book a session at Second Opinion Studio')">Book Session ↗</button>
+  </div>
+</div>
+
+<script>
+var tiers={
+  apt:{
+    panel:'dp-apt',line:'dp-topline-apt',tag:'tag-apt',tagTxt:'Tier 01 — Apartment',
+    name:'Apartment',scope:'\u00a0',
+    desc:'Focused spatial strategy for compact living — optimising flow, material selection, and interior logic within constrained footprints.',
+    feats:['Spatial optimisation','Interior flow strategy','Material selection'],
+    dot:'#c9a46a',price:'₹ 2,499'
+  },
+  vil:{
+    panel:'dp-vil',line:'dp-topline-vil',tag:'tag-vil',tagTxt:'Tier 02 — Villa',
+    name:'Villa',scope:'\u00a0',
+    desc:'End-to-end architectural development — blueprints, landscape integration, and structural elegance for independent residential builds.',
+    feats:['Architectural blueprint','Landscape integration','Structural elegance'],
+    dot:'#6aaa8c',price:'₹ 4,999'
+  },
+  sit:{
+    panel:'dp-sit',line:'dp-topline-sit',tag:'tag-sit',tagTxt:'Tier 03 — Site Plan',
+    name:'Site Plan',scope:'Up to 1 acre',
+    desc:'Master planning and zoning compliance for large-scale plots — topographical analysis and full site utilisation strategy.',
+    feats:['Master planning','Topographical layout','Zoning compliance'],
+    dot:'#9c7ec4',price:'₹ 7,999'
+  }
+};
+
+var cur='apt';
+function pick(t){
+  if(t===cur)return;
+  cur=t;
+  var d=tiers[t];
+  document.querySelectorAll('.t-btn').forEach(function(b){b.classList.remove('active')});
+  document.getElementById('btn-'+t).classList.add('active');
+  var det=document.getElementById('detail');
+  det.className='detail-panel '+d.panel;
+  var line=document.getElementById('dp-line');
+  line.className='dp-topline '+d.line;
+  var inner=det.querySelector('.dp-inner');
+  inner.classList.remove('fade');
+  void inner.offsetWidth;
+  inner.classList.add('fade');
+  document.getElementById('dp-tag').className='dp-tag '+d.tag;
+  document.getElementById('dp-tag').textContent=d.tagTxt;
+  document.getElementById('dp-name').textContent=d.name;
+  document.getElementById('dp-scope').textContent=d.scope;
+  document.getElementById('dp-desc').textContent=d.desc;
+  document.getElementById('dp-price').textContent=d.price;
+  var cta=document.getElementById('dp-cta');
+  cta.textContent='Book Session \u2197';
+  cta.onclick=function(){sendPrompt('Book a session for the '+d.name+' tier at Second Opinion Studio')};
+  document.getElementById('dp-feats').innerHTML=d.feats.map(function(f){
+    return'<li><span class="dp-dot" style="background:'+d.dot+'"></span>'+f+'</li>';
+  }).join('');
+}
+</script>

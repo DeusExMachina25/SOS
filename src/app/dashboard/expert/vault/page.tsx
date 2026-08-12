@@ -45,7 +45,7 @@ export default function ExpertVaultPage() {
   const getFileIcon = (type: string) => {
     switch (type) {
       case 'pdf': return <FileText size={24} className="text-red-400" />;
-      case 'image': return <ImageIcon size={24} className="text-cyan-400" />;
+      case 'image': return <ImageIcon size={24} className="text-[var(--color-primary)]" />;
       case 'archive': return <Archive size={24} className="text-yellow-400" />;
       default: return <FileText size={24} className="text-[var(--text-muted)]" />;
     }
@@ -71,7 +71,7 @@ export default function ExpertVaultPage() {
       <header className="mb-10 flex justify-between items-end border-b border-[var(--border)] pb-8">
         <div>
           <h1 className="font-display text-4xl font-bold text-[var(--text-primary)] flex items-center gap-4">
-            <FolderLock size={32} className="text-emerald-400" /> Secure Vault
+            <FolderLock size={32} className="text-[var(--color-green)]" /> Secure Vault
           </h1>
           <p className="font-mono-sos text-sm text-[var(--text-muted)] mt-3 tracking-widest uppercase">E2E Encrypted File Storage</p>
         </div>
@@ -83,7 +83,7 @@ export default function ExpertVaultPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search files..." 
-              className="w-full bg-[var(--bg-surface-2)] border border-[var(--border-strong)] rounded-full pl-10 pr-4 py-3 text-sm outline-none focus:border-emerald-400 text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)]"
+              className="w-full bg-[var(--bg-surface-2)] border border-[var(--border-strong)] rounded-full pl-10 pr-4 py-3 text-sm outline-none focus:border-[var(--color-green)] text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)]"
             />
           </div>
         </div>
@@ -92,16 +92,16 @@ export default function ExpertVaultPage() {
       {/* DROPZONE */}
       <div 
         onClick={handleUploadMockFile}
-        className="w-full border-2 border-dashed border-[var(--border-strong)] rounded-[32px] p-12 text-center hover:border-emerald-400 transition-all cursor-pointer bg-[var(--bg-surface-2)] flex flex-col items-center justify-center mb-12 group"
+        className="w-full border-2 border-dashed border-[var(--border-strong)] rounded-[32px] p-12 text-center hover:border-[var(--color-green)] transition-all cursor-pointer bg-[var(--bg-surface-2)] flex flex-col items-center justify-center mb-12 group"
       >
-        <div className="w-20 h-20 rounded-full bg-[var(--bg-surface)] border border-[var(--border-strong)] flex items-center justify-center mb-6 group-hover:bg-emerald-400/10 group-hover:border-emerald-400/30 transition-all">
-          <FileUp size={32} className="text-[var(--text-muted)] group-hover:text-emerald-400 transition-colors" />
+        <div className="w-20 h-20 rounded-full bg-[var(--bg-surface)] border border-[var(--border-strong)] flex items-center justify-center mb-6 group-hover:bg-[var(--color-green)]/10 group-hover:border-[var(--color-green)]/30 transition-all">
+          <FileUp size={32} className="text-[var(--text-muted)] group-hover:text-[var(--color-green)] transition-colors" />
         </div>
-        <h2 className="font-display text-2xl font-bold mb-2 text-[var(--text-primary)] group-hover:text-emerald-400 transition-colors">Upload to Vault</h2>
+        <h2 className="font-display text-2xl font-bold mb-2 text-[var(--text-primary)] group-hover:text-[var(--color-green)] transition-colors">Upload to Vault</h2>
         <p className="text-sm text-[var(--text-muted)] font-inter mb-6">Drag and drop files here or click to browse.</p>
         <div className="flex gap-4 text-xs font-mono-sos text-[var(--text-faint)] tracking-widest">
           <span className="bg-[var(--bg-base)] px-4 py-2 rounded-full border border-[var(--border)]">MAX 500MB</span>
-          <span className="bg-[var(--bg-base)] px-4 py-2 rounded-full border border-[var(--border)] text-emerald-400/70">AES-256 ENCRYPTED</span>
+          <span className="bg-[var(--bg-base)] px-4 py-2 rounded-full border border-[var(--border)] text-[var(--color-green)]/70">AES-256 ENCRYPTED</span>
         </div>
       </div>
 
@@ -113,7 +113,7 @@ export default function ExpertVaultPage() {
             onClick={() => setActiveTab(tab)}
             className={`pb-4 text-sm font-bold tracking-wide transition-all border-b-2 ${
               activeTab === tab 
-                ? "text-[var(--text-primary)] border-emerald-400" 
+                ? "text-[var(--text-primary)] border-[var(--color-green)]" 
                 : "text-[var(--text-muted)] border-transparent hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]"
             }`}
           >
@@ -125,7 +125,7 @@ export default function ExpertVaultPage() {
       {/* FILE LIST */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredFiles.map((file) => (
-          <div key={file.id} className="glass-panel p-6 rounded-[24px] border border-[var(--border-strong)] hover:border-emerald-400/50 transition-all group flex flex-col">
+          <div key={file.id} className="glass-panel p-6 rounded-[24px] border border-[var(--border-strong)] hover:border-[var(--color-green)]/50 transition-all group flex flex-col">
             <div className="flex justify-between items-start mb-6">
               <div className="w-14 h-14 rounded-2xl bg-[var(--bg-surface-2)] border border-[var(--border)] flex items-center justify-center">
                 {getFileIcon(file.type)}
@@ -133,7 +133,7 @@ export default function ExpertVaultPage() {
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
                   onClick={() => alert(`Downloading ${file.name}...`)}
-                  className="w-8 h-8 rounded-full bg-[var(--bg-surface-2)] flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-400 hover:bg-[var(--bg-surface)] border border-transparent hover:border-emerald-400/30 transition-all"
+                  className="w-8 h-8 rounded-full bg-[var(--bg-surface-2)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--color-green)] hover:bg-[var(--bg-surface)] border border-transparent hover:border-[var(--color-green)]/30 transition-all"
                 >
                   <Download size={14} />
                 </button>

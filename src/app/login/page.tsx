@@ -23,8 +23,9 @@ export default function LoginPage() {
   const trimmedInput = clientInput.trim();
   const cleanDigits = trimmedInput.replace(/[\s-()]/g, "");
   const startsWithNumbers = /^\d{6,}/.test(cleanDigits);
+  const hasAtSign = trimmedInput.includes("@");
 
-  const inputType = startsWithNumbers ? "phone" : "email";
+  const inputType = (startsWithNumbers && !hasAtSign) ? "phone" : "email";
   
   // Verification States
   const [otp, setOtp] = useState("");
@@ -50,9 +51,9 @@ export default function LoginPage() {
       val = cleanedVal.substring(2).trim();
     }
 
-    // If it's a phone number sequence, keep only digits and cap at 10
+    // If it's a phone number sequence (and doesn't contain an @), keep only digits and cap at 10
     const testDigits = val.replace(/[\s-()]/g, "");
-    if (/^\d{6,}/.test(testDigits)) {
+    if (/^\d{6,}/.test(testDigits) && !val.includes("@")) {
       val = val.replace(/\D/g, "").slice(0, 10);
     }
     
@@ -156,12 +157,31 @@ export default function LoginPage() {
         return;
       }
 
-      const { error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         phone: `+91${phoneNum}`,
         token: otp,
         type: 'sms'
       });
       if (error) throw error;
+      
+      // Profile creation for clients only (upon successful OTP verification)
+      if (data?.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", data.user.id)
+          .single();
+        
+        if (!profile) {
+          await supabase.from("profiles").insert({
+            id: data.user.id,
+            phone: data.user.phone || `+91${phoneNum}`,
+            email: data.user.email || null,
+            full_name: data.user.user_metadata?.full_name || 'Client User',
+            role: 'client'
+          });
+        }
+      }
       
       document.cookie = `trusted_device_token=client-token-${Date.now()}; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
       router.push("/dashboard/client");
@@ -177,8 +197,6 @@ export default function LoginPage() {
     document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
     router.push("/dashboard/client");
   };
-
-
 
   const handleExpertLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,11 +221,25 @@ export default function LoginPage() {
         return;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
+      
+      if (data?.user) {
+        const { data: profile, error: profileErr } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+        
+        if (profileErr || !profile || profile.role !== 'expert') {
+          // Reject non-expert logins
+          await supabase.auth.signOut();
+          throw new Error("Access denied: only pre-registered experts can log in here.");
+        }
+      }
       
       document.cookie = `trusted_device_token=expert-token-${Date.now()}; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
       router.push("/dashboard/expert");
@@ -221,7 +253,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative bg-[var(--bg-base)] overflow-hidden">
       {/* Background Cinematic Lighting */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-purple-950/3 rounded-full blur-[200px] pointer-events-none z-0"></div>
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-[#2A0089]/5 rounded-full blur-[200px] pointer-events-none z-0"></div>
 
       <div className="w-full max-w-[500px] relative z-10 my-24 md:my-32">
         

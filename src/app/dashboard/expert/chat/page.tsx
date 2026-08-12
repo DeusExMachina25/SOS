@@ -46,7 +46,7 @@ export default function ExpertChatPage() {
             <input 
               type="text" 
               placeholder="Search clients..." 
-              className="w-full bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-full pl-10 pr-4 py-3 text-sm outline-none focus:border-pink-400 text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)]"
+              className="w-full bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-full pl-10 pr-4 py-3 text-sm outline-none focus:border-[var(--color-orange)] text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)]"
             />
           </div>
         </div>
@@ -58,13 +58,13 @@ export default function ExpertChatPage() {
               onClick={() => setActiveClient(client.id)}
               className={`p-4 rounded-2xl flex items-center gap-4 cursor-pointer transition-all ${
                 activeClient === client.id 
-                  ? "bg-[var(--bg-surface-2)] border border-pink-400/50 shadow-[0_4px_20px_rgba(240,101,149,0.1)]" 
+                  ? "bg-[var(--bg-surface-2)] border border-[var(--color-orange)]/50 shadow-[0_4px_20px_rgba(255,91,46,0.1)]" 
                   : "border border-transparent hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-2)]"
               }`}
             >
               <div className="relative">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--bg-surface-2)] to-[var(--bg-base)] border border-[var(--border)] flex items-center justify-center">
-                  <Star size={16} className={activeClient === client.id ? "text-pink-400" : "text-[var(--text-muted)]"} />
+                  <Star size={16} className={activeClient === client.id ? "text-[var(--color-orange)]" : "text-[var(--text-muted)]"} />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
@@ -98,7 +98,7 @@ export default function ExpertChatPage() {
             <button className="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-all">
               <Phone size={16} />
             </button>
-            <button className="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-purple-400 hover:border-purple-400 transition-all">
+            <button className="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-all">
               <Video size={16} />
             </button>
           </div>
@@ -116,7 +116,7 @@ export default function ExpertChatPage() {
               >
                 <div className={`p-4 rounded-2xl shadow-sm text-sm text-[var(--text-primary)] ${
                   msg.sender === 'expert' 
-                    ? 'bg-pink-400/10 border border-pink-400/30 rounded-tr-sm' 
+                    ? 'bg-[var(--color-orange)]/10 border border-[var(--color-orange)]/30 rounded-tr-sm' 
                     : 'bg-[var(--bg-surface-2)] border border-[var(--border-strong)] rounded-tl-sm'
                 }`}>
                   {msg.text}
@@ -144,11 +144,11 @@ export default function ExpertChatPage() {
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
               placeholder="Type an encrypted message..." 
-              className="flex-1 bg-[var(--bg-surface)] border border-[var(--border-strong)] rounded-full px-6 py-4 text-sm outline-none focus:border-pink-400 text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)] shadow-inner" 
+              className="flex-1 bg-[var(--bg-surface)] border border-[var(--border-strong)] rounded-full px-6 py-4 text-sm outline-none focus:border-[var(--color-orange)] text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)] shadow-inner" 
             />
             <button 
               onClick={handleSend}
-              className="bg-[var(--text-primary)] text-[var(--bg-base)] px-8 py-4 rounded-full text-sm font-bold hover:bg-pink-400 hover:text-white transition-colors shadow-md"
+              className="bg-[var(--text-primary)] text-[var(--bg-base)] px-8 py-4 rounded-full text-sm font-bold hover:bg-[var(--color-orange)] hover:text-[var(--bg-base)] transition-colors shadow-md"
             >
               Send
             </button>

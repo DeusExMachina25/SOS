@@ -23,7 +23,7 @@ export default function ClientSessionsPage() {
       <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-[var(--border)] pb-8">
         <div>
           <h1 className="font-display text-4xl font-bold text-[var(--text-primary)] flex items-center gap-4">
-            <CalendarDays size={32} className="text-orange-400" /> Sessions Tracker
+            <CalendarDays size={32} className="text-[var(--color-orange)]" /> Sessions Tracker
           </h1>
           <p className="font-mono-sos text-sm text-[var(--text-muted)] mt-3 tracking-widest uppercase">Manage your expert consultations</p>
         </div>
@@ -33,10 +33,10 @@ export default function ClientSessionsPage() {
             <input 
               type="text" 
               placeholder="Search sessions..." 
-              className="w-full bg-[var(--bg-surface-2)] border border-[var(--border-strong)] rounded-full pl-10 pr-4 py-3 text-sm outline-none focus:border-orange-400 text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)]"
+              className="w-full bg-[var(--bg-surface-2)] border border-[var(--border-strong)] rounded-full pl-10 pr-4 py-3 text-sm outline-none focus:border-[var(--color-orange)] text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)]"
             />
           </div>
-          <button className="btn-sos-filled flex-shrink-0 bg-[var(--bg-surface-2)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-orange-400 hover:text-orange-400 transition-colors">
+          <button className="btn-sos-filled flex-shrink-0 bg-[var(--bg-surface-2)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-[var(--color-orange)] hover:text-[var(--color-orange)] transition-colors">
             <Plus size={16} className="mr-2 inline" /> Book Session
           </button>
         </div>
@@ -50,7 +50,7 @@ export default function ClientSessionsPage() {
             onClick={() => setActiveFilter(filter)}
             className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
               activeFilter === filter 
-                ? "bg-[var(--bg-surface-2)] text-orange-400 border border-orange-400/50 shadow-sm" 
+                ? "bg-[var(--bg-surface-2)] text-[var(--color-orange)] border border-[var(--color-orange)]/50 shadow-sm" 
                 : "bg-transparent text-[var(--text-muted)] border border-transparent hover:border-[var(--border)] hover:bg-[var(--bg-surface)]"
             }`}
           >
@@ -69,7 +69,7 @@ export default function ClientSessionsPage() {
                 <p className="text-sm text-[var(--text-muted)] font-inter">{session.expert}</p>
               </div>
               {session.status === 'scheduled' ? (
-                <div className="px-3 py-1 bg-orange-400/10 text-orange-400 text-[10px] font-bold rounded-full uppercase tracking-widest border border-orange-400/20">
+                <div className="px-3 py-1 bg-[var(--color-orange)]/10 text-[var(--color-orange)] text-[10px] font-bold rounded-full uppercase tracking-widest border border-[var(--color-orange)]/20">
                   Upcoming
                 </div>
               ) : (
@@ -80,7 +80,7 @@ export default function ClientSessionsPage() {
             </div>
 
             <div className="flex items-center gap-6 text-sm font-mono-sos text-[var(--text-faint)] mb-8">
-              <div className="flex items-center gap-2"><CalIcon size={14} className={session.status === 'scheduled' ? "text-orange-400" : ""} /> {session.date}</div>
+              <div className="flex items-center gap-2"><CalIcon size={14} className={session.status === 'scheduled' ? "text-[var(--color-orange)]" : ""} /> {session.date}</div>
               <div className="flex items-center gap-2 text-[var(--text-muted)]">• {session.time}</div>
               <div className="flex items-center gap-2 text-[var(--text-muted)]">• {session.duration}</div>
             </div>
@@ -89,7 +89,7 @@ export default function ClientSessionsPage() {
               {session.status === 'scheduled' ? (
                 <Link 
                   href={`/dashboard/video-call?sessionId=${session.id}&sessionName=${encodeURIComponent(session.name)}&displayName=Client`}
-                  className="btn-sos-filled px-6 py-3 text-xs w-full sm:w-auto text-center justify-center bg-orange-400 hover:bg-orange-500 text-white border-transparent shadow-md transition-colors rounded-2xl"
+                  className="btn-sos-filled px-6 py-3 text-xs w-full sm:w-auto text-center justify-center bg-[var(--color-orange)] hover:bg-[var(--color-orange)]/90 text-[var(--bg-base)] border-transparent shadow-md transition-colors rounded-2xl"
                 >
                   <Video size={16} className="mr-2 inline" /> Join Video Call
                 </Link>
