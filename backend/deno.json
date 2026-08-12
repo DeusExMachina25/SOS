@@ -1,0 +1,14 @@
+{
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --allow-read --watch main.ts"
+  },
+  "imports": {
+    "hono": "npm:hono@^4.4.0",
+    "hono/cors": "npm:hono@^4.4.0/cors",
+    "hono/jwt": "npm:hono@^4.4.0/jwt",
+    "hono/secure-headers": "npm:hono@^4.4.0/secure-headers",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.43.0",
+    "zod": "npm:zod@^3.23.8",
+    "@hono/zod-validator": "npm:@hono/zod-validator@^0.2.1"
+  }
+}
