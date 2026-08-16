@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ParallaxBoxes from "@/components/ParallaxBoxes";
+import FieldPie, { type FieldKey } from "@/components/platter/FieldPie";
 import { supabase } from "@/utils/supabase/client";
 
 const ANGLE_FONTS = [
@@ -34,6 +35,9 @@ interface ExpertProfile {
   bio?: string;
   tags?: string[];
   disciplines?: { id: string; title: string; desc: string }[];
+  /* Which pie segment this expert sits under. No column for this exists in
+     `profiles` yet, so it travels with the hardcoded metadata below. */
+  field?: FieldKey;
 }
 
 const DEFAULT_EXPERTS: ExpertProfile[] = [
@@ -43,6 +47,7 @@ const DEFAULT_EXPERTS: ExpertProfile[] = [
     phone: "+919876543210",
     email: "shravani@sos.com",
     role: "expert",
+    field: "architecture",
     expert_role: "Lead Systems Architect",
     bio: "Specializing in macro-level technical architecture, high-availability workflows, and secure digital defense layers. Bringing unmatched precision to critical emergency software environments.",
     tags: ["SYSTEMS DESIGN", "SCALABILITY", "SECURITY"],
@@ -58,6 +63,7 @@ const DEFAULT_EXPERTS: ExpertProfile[] = [
     phone: "+919876543211",
     email: "karan@sos.com",
     role: "expert",
+    field: "fashion",
     expert_role: "Chief Urban Strategist",
     bio: "Specializing in brand architecture, market positioning, and structural aesthetic growth. Bringing minimalist logic and stark planning to modern corporate digital footprints.",
     tags: ["BRAND SYSTEMS", "UX STRATEGY", "POSITIONING"],
@@ -73,6 +79,7 @@ const DEFAULT_EXPERTS: ExpertProfile[] = [
     phone: "+919876543212",
     email: "ananya@sos.com",
     role: "expert",
+    field: "travel",
     expert_role: "Lead Design Director",
     bio: "Specializing in human-computer choreography, high-fidelity motion systems, and brutalist design language. Bringing sensory aesthetics and pixel perfection to luxury branding.",
     tags: ["INTERFACE MOTION", "SENSORY GRAPHICS", "BRUTALISM"],
@@ -144,6 +151,43 @@ export default function PlatterPage() {
   // UI States for Pricing (collapsible per-expert accordions)
   const [openSections, setOpenSections] = useState<{ [expertId: string]: { disciplines: boolean; terms: boolean } }>({});
   const [activeTier, setActiveTier] = useState<"apt" | "vil" | "sit">("apt");
+
+  // Contact form
+  const [inquiryState, setInquiryState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [inquiryError, setInquiryError] = useState("");
+
+  const handleInquiry = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    setInquiryState("sending");
+    setInquiryError("");
+
+    if (!supabase) {
+      setInquiryState("error");
+      setInquiryError("We can't reach the server right now. Email us at hello@sos.com instead.");
+      return;
+    }
+
+    const { error } = await supabase.from("inquiries").insert({
+      full_name: String(data.get("full_name") ?? "").trim(),
+      email: String(data.get("email") ?? "").trim(),
+      subject: String(data.get("subject") ?? "").trim() || null,
+      message: String(data.get("message") ?? "").trim(),
+      source: "platter",
+    });
+
+    if (error) {
+      console.error("Inquiry submission failed", error);
+      setInquiryState("error");
+      setInquiryError("That didn't send. Try again, or email us at hello@sos.com.");
+      return;
+    }
+
+    form.reset();
+    setInquiryState("sent");
+  };
 
   const toggleSection = (expertId: string, section: "disciplines" | "terms") => {
     setOpenSections(prev => {
@@ -286,7 +330,7 @@ export default function PlatterPage() {
         </div>
       </section>
 
-      <div style={{ height: "30vh" }} aria-hidden="true" />
+      <div style={{ height: "15vh" }} aria-hidden="true" />
 
       {/* Main Container for the rest of the page */}
       <div className="container mx-auto px-6 max-w-6xl flex flex-col items-center text-center pb-[20vh]">
@@ -299,7 +343,7 @@ export default function PlatterPage() {
           </p>
         </header>
 
-        <div style={{ height: "30vh" }} aria-hidden="true" />
+        <div style={{ height: "15vh" }} aria-hidden="true" />
 
         {/* Expanded Expert Profile - Moved to Top */}
         <section ref={addToRefs} className="w-full flex flex-col items-center">
@@ -337,39 +381,12 @@ export default function PlatterPage() {
           ) : (
             <div className="w-full max-w-5xl flex flex-col items-center">
               
-              {/* Horizontal Carousel Selector */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-12">
-                {experts.map((expert) => {
-                  const isActive = selectedExpertId === expert.id;
-                  return (
-                    <button
-                      key={expert.id}
-                      onClick={() => setSelectedExpertId(expert.id)}
-                      className={`flex flex-col text-left p-6 rounded-2xl border transition-all duration-500 cursor-pointer ${
-                        isActive 
-                          ? "bg-[var(--bg-surface-2)] border-[var(--color-primary)] shadow-[0_0_30px_rgba(124,77,255,0.15)] scale-[1.02]" 
-                          : "bg-[var(--bg-surface)] border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-2)]/50 hover:scale-[1.01]"
-                      }`}
-                    >
-                      <span className="font-mono-sos text-[9px] text-[var(--text-faint)] uppercase tracking-wider mb-3">
-                        Dossier {expert.id.slice(0, 8)}
-                      </span>
-                      <h3 className="font-editorial text-2xl mb-1 text-[var(--text-primary)] transition-colors duration-300">
-                        {expert.full_name}
-                      </h3>
-                      <span className="font-mono-sos text-[10px] text-[var(--color-primary)] uppercase tracking-widest mt-2">
-                        {expert.expert_role}
-                      </span>
-                      <div className="w-full mt-4 flex items-center justify-between">
-                        <span className="font-mono-sos text-[9px] text-[var(--text-muted)] tracking-wider">
-                          {isActive ? "ACTIVE PROFILE" : "SELECT PROFILE"}
-                        </span>
-                        <span className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive ? "bg-[var(--color-primary)] animate-pulse" : "bg-transparent"}`} />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Field selector — picking an expert drives the profile card below */}
+              <FieldPie
+                experts={experts}
+                selectedExpertId={selectedExpertId}
+                onSelect={setSelectedExpertId}
+              />
 
               {/* Spacious Active Profile Details Card */}
               {(() => {
@@ -527,7 +544,7 @@ export default function PlatterPage() {
                                   Select a tier to explore scope and pricing
                                 </p>
 
-                                <div className="grid grid-cols-3 border border-black/10 dark:border-white/10 rounded-[10px] overflow-hidden bg-[#eee9e2] dark:bg-[#151221] mb-5">
+                                <div className="grid grid-cols-3 border border-[var(--border-strong)] rounded-[10px] overflow-hidden bg-[var(--bg-surface-2)] mb-5">
                                   {(Object.keys(PRICING_TIERS) as Array<keyof typeof PRICING_TIERS>).map((tierKey) => {
                                     const tier = PRICING_TIERS[tierKey];
                                     const isActive = activeTier === tierKey;
@@ -535,8 +552,8 @@ export default function PlatterPage() {
                                       <button
                                         key={tierKey}
                                         onClick={() => setActiveTier(tierKey)}
-                                        className={`bg-transparent text-left cursor-pointer relative py-4 px-[18px] border-r border-black/10 dark:border-white/10 last:border-r-0 hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-300 ${
-                                          isActive ? "bg-white dark:bg-[#201c30]" : ""
+                                        className={`bg-transparent text-left cursor-pointer relative py-4 px-[18px] border-r border-[var(--border-strong)] last:border-r-0 hover:bg-[var(--bg-surface)] transition-all duration-300 ${
+                                          isActive ? "bg-[var(--bg-base)]" : ""
                                         }`}
                                       >
                                         <span className="font-mono-sos text-[9px] font-medium tracking-[0.16em] uppercase text-[#b8965a] block mb-1">
@@ -650,19 +667,12 @@ export default function PlatterPage() {
                                   </div>
                                 </div>
 
-                                {/* Footer Row */}
-                                <div className="mt-6 pt-4 border-t border-[var(--border)] flex flex-col md:flex-row items-center justify-between gap-4 w-full text-left">
+                                {/* Footer Row — booking lives on the tier panel above, so this
+                                    only carries the delivery promise. */}
+                                <div className="mt-6 pt-4 border-t border-[var(--border)] w-full text-left">
                                   <div className="font-inter text-xs text-[var(--text-muted)] font-light">
                                     Written summary delivered within 48 hours of every session.
                                   </div>
-                                  <button 
-                                    onClick={() => {
-                                      router.push("/login?tier=General");
-                                    }}
-                                    className="font-inter text-[11px] font-semibold tracking-wider uppercase border border-[var(--text-primary)] text-[var(--text-primary)] bg-transparent py-2.5 px-6 rounded-[3px] hover:bg-[var(--text-primary)] hover:text-[var(--bg-base)] transition-all duration-300 cursor-pointer"
-                                  >
-                                    Book Session ↗
-                                  </button>
                                 </div>
 
                               </div>
@@ -681,7 +691,7 @@ export default function PlatterPage() {
           )}
         </section>
 
-        <div style={{ height: "30vh" }} aria-hidden="true" />
+        <div style={{ height: "15vh" }} aria-hidden="true" />
 
         {/* Standalone Secure Slot CTA */}
         <section ref={addToRefs} className="w-full flex flex-col items-center overflow-visible">
@@ -697,7 +707,7 @@ export default function PlatterPage() {
            </Link>
          </section>
 
-        <div style={{ height: "20vh" }} aria-hidden="true" />
+        <div style={{ height: "10vh" }} aria-hidden="true" />
 
         {/* Let's Talk Contact Form */}
         <section ref={addToRefs} className="w-full border-t border-[var(--border)] bg-[var(--bg-base)] z-10 relative py-24">
@@ -726,18 +736,17 @@ export default function PlatterPage() {
 
             {/* Fully Centered Contact Form (Single Column) */}
             <div className="w-full max-w-xl mx-auto flex flex-col items-center relative z-20">
-              <form 
+              <form
                 className="w-full flex flex-col items-center gap-y-12"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert("Thank you! Your inquiry has been received.");
-                }}
+                onSubmit={handleInquiry}
               >
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Full Name *</label>
-                  <input 
-                    type="text" 
-                    required 
+                  <input
+                    type="text"
+                    name="full_name"
+                    maxLength={200}
+                    required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="Jane Doe"
                   />
@@ -745,9 +754,11 @@ export default function PlatterPage() {
 
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">E-mail *</label>
-                  <input 
-                    type="email" 
-                    required 
+                  <input
+                    type="email"
+                    name="email"
+                    maxLength={320}
+                    required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="jane@example.com"
                   />
@@ -755,8 +766,10 @@ export default function PlatterPage() {
 
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Subject</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
+                    name="subject"
+                    maxLength={300}
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="Project Inquiry"
                   />
@@ -764,9 +777,11 @@ export default function PlatterPage() {
 
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Message *</label>
-                  <textarea 
+                  <textarea
                     rows={1}
-                    required 
+                    name="message"
+                    maxLength={5000}
+                    required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors resize-none rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 min-h-[100px] text-center"
                     placeholder="Tell us about your vision..."
                   ></textarea>
@@ -784,10 +799,25 @@ export default function PlatterPage() {
                   </label>
                 </div>
 
-                <div className="mt-8 text-center w-full">
-                  <button type="submit" className="bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos text-xs tracking-[0.3em] px-12 py-4 uppercase hover:opacity-80 transition-opacity duration-300 w-full md:w-auto cursor-pointer">
-                    Submit Inquiry
+                <div className="mt-8 text-center w-full flex flex-col items-center gap-4">
+                  <button
+                    type="submit"
+                    disabled={inquiryState === "sending"}
+                    className="bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos text-xs tracking-[0.3em] px-12 py-4 uppercase hover:opacity-80 transition-opacity duration-300 w-full md:w-auto cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                  >
+                    {inquiryState === "sending" ? "Sending…" : "Submit Inquiry"}
                   </button>
+
+                  <p
+                    role="status"
+                    aria-live="polite"
+                    className={`font-inter text-sm min-h-[20px] ${
+                      inquiryState === "error" ? "text-[var(--color-orange)]" : "text-[var(--text-muted)]"
+                    }`}
+                  >
+                    {inquiryState === "sent" && "Thanks — we've got it. We'll reply within two working days."}
+                    {inquiryState === "error" && inquiryError}
+                  </p>
                 </div>
 
               </form>
@@ -795,7 +825,7 @@ export default function PlatterPage() {
           </div>
         </section>
 
-        <div style={{ height: "10vh" }} aria-hidden="true" />
+        <div style={{ height: "6vh" }} aria-hidden="true" />
 
       </div>
     </div>

@@ -523,3 +523,333 @@ body::before {
 }
 
 
+
+/* ═══════════════════════════════════════════════════════
+   POSITION TRACKER BACKGROUND
+   Scroll-reactive measurement grid revealed after the
+   opening SOS logo flies through the camera.
+════════════════════════════════════════════════════════*/
+.pt-root {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  --pt-x: 50vw;
+  --pt-y: 50vh;
+}
+
+/* Cursor spotlight */
+.pt-spotlight {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    420px circle at var(--pt-x) var(--pt-y),
+    rgba(178, 155, 255, 0.07),
+    transparent 70%
+  );
+}
+
+/* Measurement columns */
+.pt-grid {
+  position: absolute;
+  inset: 0 2rem;
+  display: flex;
+  gap: 8px;
+}
+.pt-col {
+  position: relative;
+  flex: 1 1 auto;
+  background-color: var(--color-primary-pale);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.pt-fill {
+  position: absolute;
+  inset: 0;
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  background: linear-gradient(
+    to top,
+    rgba(178, 155, 255, 0.10),
+    rgba(178, 155, 255, 0.01) 65%,
+    transparent
+  );
+  will-change: transform;
+}
+
+/* Left rail ruler */
+.pt-rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0.75rem;
+  width: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.pt-tick {
+  width: 4px;
+  height: 1px;
+  background-color: var(--text-faint);
+}
+.pt-tick-major {
+  width: 10px;
+}
+.pt-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 1px;
+  background-color: var(--color-primary);
+  opacity: 0.5;
+  will-change: transform;
+}
+
+/* Scan line */
+.pt-scan {
+  position: absolute;
+  top: 0;
+  left: 2rem;
+  right: 2rem;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(178, 155, 255, 0.28),
+    transparent
+  );
+  will-change: transform;
+}
+
+/* HUD readout */
+.pt-hud {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.pt-hud-label {
+  margin-bottom: 0.25rem;
+}
+.pt-hud-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.pt-hud-value {
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 767px) {
+  .pt-col-wide-only { display: none; }
+  .pt-grid { inset: 0 1rem; }
+  .pt-scan { left: 1rem; right: 1rem; }
+  .pt-hud { right: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pt-scan,
+  .pt-marker { display: none; }
+  .pt-spotlight { background: none; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SOS WORDMARK  ("SOS Mark Final" from the logo redesign)
+════════════════════════════════════════════════════════*/
+:root,
+[data-theme="dark"] {
+  /* Dark lockup: orange letterforms, indigo dots */
+  --mark-ink:    #E8611C;
+  --mark-accent: #2E2A6B;
+}
+
+[data-theme="light"] {
+  /* Light lockup: indigo letterforms, orange dots */
+  --mark-ink:    #2E2A6B;
+  --mark-accent: #E8611C;
+}
+
+.sos-mark {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Silkscreen', monospace;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--mark-ink);
+}
+.sos-mark-letter {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sos-mark-glyph {
+  font: inherit;
+  line-height: 1;
+}
+.sos-mark-grid {
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  place-items: center;
+}
+.sos-mark-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--mark-ink);
+}
+.sos-mark-dot {
+  background-color: var(--mark-accent);
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   FIELD PIE (Platter)
+   2.5D field selector. Slice models hold still until the
+   slice takes focus, then their detail animations run.
+════════════════════════════════════════════════════════*/
+.fp-slice {
+  cursor: pointer;
+  transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.45s ease;
+}
+.fp-lift {
+  transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.fp-shadow {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.55s ease;
+}
+.fp-awake .fp-shadow {
+  transform: scale(0.82);
+  opacity: 0.6;
+}
+
+.fp-bob {
+  animation: fp-bob 5s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.fp-bob.fp-drift {
+  animation: fp-drift 6s ease-in-out infinite;
+}
+@keyframes fp-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2.5px); }
+}
+@keyframes fp-drift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-8px) rotate(-4deg); }
+}
+
+.fp-win { animation: fp-win 5s ease-in-out infinite; }
+@keyframes fp-win {
+  0%, 42%, 100% { opacity: 0.22; }
+  58%, 86%      { opacity: 0.92; }
+}
+
+.fp-beacon {
+  animation: fp-beacon 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes fp-beacon {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 1; }
+}
+
+.fp-halo {
+  animation: fp-halo 2.4s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+}
+@keyframes fp-halo {
+  0%   { opacity: 0; transform: scale(0.5); }
+  18%  { opacity: 0.5; }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+
+.fp-glint {
+  animation: fp-glint 3.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes fp-glint {
+  0%, 72%, 100% { opacity: 0.55; }
+  84%           { opacity: 1; }
+}
+
+.fp-band {
+  animation: fp-band 7s linear infinite;
+  transform-box: fill-box;
+  opacity: 0;
+}
+@keyframes fp-band {
+  0%   { transform: translateY(0); opacity: 0; }
+  12%  { opacity: 0.7; }
+  88%  { opacity: 0.7; }
+  100% { transform: translateY(-11px); opacity: 0; }
+}
+
+.fp-thread {
+  stroke-dasharray: 2 5;
+  animation: fp-thread 2.4s linear infinite;
+}
+@keyframes fp-thread { to { stroke-dashoffset: -14; } }
+
+.fp-trail {
+  stroke-dasharray: 3 7;
+  animation: fp-trail 1.5s linear infinite;
+}
+@keyframes fp-trail { to { stroke-dashoffset: -20; } }
+
+/* Everything rests paused; only the focused slice runs. */
+.fp-bob, .fp-win, .fp-beacon, .fp-halo, .fp-glint, .fp-band, .fp-thread, .fp-trail {
+  animation-play-state: paused;
+}
+.fp-awake .fp-bob,
+.fp-awake .fp-win,
+.fp-awake .fp-beacon,
+.fp-awake .fp-halo,
+.fp-awake .fp-glint,
+.fp-awake .fp-band,
+.fp-awake .fp-thread,
+.fp-awake .fp-trail {
+  animation-play-state: running;
+}
+
+.fp-card {
+  opacity: 0;
+  transform: translateY(52px);
+  animation: fp-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes fp-rise {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fp-bob, .fp-win, .fp-beacon, .fp-halo, .fp-glint, .fp-band, .fp-thread, .fp-trail,
+  .fp-awake .fp-bob, .fp-awake .fp-win, .fp-awake .fp-beacon, .fp-awake .fp-halo,
+  .fp-awake .fp-glint, .fp-awake .fp-band, .fp-awake .fp-thread, .fp-awake .fp-trail {
+    animation: none;
+  }
+  .fp-card { animation: none; opacity: 1; transform: none; }
+}
