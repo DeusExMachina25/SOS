@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@700&amp;family=Unbounded:wght@800&amp;family=Silkscreen:wght@700&amp;display=swap" rel="stylesheet">
+<meta name="design_doc_mode" content="canvas">
+<style>
+body { margin: 0; background: #FAFAF7; }
+</style>
+</helmet>
+<section id="2a-row" style="background:#FAFAF7;padding:80px 60px 40px;box-sizing:border-box;font-family:Inter,sans-serif;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div style="font-size:12px;font-weight:600;letter-spacing:0.14em;color:#1C1B29;text-transform:uppercase;opacity:0.55;">Turn 2 — typography options</div>
+    <div style="font-size:15px;color:#1C1B29;opacity:0.6;margin-top:8px;max-width:680px;">Morse now overlays the letterform too — a footer strip punched into the base of each glyph, alongside the braille dots. Three typefaces, chosen for how well their counters and strokes host the punched marks.</div>
+    <div style="display:flex;gap:40px;flex-wrap:wrap;margin-top:32px;">
+
+      <div id="2a" style="position:relative;">
+        <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:0.04em;">2a</div>
+        <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(28,27,41,0.25);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:72px;line-height:1;color:#1C1B29;">S</div>
+              <div style="position:absolute;top:2px;left:0;right:0;bottom:26px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                <span></span><span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+              </div>
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+              </div>
+            </div>
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:72px;line-height:1;color:#1C1B29;">O</div>
+              <div style="position:absolute;top:2px;left:0;right:0;bottom:26px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                <span></span><span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+              </div>
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                <span style="width:20px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:14px;height:5px;border-radius:2.5px;background:#1C1B29;"></span></span>
+                <span style="width:20px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:14px;height:5px;border-radius:2.5px;background:#1C1B29;"></span></span>
+                <span style="width:20px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:14px;height:5px;border-radius:2.5px;background:#1C1B29;"></span></span>
+              </div>
+            </div>
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:72px;line-height:1;color:#1C1B29;">S</div>
+              <div style="position:absolute;top:2px;left:0;right:0;bottom:26px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                <span></span><span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+              </div>
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Space Grotesk</div>
+        <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Current type. Even strokes, geometric bowl — the baseline.</div>
+      </div>
+
+      <div id="2b" style="position:relative;">
+        <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:0.04em;">2b</div>
+        <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(28,27,41,0.25);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Space Mono',monospace;font-weight:700;font-size:64px;line-height:1;color:#1C1B29;">S</div>
+              <div style="position:absolute;top:2px;left:0;right:0;bottom:26px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                <span></span><span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+              </div>
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+              </div>
+            </div>
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Space Mono',monospace;font-weight:700;font-size:64px;line-height:1;color:#1C1B29;">O</div>
+              <div style="position:absolute;top:2px;left:0;right:0;bottom:26px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                <span></span><span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+              </div>
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                <span style="width:20px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:14px;height:5px;border-radius:2.5px;background:#1C1B29;"></span></span>
+                <span style="width:20px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:14px;height:5px;border-radius:2.5px;background:#1C1B29;"></span></span>
+                <span style="width:20px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:14px;height:5px;border-radius:2.5px;background:#1C1B29;"></span></span>
+              </div>
+            </div>
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Space Mono',monospace;font-weight:700;font-size:64px;line-height:1;color:#1C1B29;">S</div>
+              <div style="position:absolute;top:2px;left:0;right:0;bottom:26px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                <span></span><span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+              </div>
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Space Mono</div>
+        <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Fixed-width, ticked terminals — reads as "encoded", matching morse/braille as codes.</div>
+      </div>
+
+      <div id="2c" style="position:relative;">
+        <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:0.04em;">2c</div>
+        <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(28,27,41,0.25);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:60px;line-height:1;color:#1C1B29;">S</div>
+              <div style="position:absolute;top:2px;left:0;right:0;bottom:26px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                <span></span><span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+              </div>
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+              </div>
+            </div>
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:60px;line-height:1;color:#1C1B29;">O</div>
+              <div style="position:absolute;top:2px;left:0;right:0;bottom:26px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                <span></span><span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+              </div>
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                <span style="width:20px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:14px;height:5px;border-radius:2.5px;background:#1C1B29;"></span></span>
+                <span style="width:20px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:14px;height:5px;border-radius:2.5px;background:#1C1B29;"></span></span>
+                <span style="width:20px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:14px;height:5px;border-radius:2.5px;background:#1C1B29;"></span></span>
+              </div>
+            </div>
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:60px;line-height:1;color:#1C1B29;">S</div>
+              <div style="position:absolute;top:2px;left:0;right:0;bottom:26px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                <span></span><span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+              </div>
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                <span style="width:12px;height:12px;border-radius:6px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Unbounded</div>
+        <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Rounder, fuller bowls — more room inside the counters for the dots to nest.</div>
+      </div>
+
+      <div id="2d" style="position:relative;">
+        <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:0.04em;">2d</div>
+        <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(46,42,107,0.3);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">S<div style="position: absolute; top: 29px; left: 12px; display: grid; grid-template-columns: repeat(2,1fr); grid-template-rows: repeat(3,1fr); place-items: center; width: 39px; height: 38px">
+                <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+                <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width: 38px; height: 8px; border-radius: 1px; background: #E8611C"></span></span><span></span>
+                <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              </div></div>
+              
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                
+                
+                
+              </div>
+            </div>
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              
+              
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                
+                
+                
+              </div>
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">O<div style="position: absolute; top: 33px; left: 15px; display: grid; grid-template-columns: repeat(2,1fr); grid-template-rows: repeat(3,1fr); place-items: center; width: 39px; height: 33px">
+                <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+                <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width: 17px; height: 10px; border-radius: 1px; background: #E8611C"></span></span>
+                <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              </div></div></div>
+            <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+              <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">S<div style="position: absolute; top: 30px; left: 15px; display: grid; grid-template-columns: repeat(2,1fr); grid-template-rows: repeat(3,1fr); place-items: center; width: 34px; height: 38px">
+                <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+                <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width: 22px; height: 11px; border-radius: 1px; background: #E8611C"></span></span><span></span>
+                <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              </div></div>
+              
+              <div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:3px;align-items:center;justify-content:center;">
+                
+                
+                
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Silkscreen — two-tone</div>
+        <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Purple letters, amber braille dots punched fully inside the strokes, morse footer in purple.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div id="1a" style="position:relative;background:#FAFAF7;min-height:100vh;padding:40px 60px 80px;box-sizing:border-box;font-family:Inter,sans-serif;border-top:1px solid rgba(28,27,41,0.1);">
+  <div style="position:absolute;top:16px;left:16px;background:rgba(28,27,41,0.5);color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:0.04em;">1a — previous turn</div>
+  <div style="max-width:1100px;margin:40px auto 0;">
+    <div style="font-size:12px;font-weight:600;letter-spacing:0.14em;color:#1C1B29;text-transform:uppercase;opacity:0.55;">SOS · Second Opinion Studios</div>
+    <div style="font-size:15px;color:#1C1B29;opacity:0.6;margin-top:8px;max-width:640px;">Braille is punched directly into each letterform; morse runs underneath it — two signals fused into one glyph per letter.</div>
+
+    <!-- VARIANT 1 -->
+    <div style="margin-top:64px;">
+      <div style="font-size:13px;font-weight:600;letter-spacing:0.08em;color:#1C1B29;text-transform:uppercase;margin-bottom:24px;">01 — Monochrome</div>
+      <div style="display:flex;align-items:center;gap:64px;flex-wrap:wrap;">
+
+        <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(28,27,41,0.25);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+              <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#1C1B29;">S</div>
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                  <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+              <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#1C1B29;">O</div>
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                  <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;"><span style="width:14px;height:6px;border-radius:3px;background:#1C1B29;"></span><span style="width:14px;height:6px;border-radius:3px;background:#1C1B29;"></span><span style="width:14px;height:6px;border-radius:3px;background:#1C1B29;"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+              <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#1C1B29;">S</div>
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                  <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:24px;">
+          <div style="width:110px;height:110px;overflow:hidden;">
+            <div style="transform:scale(0.4583);transform-origin:top left;width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(28,27,41,0.25);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#1C1B29;">S</div>
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                      <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#1C1B29;">O</div>
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                      <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:3px;align-items:center;"><span style="width:14px;height:6px;border-radius:3px;background:#1C1B29;"></span><span style="width:14px;height:6px;border-radius:3px;background:#1C1B29;"></span><span style="width:14px;height:6px;border-radius:3px;background:#1C1B29;"></span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#1C1B29;">S</div>
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                      <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></span><span></span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span><span style="width:6px;height:6px;border-radius:50%;background:#1C1B29;"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;justify-content:center;">
+            <div style="font-family:Inter,sans-serif;font-weight:600;font-size:19px;letter-spacing:0.06em;color:#1C1B29;text-transform:uppercase;">Second Opinion</div>
+            <div style="font-family:Inter,sans-serif;font-weight:600;font-size:19px;letter-spacing:0.06em;color:#1C1B29;text-transform:uppercase;">Studios</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:1px;background:rgba(28,27,41,0.1);margin:56px 0;"></div>
+
+    <!-- VARIANT 2 -->
+    <div>
+      <div style="font-size:13px;font-weight:600;letter-spacing:0.08em;color:#1C1B29;text-transform:uppercase;margin-bottom:8px;">02 — Two-color</div>
+      <div style="font-size:13px;color:#1C1B29;opacity:0.55;margin-bottom:24px;">Purple carries the letters and the morse; orange dots are punched into the letterforms.</div>
+      <div style="display:flex;align-items:center;gap:64px;flex-wrap:wrap;">
+
+        <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(46,42,107,0.3);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+              <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#2E2A6B;">S</div>
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                  <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+              <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#2E2A6B;">O</div>
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                  <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;"><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+              <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#2E2A6B;">S</div>
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                  <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:24px;">
+          <div style="width:110px;height:110px;overflow:hidden;">
+            <div style="transform:scale(0.4583);transform-origin:top left;width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(46,42,107,0.3);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#2E2A6B;">S</div>
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                      <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#2E2A6B;">O</div>
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                      <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:3px;align-items:center;"><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#2E2A6B;">S</div>
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                      <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;justify-content:center;">
+            <div style="font-family:Inter,sans-serif;font-weight:600;font-size:19px;letter-spacing:0.06em;color:#2E2A6B;text-transform:uppercase;">Second Opinion</div>
+            <div style="font-family:Inter,sans-serif;font-weight:600;font-size:19px;letter-spacing:0.06em;color:#2E2A6B;text-transform:uppercase;">Studios</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:1px;background:rgba(28,27,41,0.1);margin:56px 0;"></div>
+
+    <!-- VARIANT 3 -->
+    <div>
+      <div style="font-size:13px;font-weight:600;letter-spacing:0.08em;color:#1C1B29;text-transform:uppercase;margin-bottom:8px;">03 — Full color</div>
+      <div style="font-size:13px;color:#1C1B29;opacity:0.55;margin-bottom:24px;">Letters in coral, braille dots punched in amber, morse in indigo underneath.</div>
+      <div style="display:flex;align-items:center;gap:64px;flex-wrap:wrap;">
+
+        <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(28,27,41,0.18);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+              <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#D6402E;">S</div>
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                  <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+              <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#D6402E;">O</div>
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                  <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;"><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+              <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#D6402E;">S</div>
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                  <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                  <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:24px;">
+          <div style="width:110px;height:110px;overflow:hidden;">
+            <div style="transform:scale(0.4583);transform-origin:top left;width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(28,27,41,0.18);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#D6402E;">S</div>
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                      <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#D6402E;">O</div>
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                      <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:3px;align-items:center;"><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span><span style="width:14px;height:6px;border-radius:3px;background:#2E2A6B;"></span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+                  <div style="position:relative;width:56px;height:78px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;line-height:1;color:#D6402E;">S</div>
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);place-items:center;">
+                      <span></span><span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                      <span style="width:12px;height:12px;border-radius:50%;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:#E8611C;"></span></span><span></span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:3px;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span><span style="width:6px;height:6px;border-radius:50%;background:#2E2A6B;"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;justify-content:center;">
+            <div style="font-family:Inter,sans-serif;font-weight:600;font-size:19px;letter-spacing:0.06em;color:#1C1B29;text-transform:uppercase;">Second Opinion</div>
+            <div style="font-family:Inter,sans-serif;font-weight:600;font-size:19px;letter-spacing:0.06em;color:#1C1B29;text-transform:uppercase;">Studios</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

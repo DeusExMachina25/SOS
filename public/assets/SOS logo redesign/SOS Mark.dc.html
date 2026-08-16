@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@700&amp;family=Inter:wght@500;600&amp;display=swap" rel="stylesheet">
+<meta name="design_doc_mode" content="canvas">
+<style>
+body { margin: 0; background: #FAFAF7; }
+</style>
+</helmet>
+<section style="background:#FAFAF7;padding:80px 60px;box-sizing:border-box;font-family:Inter,sans-serif;">
+  <div style="font-size:12px;font-weight:600;letter-spacing:0.14em;color:#1C1B29;text-transform:uppercase;opacity:0.55;margin-bottom:32px;">Turn 2 — color options</div>
+  <div style="display:flex;gap:48px;flex-wrap:wrap;margin-bottom:64px;">
+
+    <div id="2a" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">2a</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(46,42,107,0.3);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width: 21px; height: 8px; border-radius: 1px; background: #E8611C"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">O<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Indigo / orange (current)</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Existing palette, for reference.</div>
+    </div>
+
+    <div id="2b" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">2b</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(28,27,41,0.25);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#1C1B29;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#1C1B29;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#D6402E;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#1C1B29;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#D6402E;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#1C1B29;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#D6402E;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#1C1B29;">O<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span style="width:9px;height:9px;border-radius:2px;background:#1C1B29;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#D6402E;"></span></span><span></span>
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#1C1B29;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#D6402E;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#1C1B29;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#D6402E;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#1C1B29;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#1C1B29;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#D6402E;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#1C1B29;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#D6402E;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#1C1B29;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#D6402E;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Charcoal / coral</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Neutral, near-black letters with a warm coral accent in the braille.</div>
+    </div>
+
+    <div id="2c" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">2c</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#0F3D3E;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#F4EDE1;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#F4EDE1;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8A23B;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#F4EDE1;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8A23B;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#F4EDE1;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8A23B;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#F4EDE1;">O<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span style="width:9px;height:9px;border-radius:2px;background:#F4EDE1;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8A23B;"></span></span><span></span>
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#F4EDE1;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8A23B;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#F4EDE1;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8A23B;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#F4EDE1;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#F4EDE1;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8A23B;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#F4EDE1;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8A23B;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#F4EDE1;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8A23B;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Deep teal / amber</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Dark teal field, cream letters, amber braille — a moodier, more premium field color.</div>
+    </div>
+
+    <div id="2d" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">2d</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(15,72,63,0.3);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#0F483F;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#0F483F;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#0F483F;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#0F483F;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#0F483F;">O<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span style="width:9px;height:9px;border-radius:2px;background:#0F483F;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#0F483F;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#0F483F;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#0F483F;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#0F483F;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#0F483F;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#0F483F;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Teal / orange, light field</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Light background, deep teal letters, orange braille — softer than 2c while keeping the teal identity.</div>
+    </div>
+
+    <div id="2e" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">2e</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#1C1B29;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#E8611C;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#1C1B29;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#1C1B29;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#1C1B29;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#E8611C;">O<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#1C1B29;"></span></span><span></span>
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#1C1B29;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#1C1B29;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#E8611C;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#1C1B29;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#1C1B29;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#1C1B29;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Orange on charcoal, reversed</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Full orange letterforms on charcoal field, dots punched through in charcoal — bold, high-contrast, one-color-feel.</div>
+    </div>
+
+  </div>
+
+  <div style="font-size:12px;font-weight:600;letter-spacing:0.14em;color:#1C1B29;text-transform:uppercase;opacity:0.55;margin-bottom:32px;">Final — light / dark</div>
+  <div style="display:flex;gap:48px;flex-wrap:wrap;margin-bottom:64px;">
+
+    <div id="3a" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">3a</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(46,42,107,0.3);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">O<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Light mode</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Cream field, indigo letters, orange braille.</div>
+    </div>
+
+    <div id="3b" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">3b</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#E8611C;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#2E2A6B;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#2E2A6B;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#2E2A6B;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#E8611C;">O<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#2E2A6B;"></span></span><span></span>
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#2E2A6B;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#2E2A6B;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#E8611C;">S<div style="position:absolute;top:28px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#2E2A6B;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:1px;background:#2E2A6B;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#E8611C;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#2E2A6B;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Dark mode</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Indigo field, orange letters, indigo-punched braille.</div>
+    </div>
+
+  </div>
+
+  <div style="font-size:12px;font-weight:600;letter-spacing:0.14em;color:#1C1B29;text-transform:uppercase;opacity:0.55;margin-bottom:32px;">Turn 1 — where next</div>
+  <div style="display:flex;gap:48px;flex-wrap:wrap;">
+
+    <div id="1a" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">1a</div>
+      <div style="width:360px;height:360px;border-radius:24px;background:#FAFAF7;border:2px solid rgba(46,42,107,0.3);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="position:relative;width:93px;height:135px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:87px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:41.5px;left:21px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:6px;place-items:center;width:51px;height:51px">
+              <span></span><span style="width:13.5px;height:13.5px;border-radius:3px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:1.5px;background:#E8611C;"></span></span>
+              <span style="width:13.5px;height:13.5px;border-radius:3px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:12px;height:12px;border-radius:1.5px;background:#E8611C;"></span></span><span></span>
+              <span style="width:13.5px;height:13.5px;border-radius:3px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:1.5px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:93px;height:135px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:87px;line-height:1;color:#2E2A6B;">O<div style="position:absolute;top:41.5px;left:21px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:6px;place-items:center;width:51px;height:51px">
+              <span style="width:13.5px;height:13.5px;border-radius:3px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:1.5px;background:#E8611C;"></span></span><span></span>
+              <span></span><span style="width:13.5px;height:13.5px;border-radius:3px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:12px;height:12px;border-radius:1.5px;background:#E8611C;"></span></span>
+              <span style="width:13.5px;height:13.5px;border-radius:3px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:1.5px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:93px;height:135px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:87px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:41.5px;left:21px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:6px;place-items:center;width:51px;height:51px">
+              <span></span><span style="width:13.5px;height:13.5px;border-radius:3px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:1.5px;background:#E8611C;"></span></span>
+              <span style="width:13.5px;height:13.5px;border-radius:3px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:12px;height:12px;border-radius:1.5px;background:#E8611C;"></span></span><span></span>
+              <span style="width:13.5px;height:13.5px;border-radius:3px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:1.5px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Aligned grid</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Same mark, but every braille cell sits on the identical size/position — cleaner, more consistent baseline across S · O · S.</div>
+    </div>
+
+    <div id="1b" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">1b</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#FAFAF7;">S<div style="position:absolute;top:26px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#FAFAF7;">O<div style="position:absolute;top:26px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span style="width:9px;height:9px;border-radius:2px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#FAFAF7;">S<div style="position:absolute;top:26px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Dark / reversed</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">Purple as the field, cream letters, orange dots — tests the mark for app icons and dark UI.</div>
+    </div>
+
+    <div id="1c" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">1c</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(46,42,107,0.3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:44px;height:64px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:42px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:18px;left:10px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:3px;place-items:center;width:24px;height:24px">
+              <span></span><span style="width:6px;height:6px;border-radius:1.5px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:3px;height:3px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:6px;height:6px;border-radius:1.5px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:3px;height:3px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:6px;height:6px;border-radius:1.5px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:3px;height:3px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:44px;height:64px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:42px;line-height:1;color:#2E2A6B;">O<div style="position:absolute;top:18px;left:10px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:3px;place-items:center;width:24px;height:24px">
+              <span style="width:6px;height:6px;border-radius:1.5px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:3px;height:3px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span></span><span style="width:6px;height:6px;border-radius:1.5px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:3px;height:3px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:6px;height:6px;border-radius:1.5px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:3px;height:3px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:44px;height:64px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:42px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:18px;left:10px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:3px;place-items:center;width:24px;height:24px">
+              <span></span><span style="width:6px;height:6px;border-radius:1.5px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:3px;height:3px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:6px;height:6px;border-radius:1.5px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:3px;height:3px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:6px;height:6px;border-radius:1.5px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:3px;height:3px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <div style="font-family:Inter,sans-serif;font-weight:600;font-size:12px;letter-spacing:0.08em;color:#1C1B29;text-transform:uppercase;">Second Opinion</div>
+          <div style="font-family:Inter,sans-serif;font-weight:600;font-size:12px;letter-spacing:0.08em;color:#1C1B29;text-transform:uppercase;">Studios</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">With wordmark lockup</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">The full name stacked underneath, sized smaller so the icon still leads.</div>
+    </div>
+
+    <div id="1d" style="position:relative;">
+      <div style="position:absolute;top:-14px;left:-14px;background:#1C1B29;color:#FAFAF7;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;">1d</div>
+      <div style="width:240px;height:240px;border-radius:16px;background:#FAFAF7;border:1.5px solid rgba(46,42,107,0.3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:26px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">O<div style="position:absolute;top:26px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+          <div style="position:relative;width:62px;height:90px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-family:'Silkscreen',monospace;font-weight:700;font-size:58px;line-height:1;color:#2E2A6B;">S<div style="position:absolute;top:26px;left:14px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr);gap:4px;place-items:center;width:34px;height:34px">
+              <span></span><span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+              <span style="width:9px;height:9px;border-radius:2px;background:#2E2A6B;display:flex;align-items:center;justify-content:center;"><span style="width:4px;height:4px;border-radius:1px;background:#E8611C;"></span></span><span></span>
+            </div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#2E2A6B;"></span><span style="width:8px;height:8px;border-radius:50%;background:#2E2A6B;"></span><span style="width:8px;height:8px;border-radius:50%;background:#2E2A6B;"></span>
+          <span style="width:20px;height:8px;border-radius:4px;background:#2E2A6B;margin-left:4px;"></span><span style="width:20px;height:8px;border-radius:4px;background:#2E2A6B;"></span><span style="width:20px;height:8px;border-radius:4px;background:#2E2A6B;"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:#2E2A6B;margin-left:4px;"></span><span style="width:8px;height:8px;border-radius:50%;background:#2E2A6B;"></span><span style="width:8px;height:8px;border-radius:50%;background:#2E2A6B;"></span>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;font-weight:600;color:#1C1B29;">Morse footer, subtle</div>
+      <div style="font-size:12px;color:#1C1B29;opacity:0.55;max-width:220px;">A single thin morse strip (··· −−− ···) under the whole mark, rather than per-letter — brings the third signal back without cluttering the glyphs.</div>
+    </div>
+
+  </div>
+</section>
+
+</x-dc>
+</body>
+</html>
