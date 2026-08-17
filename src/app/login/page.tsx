@@ -40,6 +40,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  /**
+   * Dev-only login shortcuts. Every bypass below is gated on this — without it
+   * the fixed test credentials work in production and hand out expert sessions.
+   */
+  const isDev = process.env.NODE_ENV === "development";
+
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
     const cleanedVal = val.trim();
@@ -71,7 +78,7 @@ export default function LoginPage() {
     if (inputType === "email") {
       // Magic Link Flow
       try {
-        if (cleanedInput.toLowerCase() === "test@sos.com" || !supabase) {
+        if (isDev && (cleanedInput.toLowerCase() === "test@sos.com" || !supabase)) {
           // Dev bypass
           setTimeout(() => {
             setMagicLinkSent(true);
@@ -79,6 +86,7 @@ export default function LoginPage() {
           }, 1200);
           return;
         }
+        if (!supabase) throw new Error("Auth is not configured.");
 
         const { error } = await supabase.auth.signInWithOtp({
           email: cleanedInput,
@@ -107,7 +115,7 @@ export default function LoginPage() {
       }
 
       try {
-        if (phoneNum === "0000000000" || !supabase) {
+        if (isDev && (phoneNum === "0000000000" || !supabase)) {
           // Dev bypass
           setTimeout(() => {
             setOtpSent(true);
@@ -115,6 +123,7 @@ export default function LoginPage() {
           }, 1200);
           return;
         }
+        if (!supabase) throw new Error("Auth is not configured.");
 
         const { error } = await supabase.auth.signInWithOtp({
           phone: `+91${phoneNum}`,
@@ -148,7 +157,7 @@ export default function LoginPage() {
 
     try {
       // Temporary Dev Bypass
-      if ((phoneNum === "0000000000" && otp === "123456") || !supabase) {
+      if (isDev && ((phoneNum === "0000000000" && otp === "123456") || !supabase)) {
         setTimeout(() => {
           // Set Trusted Device Cookie (30 days)
           document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
@@ -156,6 +165,7 @@ export default function LoginPage() {
         }, 1000);
         return;
       }
+      if (!supabase) throw new Error("Auth is not configured.");
 
       const { data, error } = await supabase.auth.verifyOtp({
         phone: `+91${phoneNum}`,
@@ -213,13 +223,14 @@ export default function LoginPage() {
 
     try {
       // Temporary Dev Bypass
-      if ((email === "test@sos.com" && password === "password") || !supabase) {
+      if (isDev && ((email === "test@sos.com" && password === "password") || !supabase)) {
         setTimeout(() => {
           document.cookie = `trusted_device_token=dev-token-expert; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
           router.push("/dashboard/expert");
         }, 1000);
         return;
       }
+      if (!supabase) throw new Error("Auth is not configured.");
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,

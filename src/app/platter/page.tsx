@@ -239,10 +239,13 @@ export default function PlatterPage() {
         return;
       }
       try {
+        // Reads the public view, not `profiles` directly: RLS restricts that
+        // table to authenticated users, and this is a public page. The view
+        // also exposes only id + full_name, so no contact details reach the
+        // browser.
         const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("role", "expert");
+          .from("public_experts")
+          .select("id, full_name");
         if (error) throw error;
         if (data && data.length > 0) {
           const merged = data.map((p, idx) => {
@@ -250,9 +253,7 @@ export default function PlatterPage() {
             return {
               ...defaultExp,
               id: p.id,
-              full_name: p.full_name,
-              email: p.email,
-              phone: p.phone
+              full_name: p.full_name
             };
           });
           setExperts(merged);
