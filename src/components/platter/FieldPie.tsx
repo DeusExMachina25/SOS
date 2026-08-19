@@ -19,10 +19,10 @@ interface FieldPieProps {
   onSelect: (id: string) => void;
 }
 
-const FIELDS: { key: FieldKey; name: string; cssVar: string; tagline: string }[] = [
-  { key: "architecture", name: "Architecture", cssVar: "--color-primary", tagline: "Space, structure, material" },
-  { key: "fashion", name: "Fashion", cssVar: "--color-orange", tagline: "Brand, collection, direction" },
-  { key: "travel", name: "Travel", cssVar: "--color-green", tagline: "Route, pacing, logistics" },
+const FIELDS: { key: FieldKey; name: string; cssVar: string; tagline: string; active: boolean }[] = [
+  { key: "architecture", name: "Architecture", cssVar: "--color-primary", tagline: "Space, structure, material", active: true },
+  { key: "fashion", name: "Fashion", cssVar: "--color-orange", tagline: "Brand, collection, direction", active: false },
+  { key: "travel", name: "Travel", cssVar: "--color-green", tagline: "Route, pacing, logistics", active: false },
 ];
 
 /* Light-theme values, used for the server render before the real tokens resolve. */
@@ -359,7 +359,13 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
                 onClick={() => setOpenField(openField === i ? null : i)}
               >
                 {wall && <path d={wall} fill={shade(base, 0.6)} />}
-                <path d={topFace(i)} fill={base} stroke="var(--bg-base)" strokeWidth="2" />
+                <path
+                  d={topFace(i)}
+                  fill={base}
+                  stroke="var(--bg-base)"
+                  strokeWidth="2"
+                  opacity={FIELDS[i].active ? 1 : 0.45}
+                />
                 <g className="fp-lift" style={{ transform: `translateY(-${rise}px)` }}>
                   <g className={`fp-bob${FIELDS[i].key === "travel" ? " fp-drift" : ""}`} style={{ animationDelay: `${(i * 0.7).toFixed(1)}s` }}>
                     <Model field={FIELDS[i].key} ox={ox} oy={oy} base={base} />
@@ -373,23 +379,42 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
             const [lx, ly] = onRim(R + 46, midOf(i));
             const on = i === focus;
             return (
-              <text
-                key={f.key}
-                x={lx}
-                y={ly}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="font-inter pointer-events-none"
-                style={{
-                  fontSize: 13,
-                  fill: on ? "var(--text-primary)" : "var(--text-muted)",
-                  fontWeight: on ? 600 : 400,
-                  opacity: focus !== null && !on ? 0.3 : 1,
-                  transition: "fill 0.4s, opacity 0.45s",
-                }}
-              >
-                {f.name}
-              </text>
+              <g key={f.key}>
+                <text
+                  x={lx}
+                  y={f.active ? ly : ly - 7}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="font-inter pointer-events-none"
+                  style={{
+                    fontSize: 13,
+                    fill: on ? "var(--text-primary)" : "var(--text-muted)",
+                    fontWeight: on ? 600 : 400,
+                    opacity: (focus !== null && !on ? 0.3 : 1) * (f.active ? 1 : 0.6),
+                    transition: "fill 0.4s, opacity 0.45s",
+                  }}
+                >
+                  {f.name}
+                </text>
+                {!f.active && (
+                  <text
+                    x={lx}
+                    y={ly + 9}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="font-mono-sos pointer-events-none"
+                    style={{
+                      fontSize: 8,
+                      letterSpacing: "0.14em",
+                      fill: "var(--text-faint)",
+                      opacity: focus !== null && !on ? 0.3 : 1,
+                      transition: "opacity 0.45s",
+                    }}
+                  >
+                    SOON
+                  </text>
+                )}
+              </g>
             );
           })}
         </svg>
@@ -422,7 +447,9 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
             <div>
               <div className="font-editorial text-xl text-[var(--text-primary)]">{FIELDS[openField].name}</div>
               <div className="font-mono-sos text-[10px] text-[var(--text-muted)] mt-1">
-                {openExperts.length} {openExperts.length === 1 ? "expert" : "experts"} available
+                {FIELDS[openField].active
+                  ? `${openExperts.length} ${openExperts.length === 1 ? "expert" : "experts"} available`
+                  : "Coming soon"}
               </div>
             </div>
             <button
@@ -433,7 +460,16 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
             </button>
           </div>
 
-          {openExperts.length === 0 ? (
+          {!FIELDS[openField].active ? (
+            <div className="text-center py-10">
+              <p className="font-editorial text-lg text-[var(--text-muted)] mb-2">
+                {FIELDS[openField].name} isn&rsquo;t open yet.
+              </p>
+              <p className="font-inter text-sm text-[var(--text-faint)] max-w-sm mx-auto">
+                We&rsquo;re starting with architecture. This division opens once we do.
+              </p>
+            </div>
+          ) : openExperts.length === 0 ? (
             <p className="font-inter text-sm text-[var(--text-muted)] text-center py-10">
               No experts listed in this field yet.
             </p>
