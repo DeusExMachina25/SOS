@@ -1,9 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageSquare, Video, X, Star, MapPin, Clock, Bell, AlertTriangle, CreditCard, ArrowRight, ShieldAlert, Edit2, Check, FileDown, CheckCircle2, MoreHorizontal } from "lucide-react";
+import { Video, X, Star, MapPin, Clock, Bell, CreditCard, ArrowRight, ShieldAlert, Edit2, Check, FileDown, CheckCircle2, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  getStoredInvoices,
+  saveInvoices,
+  getRetainerBalance,
+  saveRetainerBalance,
+  getProjectPhase,
+  saveProjectPhase,
+  Invoice,
+} from "@/utils/billingMock";
+import { getApprovedExperts, getMySessions, bookSession, getOrCreateThread, getCurrentUserId } from "@/lib/data/queries";
+import type { Session, Expert } from "@/lib/data/types";
+import PaymentModal from "@/components/dashboard/PaymentModal";
 
 function ClockPicker({ initialTime, onChange }: { initialTime: string, onChange: (t: string) => void }) {
   const [mode, setMode] = useState<'h'|'m'>('h');
@@ -288,23 +300,6 @@ function EditableProjectPhase() {
   );
 }
 
-import { 
-  getStoredSessions, 
-  saveSessions, 
-  getStoredMessages, 
-  saveMessages, 
-  getStoredInvoices, 
-  saveInvoices, 
-  getRetainerBalance, 
-  saveRetainerBalance, 
-  getProjectPhase, 
-  saveProjectPhase,
-  Session, 
-  ChatMessage, 
-  Invoice 
-} from "@/utils/sessionsStore";
-import { supabase } from "@/utils/supabase/client";
-
 export default function ClientDashboard() {
   const [isBooking, setIsBooking] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -312,17 +307,17 @@ export default function ClientDashboard() {
 
   const [sessionType, setSessionType] = useState("Architecture Review");
   const [sessionDate, setSessionDate] = useState("2026-10-24");
-  const [selectedExpert, setSelectedExpert] = useState("Shravani Reddy");
+  const [selectedExpertId, setSelectedExpertId] = useState("");
+  const [bookingError, setBookingError] = useState("");
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
 
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [dbExperts, setDbExperts] = useState<any[]>([]);
-  const [currentExpert, setCurrentExpert] = useState<any>({
-    id: "789e4567-e89b-12d3-a456-426614174000",
-    full_name: "Shravani Reddy",
-    phone: "+919876543210",
-    email: "shravani@sos.com",
-    role: "expert"
-  });
+  const [dbExperts, setDbExperts] = useState<Expert[]>([]);
+  const [currentExpert, setCurrentExpert] = useState<Expert | null>(null);
+  const [loadError, setLoadError] = useState("");
+
+  // Payment step, shown after a successful booking.
+  const [paymentSession, setPaymentSession] = useState<Session | null>(null);
 
   // Billing states
   const [balance, setBalance] = useState(15000);
@@ -350,109 +345,37 @@ export default function ClientDashboard() {
     updateTimeContext();
     const interval = setInterval(updateTimeContext, 30000);
 
-    // Load initial data
+    // Load billing mock data (no backend for retainer/invoices yet).
     const bal = getRetainerBalance();
     setBalance(bal);
     setInvoices(getStoredInvoices());
     setBalanceHistory([15000, 12500, 10000, bal]);
 
     async function loadDashboardData() {
-      const fallbackExperts = [
-        {
-          id: "789e4567-e89b-12d3-a456-426614174000",
-          full_name: "Shravani Reddy",
-          phone: "+919876543210",
-          email: "shravani@sos.com",
-          role: "expert"
-        }
-      ];
-      setDbExperts(fallbackExperts);
-
-      if (!supabase) {
-        const localSess = getStoredSessions();
-        setSessions(localSess);
-        
-        const platterSelected = localStorage.getItem("platter_selected_expert");
-        if (platterSelected) {
-          const match = fallbackExperts.find(e => e.id === platterSelected);
-          if (match) {
-            setCurrentExpert(match);
-            setSelectedExpert(match.full_name);
-          }
-          localStorage.removeItem("platter_selected_expert");
-        } else if (localSess.length > 0) {
-          const lastSess = localSess[0];
-          const match = fallbackExperts.find(e => e.full_name === lastSess.expert);
-          if (match) {
-            setCurrentExpert(match);
-            setSelectedExpert(match.full_name);
-          }
-        }
-        return;
-      }
-
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        const { data: expertsData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("role", "expert");
-        
-        const activeExperts = (expertsData && expertsData.length > 0) ? expertsData : fallbackExperts;
-        setDbExperts(activeExperts);
-
-        let mappedSess: Session[] = [];
-        if (user) {
-          const { data: sessionsData } = await supabase
-            .from("sessions")
-            .select("*")
-            .eq("client_id", user.id)
-            .order("scheduled_at", { ascending: false });
-          
-          if (sessionsData) {
-            mappedSess = sessionsData.map((s: any) => {
-              const exp = activeExperts.find(e => e.id === s.expert_id);
-              const dt = new Date(s.scheduled_at);
-              return {
-                id: s.id,
-                name: "Consultation Session",
-                client: "Client User",
-                expert: exp ? exp.full_name : "Shravani Reddy",
-                date: dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-                time: dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                status: (s.status === "completed" || s.status === "scheduled") ? s.status : "scheduled",
-                duration: `${s.duration_minutes || 60} min`
-              };
-            });
-          }
-        }
-
-        if (mappedSess.length === 0) {
-          mappedSess = getStoredSessions();
-        }
-        setSessions(mappedSess);
+        const [experts, mySessions] = await Promise.all([getApprovedExperts(), getMySessions()]);
+        setDbExperts(experts);
+        setSessions(mySessions);
 
         const platterSelected = localStorage.getItem("platter_selected_expert");
-        let targetExpert = activeExperts[0];
+        let targetExpert = experts[0] ?? null;
 
         if (platterSelected) {
-          const match = activeExperts.find(e => e.id === platterSelected);
+          const match = experts.find(e => e.id === platterSelected);
           if (match) targetExpert = match;
           localStorage.removeItem("platter_selected_expert");
-        } else if (mappedSess.length > 0) {
-          const lastSessExpertName = mappedSess[0].expert;
-          const match = activeExperts.find(e => e.full_name === lastSessExpertName);
+        } else if (mySessions.length > 0) {
+          const match = experts.find(e => e.id === mySessions[0].expertId);
           if (match) targetExpert = match;
         }
 
         if (targetExpert) {
           setCurrentExpert(targetExpert);
-          setSelectedExpert(targetExpert.full_name);
+          setSelectedExpertId(targetExpert.id);
         }
       } catch (err) {
         console.error("Error loading client dashboard data", err);
-        setSessions(getStoredSessions());
+        setLoadError(err instanceof Error ? err.message : "Failed to load dashboard");
       }
     }
 
@@ -461,96 +384,73 @@ export default function ClientDashboard() {
   }, []);
 
   const handleConfirmBooking = async () => {
-    const formattedDate = new Date(sessionDate).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    });
-
-    const targetExpertObj = dbExperts.find(e => e.full_name === selectedExpert) || currentExpert;
-
-    // Deduct cost and generate invoice
-    const cost = 2500;
-    const newBalance = Math.max(0, balance - cost);
-    setBalance(newBalance);
-    saveRetainerBalance(newBalance);
-
-    const invoiceNum = `INV-2026-00${invoices.length + 1}`;
-    const newInvoice: Invoice = {
-      id: `inv-${Date.now()}`,
-      invoiceNumber: invoiceNum,
-      description: `${sessionType} with ${selectedExpert}`,
-      amount: cost,
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      status: "paid"
-    };
-
-    const updatedInvoices = [newInvoice, ...invoices];
-    setInvoices(updatedInvoices);
-    saveInvoices(updatedInvoices);
-    setBalanceHistory(prev => [...prev, newBalance]);
-
-    if (supabase) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const timeMatch = selectedTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
-          let hours = 10;
-          let minutes = 0;
-          if (timeMatch) {
-            hours = parseInt(timeMatch[1], 10);
-            minutes = parseInt(timeMatch[2], 10);
-            const ampm = timeMatch[3].toUpperCase();
-            if (ampm === "PM" && hours < 12) hours += 12;
-            if (ampm === "AM" && hours === 12) hours = 0;
-          }
-          
-          const scheduledDate = new Date(sessionDate);
-          scheduledDate.setHours(hours, minutes, 0, 0);
-
-          await supabase
-            .from("sessions")
-            .insert({
-              client_id: user.id,
-              expert_id: targetExpertObj.id,
-              scheduled_at: scheduledDate.toISOString(),
-              duration_minutes: 60,
-              status: "scheduled"
-            });
-        }
-      } catch (err) {
-        console.error("Failed to insert session in DB", err);
-      }
+    const targetExpert = dbExperts.find(e => e.id === selectedExpertId) ?? currentExpert;
+    if (!targetExpert) {
+      setBookingError("Choose an expert before booking.");
+      return;
     }
 
-    const newSession: Session = {
-      id: `sess-${Date.now()}`,
-      name: sessionType,
-      client: "Client User",
-      expert: selectedExpert,
-      date: formattedDate,
-      time: selectedTime,
-      status: "scheduled",
-      duration: "60 min"
-    };
+    const timeMatch = selectedTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    let hours = 10;
+    let minutes = 0;
+    if (timeMatch) {
+      hours = parseInt(timeMatch[1], 10);
+      minutes = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3].toUpperCase();
+      if (ampm === "PM" && hours < 12) hours += 12;
+      if (ampm === "AM" && hours === 12) hours = 0;
+    }
 
-    const updatedSessions = [newSession, ...sessions];
-    setSessions(updatedSessions);
-    saveSessions(updatedSessions);
+    const scheduledDate = new Date(sessionDate);
+    scheduledDate.setHours(hours, minutes, 0, 0);
 
-    const expertId = selectedExpert === "Shravani Reddy" ? 1 : 2;
-    const currentMsgs = getStoredMessages();
-    const newMsg: ChatMessage = {
-      id: Date.now(),
-      expertId,
-      sender: "client",
-      text: `Hello! I just booked a new session: "${sessionType}" for ${formattedDate} at ${selectedTime}.`,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    };
-    saveMessages([...currentMsgs, newMsg]);
+    setBookingError("");
+    setBookingSubmitting(true);
+    try {
+      const cost = targetExpert.sessionRateInr || 2500;
 
-    setIsBooking(false);
-    setShowTimePicker(false);
+      const created = await bookSession({
+        expertId: targetExpert.id,
+        title: sessionType,
+        startsAt: scheduledDate.toISOString(),
+        durationMinutes: 60,
+        amountInr: cost,
+      });
+
+      setSessions(prev => [created, ...prev]);
+
+      // Best-effort: open a chat thread with the expert so Messages isn't
+      // empty right after booking. Never block the booking on this.
+      getCurrentUserId()
+        .then((uid) => (uid ? getOrCreateThread(uid, targetExpert.id) : null))
+        .catch((err) => console.error("Failed to open chat thread", err));
+
+      // Mock billing side-effects — no real invoices/retainer backend yet.
+      const newBalance = Math.max(0, balance - cost);
+      setBalance(newBalance);
+      saveRetainerBalance(newBalance);
+
+      const newInvoice: Invoice = {
+        id: `inv-${Date.now()}`,
+        invoiceNumber: `INV-2026-00${invoices.length + 1}`,
+        description: `${sessionType} with ${targetExpert.fullName}`,
+        amount: cost,
+        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        status: "paid"
+      };
+      const updatedInvoices = [newInvoice, ...invoices];
+      setInvoices(updatedInvoices);
+      saveInvoices(updatedInvoices);
+      setBalanceHistory(prev => [...prev, newBalance]);
+
+      setIsBooking(false);
+      setShowTimePicker(false);
+      setPaymentSession(created);
+    } catch (err) {
+      setBookingError(err instanceof Error ? err.message : "Failed to book session");
+    } finally {
+      setBookingSubmitting(false);
+    }
   };
 
   return (
@@ -560,6 +460,7 @@ export default function ClientDashboard() {
         <div>
           <h1 className="font-inter text-3xl md:text-4xl font-light tracking-[0.18em] text-[var(--text-primary)] uppercase">Overview</h1>
           <p className="font-mono-sos text-xs text-[var(--text-faint)] mt-2 tracking-widest uppercase">{greeting}, Client • {localTimeStr}</p>
+          {loadError && <p className="font-mono-sos text-xs text-[var(--color-orange)] mt-2">{loadError}</p>}
           <EditableProjectPhase />
         </div>
         <div className="flex gap-4 items-center">
@@ -728,8 +629,8 @@ export default function ClientDashboard() {
                 <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[var(--color-green)] border-[2.5px] border-[var(--bg-base)] rounded-full"></div>
               </div>
               <div className="flex flex-col min-w-0">
-                <h2 className="font-inter text-xl font-bold text-[var(--text-primary)] mb-0.5 truncate">{currentExpert.full_name || "Shravani Reddy"}</h2>
-                <p className="text-xs font-inter text-[var(--color-primary)] font-semibold mb-1 truncate">Lead Architectural Consultant</p>
+                <h2 className="font-inter text-xl font-bold text-[var(--text-primary)] mb-0.5 truncate">{currentExpert?.fullName ?? "No expert selected"}</h2>
+                <p className="text-xs font-inter text-[var(--color-primary)] font-semibold mb-1 truncate">{currentExpert?.professionalTitle ?? " "}</p>
                 <div className="flex items-center gap-1 text-[9px] text-[var(--text-muted)] font-mono-sos">
                   <MapPin size={9} className="text-[var(--text-faint)] shrink-0" /> <span className="truncate">Hyderabad (IST)</span>
                 </div>
@@ -742,14 +643,14 @@ export default function ClientDashboard() {
                 <div className="absolute top-0 right-0 w-20 h-6 rounded-tr-2xl rounded-bl-2xl bg-[var(--color-primary)]/10 flex items-center justify-center border-l border-b border-[var(--border-strong)] text-[8px] font-mono-sos text-[var(--color-primary)] uppercase tracking-wider">Scheduled</div>
                 <div>
                   <p className="text-[9px] font-mono-sos text-[var(--text-faint)] tracking-widest uppercase mb-1">Upcoming Session</p>
-                  <h4 className="font-inter text-base font-bold text-[var(--text-primary)] mb-1 truncate">{nextSession.name}</h4>
+                  <h4 className="font-inter text-base font-bold text-[var(--text-primary)] mb-1 truncate">{nextSession.title}</h4>
                   <p className="text-xs text-[var(--color-primary)] font-mono-sos flex items-center gap-1.5 mb-4">
                     <Clock size={12} className="shrink-0" /> {nextSession.date} • {nextSession.time}
                   </p>
                 </div>
-                
-                <Link 
-                  href={`/dashboard/video-call?sessionId=${nextSession.id}&sessionName=${encodeURIComponent(nextSession.name)}&displayName=Client`}
+
+                <Link
+                  href={`/dashboard/video-call?sessionId=${nextSession.id}&sessionName=${encodeURIComponent(nextSession.title)}&displayName=Client`}
                   className="w-full flex items-center justify-center gap-2 bg-[var(--bg-surface-2)] hover:bg-[var(--bg-surface)] border border-[var(--border-strong)] text-[var(--text-primary)] py-3.5 rounded-xl text-xs font-bold transition-all hover:border-[var(--color-primary)] group/join"
                 >
                   <Video size={14} className="text-[var(--text-muted)] group-hover/join:text-[var(--color-primary)] transition-colors" /> Join Video Call
@@ -832,9 +733,9 @@ export default function ClientDashboard() {
                 </div>
                  <div>
                   <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest">ASSIGNED EXPERT</label>
-                  <select value={selectedExpert} onChange={(e) => setSelectedExpert(e.target.value)} className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-lg outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer">
+                  <select value={selectedExpertId} onChange={(e) => setSelectedExpertId(e.target.value)} className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-lg outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer">
                     {dbExperts.map(exp => (
-                      <option key={exp.id} value={exp.full_name}>{exp.full_name}</option>
+                      <option key={exp.id} value={exp.id}>{exp.fullName}</option>
                     ))}
                   </select>
                 </div>
@@ -875,17 +776,33 @@ export default function ClientDashboard() {
                   </div>
                 </div>
               </div>
-              
-              <button 
+
+              {bookingError && (
+                <p className="text-sm text-[var(--color-orange)] font-mono-sos mb-4 text-center">{bookingError}</p>
+              )}
+
+              <button
                 onClick={handleConfirmBooking}
-                className="btn-sos-filled w-full py-5 text-lg text-center justify-center rounded-2xl tracking-widest mt-8 shadow-lg"
+                disabled={bookingSubmitting}
+                className="btn-sos-filled w-full py-5 text-lg text-center justify-center rounded-2xl tracking-widest mt-8 shadow-lg disabled:opacity-50"
               >
-                Confirm Booking
+                {bookingSubmitting ? "Booking…" : "Confirm Booking"}
               </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Payment step, shown right after a successful booking */}
+      {paymentSession && (
+        <PaymentModal
+          sessionId={paymentSession.id}
+          amountInr={paymentSession.amountInr}
+          expertName={currentExpert?.fullName ?? "your expert"}
+          expertUpiId={currentExpert?.upiId ?? null}
+          onClose={() => setPaymentSession(null)}
+        />
+      )}
     </div>
   );
 }

@@ -2,8 +2,8 @@
  * Application-facing data shapes for the SOS marketplace.
  *
  * These mirror the Supabase schema but stay UI-friendly (formatted date/time
- * strings, expert display names) so dashboard components can move off the
- * localStorage mock in `src/utils/sessionsStore.ts` with minimal churn.
+ * strings, expert display names) for the dashboard components that consume
+ * them.
  */
 
 export type UserRole = "client" | "expert" | "admin";

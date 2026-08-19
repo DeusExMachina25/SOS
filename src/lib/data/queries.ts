@@ -3,10 +3,9 @@
 /**
  * Client-side data access for the SOS marketplace.
  *
- * Replaces the localStorage mock in `src/utils/sessionsStore.ts`. Every call
- * goes through the browser Supabase client, so Postgres RLS decides what the
- * signed-in user can actually see or write — the queries below never assume
- * authorization on their own.
+ * Every call goes through the browser Supabase client, so Postgres RLS
+ * decides what the signed-in user can actually see or write — the queries
+ * below never assume authorization on their own.
  */
 
 import { supabase } from "@/utils/supabase/client";
