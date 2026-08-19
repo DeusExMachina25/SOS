@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ParallaxBoxes from "@/components/ParallaxBoxes";
+import FieldPie, { type FieldKey } from "@/components/platter/FieldPie";
 import { supabase } from "@/utils/supabase/client";
 
 const ANGLE_FONTS = [
@@ -34,8 +35,16 @@ interface ExpertProfile {
   bio?: string;
   tags?: string[];
   disciplines?: { id: string; title: string; desc: string }[];
+  /* Which pie segment this expert sits under. No column for this exists in
+     `profiles` yet, so it travels with the hardcoded metadata below. */
+  field?: FieldKey;
 }
 
+/**
+ * All three architects sit in the "architecture" field. Fashion and Travel
+ * are surfaced in the field-pie as inactive divisions — no experts, no
+ * bookings — until SOS opens those sides of the practice.
+ */
 const DEFAULT_EXPERTS: ExpertProfile[] = [
   {
     id: "789e4567-e89b-12d3-a456-426614174000",
@@ -43,13 +52,14 @@ const DEFAULT_EXPERTS: ExpertProfile[] = [
     phone: "+919876543210",
     email: "shravani@sos.com",
     role: "expert",
-    expert_role: "Lead Systems Architect",
-    bio: "Specializing in macro-level technical architecture, high-availability workflows, and secure digital defense layers. Bringing unmatched precision to critical emergency software environments.",
-    tags: ["SYSTEMS DESIGN", "SCALABILITY", "SECURITY"],
+    field: "architecture",
+    expert_role: "Principal Architect, Residential",
+    bio: "Two decades of independent residential practice — structural planning, material selection, and landscape integration for ground-up builds.",
+    tags: ["RESIDENTIAL ARCHITECTURE", "STRUCTURAL PLANNING", "MATERIAL SELECTION"],
     disciplines: [
-      { id: "01", title: "Architectural Strategy", desc: "Defining your true north, security protocols, and long-term tech stack narrative." },
-      { id: "02", title: "Technical Planning", desc: "Building scalable blueprints, database optimization, and cloud architecture." },
-      { id: "03", title: "Security Auditing", desc: "Securing emergency pipelines, defense mapping, and threat vector analysis." }
+      { id: "01", title: "Site & Structural Strategy", desc: "Reading the plot, load paths, and foundation strategy before a single wall is drawn." },
+      { id: "02", title: "Material & Detailing", desc: "Choosing materials and junctions that age well, not just render well." },
+      { id: "03", title: "Landscape Integration", desc: "Tying the built form to the site — light, water, and green cover." }
     ]
   },
   {
@@ -58,13 +68,14 @@ const DEFAULT_EXPERTS: ExpertProfile[] = [
     phone: "+919876543211",
     email: "karan@sos.com",
     role: "expert",
-    expert_role: "Chief Urban Strategist",
-    bio: "Specializing in brand architecture, market positioning, and structural aesthetic growth. Bringing minimalist logic and stark planning to modern corporate digital footprints.",
-    tags: ["BRAND SYSTEMS", "UX STRATEGY", "POSITIONING"],
+    field: "architecture",
+    expert_role: "Interior & Spatial Strategist",
+    bio: "Specializing in spatial strategy for compact living — flow, storage logic, and material honesty within constrained footprints.",
+    tags: ["SPATIAL PLANNING", "INTERIOR FLOW", "MATERIAL HONESTY"],
     disciplines: [
-      { id: "01", title: "Brand Zoning", desc: "Establishing corporate typography, identity guidelines, and layout grids." },
-      { id: "02", title: "Market Alignment", desc: "Analyzing audience footprints, competitor grids, and positioning maps." },
-      { id: "03", title: "Design System Scaling", desc: "Structuring reusable Figma systems, atomic tokens, and visual standards." }
+      { id: "01", title: "Spatial Zoning", desc: "Mapping how a small footprint should actually be used, room by room." },
+      { id: "02", title: "Flow & Circulation", desc: "Removing the friction between rooms before it becomes a habit." },
+      { id: "03", title: "Material Honesty", desc: "Finishes that do their job without pretending to be something else." }
     ]
   },
   {
@@ -73,12 +84,14 @@ const DEFAULT_EXPERTS: ExpertProfile[] = [
     phone: "+919876543212",
     email: "ananya@sos.com",
     role: "expert",
-    expert_role: "Lead Design Director",
-    bio: "Specializing in human-computer choreography, high-fidelity motion systems, and brutalist design language. Bringing sensory aesthetics and pixel perfection to luxury branding.",
-    tags: ["INTERFACE MOTION", "SENSORY GRAPHICS", "BRUTALISM"],
+    field: "architecture",
+    expert_role: "Landscape & Site Planning Lead",
+    bio: "Master planning and zoning compliance for large-scale plots — topographical reading, phased development, and full site utilisation strategy.",
+    tags: ["MASTER PLANNING", "ZONING COMPLIANCE", "TOPOGRAPHY"],
     disciplines: [
-      { id: "01", title: "Motion Choreography", desc: "Choreographing dynamic page loads, interactive feedback, and SVG loops." },
-      { id: "02", title: "Sensory Interface Design", desc: "Building rich micro-interactions, custom scroll rigs, and dark mode dynamics." },
+      { id: "01", title: "Topographical Reading", desc: "Understanding a site's contours, drainage, and orientation before planning a single structure." },
+      { id: "02", title: "Master Planning", desc: "Sequencing what gets built where, and in what order, across a large plot." },
+      { id: "03", title: "Zoning & Compliance", desc: "Navigating regulation so the plan survives contact with approval." }
     ]
   }
 ];
@@ -144,6 +157,43 @@ export default function PlatterPage() {
   // UI States for Pricing (collapsible per-expert accordions)
   const [openSections, setOpenSections] = useState<{ [expertId: string]: { disciplines: boolean; terms: boolean } }>({});
   const [activeTier, setActiveTier] = useState<"apt" | "vil" | "sit">("apt");
+
+  // Contact form
+  const [inquiryState, setInquiryState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [inquiryError, setInquiryError] = useState("");
+
+  const handleInquiry = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    setInquiryState("sending");
+    setInquiryError("");
+
+    if (!supabase) {
+      setInquiryState("error");
+      setInquiryError("We can't reach the server right now. Email us at hello@sos.com instead.");
+      return;
+    }
+
+    const { error } = await supabase.from("inquiries").insert({
+      full_name: String(data.get("full_name") ?? "").trim(),
+      email: String(data.get("email") ?? "").trim(),
+      subject: String(data.get("subject") ?? "").trim() || null,
+      message: String(data.get("message") ?? "").trim(),
+      source: "platter",
+    });
+
+    if (error) {
+      console.error("Inquiry submission failed", error);
+      setInquiryState("error");
+      setInquiryError("That didn't send. Try again, or email us at hello@sos.com.");
+      return;
+    }
+
+    form.reset();
+    setInquiryState("sent");
+  };
 
   const toggleSection = (expertId: string, section: "disciplines" | "terms") => {
     setOpenSections(prev => {
@@ -286,7 +336,7 @@ export default function PlatterPage() {
         </div>
       </section>
 
-      <div style={{ height: "30vh" }} aria-hidden="true" />
+      <div style={{ height: "15vh" }} aria-hidden="true" />
 
       {/* Main Container for the rest of the page */}
       <div className="container mx-auto px-6 max-w-6xl flex flex-col items-center text-center pb-[20vh]">
@@ -295,11 +345,11 @@ export default function PlatterPage() {
         <header ref={addToRefs} className="flex flex-col items-center w-full">
           <h1 className="font-editorial text-7xl md:text-9xl text-[var(--text-primary)] mb-8 tracking-tighter drop-shadow-lg">The Platter</h1>
           <p className="font-inter text-xl text-[var(--text-muted)] max-w-2xl font-light leading-relaxed">
-            A curated selection of expert consultations designed to elevate your brand, strategy, and execution.
+            A curated roster of architects, vetted on built work, available for a single honest session on your project.
           </p>
         </header>
 
-        <div style={{ height: "30vh" }} aria-hidden="true" />
+        <div style={{ height: "15vh" }} aria-hidden="true" />
 
         {/* Expanded Expert Profile - Moved to Top */}
         <section ref={addToRefs} className="w-full flex flex-col items-center">
@@ -337,39 +387,12 @@ export default function PlatterPage() {
           ) : (
             <div className="w-full max-w-5xl flex flex-col items-center">
               
-              {/* Horizontal Carousel Selector */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-12">
-                {experts.map((expert) => {
-                  const isActive = selectedExpertId === expert.id;
-                  return (
-                    <button
-                      key={expert.id}
-                      onClick={() => setSelectedExpertId(expert.id)}
-                      className={`flex flex-col text-left p-6 rounded-2xl border transition-all duration-500 cursor-pointer ${
-                        isActive 
-                          ? "bg-[var(--bg-surface-2)] border-[var(--color-primary)] shadow-[0_0_30px_rgba(124,77,255,0.15)] scale-[1.02]" 
-                          : "bg-[var(--bg-surface)] border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-2)]/50 hover:scale-[1.01]"
-                      }`}
-                    >
-                      <span className="font-mono-sos text-[9px] text-[var(--text-faint)] uppercase tracking-wider mb-3">
-                        Dossier {expert.id.slice(0, 8)}
-                      </span>
-                      <h3 className="font-editorial text-2xl mb-1 text-[var(--text-primary)] transition-colors duration-300">
-                        {expert.full_name}
-                      </h3>
-                      <span className="font-mono-sos text-[10px] text-[var(--color-primary)] uppercase tracking-widest mt-2">
-                        {expert.expert_role}
-                      </span>
-                      <div className="w-full mt-4 flex items-center justify-between">
-                        <span className="font-mono-sos text-[9px] text-[var(--text-muted)] tracking-wider">
-                          {isActive ? "ACTIVE PROFILE" : "SELECT PROFILE"}
-                        </span>
-                        <span className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive ? "bg-[var(--color-primary)] animate-pulse" : "bg-transparent"}`} />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Field selector — picking an expert drives the profile card below */}
+              <FieldPie
+                experts={experts}
+                selectedExpertId={selectedExpertId}
+                onSelect={setSelectedExpertId}
+              />
 
               {/* Spacious Active Profile Details Card */}
               {(() => {
@@ -481,197 +504,6 @@ export default function PlatterPage() {
                         </div>
                       </div>
 
-                      {/* Accordion Item 2: Engagement Terms */}
-                      <div>
-                        <button
-                          onClick={() => toggleSection(activeExpert.id, "terms")}
-                          className={`w-full py-8 flex items-center justify-between text-left group cursor-pointer focus:outline-none border-b transition-all duration-300 ${
-                            openSections[activeExpert.id]?.terms 
-                              ? "border-[var(--color-orange)] bg-gradient-to-r from-[var(--color-orange)]/3 to-transparent px-4" 
-                              : "border-[var(--border)] hover:border-[var(--color-orange)]/40 hover:px-2"
-                          }`}
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-editorial text-3xl md:text-4xl tracking-tight text-[var(--text-primary)]">
-                              Investment Architecture
-                            </span>
-                            <span className="font-mono-sos text-[9px] tracking-[0.2em] text-[var(--text-muted)] uppercase mt-2 opacity-60">
-                              Engagement terms, pricing models, and available add-ons
-                            </span>
-                          </div>
-                          <div className="relative w-8 h-8 flex items-center justify-center">
-                            <div className={`absolute w-4 h-[1px] transition-colors duration-300 ${
-                              openSections[activeExpert.id]?.terms ? "bg-[var(--color-orange)]" : "bg-[var(--text-muted)] group-hover:bg-[var(--text-primary)]"
-                            }`}></div>
-                            <div className={`absolute h-4 w-[1px] transition-all duration-500 ${
-                              openSections[activeExpert.id]?.terms ? "bg-[var(--color-orange)] rotate-90 opacity-0" : "bg-[var(--text-muted)] group-hover:bg-[var(--text-primary)] rotate-0"
-                            }`}></div>
-                          </div>
-                        </button>
-
-                        {/* Collapsible Content */}
-                        <div className={`grid transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${openSections[activeExpert.id]?.terms ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-                          <div className="overflow-hidden">
-                            <div className="md:pl-16 pb-12 pt-8">
-                              
-                              {/* Translated Selector Panel */}
-                              <div className="w-full text-left max-w-3xl">
-                                
-                                <div className="font-mono-sos text-[10px] font-medium tracking-[0.16em] uppercase text-[#b8965a] mb-1.5">
-                                  Structure &amp; Consulting
-                                </div>
-                                <h4 className="font-editorial text-4xl font-light text-[var(--text-primary)] tracking-tight leading-none mb-1">
-                                  Investment Architecture
-                                </h4>
-                                <p className="font-inter text-xs font-light text-[var(--text-muted)] mb-7">
-                                  Select a tier to explore scope and pricing
-                                </p>
-
-                                <div className="grid grid-cols-3 border border-black/10 dark:border-white/10 rounded-[10px] overflow-hidden bg-[#eee9e2] dark:bg-[#151221] mb-5">
-                                  {(Object.keys(PRICING_TIERS) as Array<keyof typeof PRICING_TIERS>).map((tierKey) => {
-                                    const tier = PRICING_TIERS[tierKey];
-                                    const isActive = activeTier === tierKey;
-                                    return (
-                                      <button
-                                        key={tierKey}
-                                        onClick={() => setActiveTier(tierKey)}
-                                        className={`bg-transparent text-left cursor-pointer relative py-4 px-[18px] border-r border-black/10 dark:border-white/10 last:border-r-0 hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-300 ${
-                                          isActive ? "bg-white dark:bg-[#201c30]" : ""
-                                        }`}
-                                      >
-                                        <span className="font-mono-sos text-[9px] font-medium tracking-[0.16em] uppercase text-[#b8965a] block mb-1">
-                                          {tier.num}
-                                        </span>
-                                        <span className="font-editorial text-[21px] font-light text-[var(--text-primary)] block leading-[1.1] mb-1.5">
-                                          {tier.name}
-                                        </span>
-                                        <span className="font-inter text-[11px] text-[var(--text-muted)] block">
-                                          {tier.priceText}
-                                        </span>
-                                        <div 
-                                          className={`absolute bottom-0 left-0 h-[2px] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                                            isActive ? "w-full" : "w-0"
-                                          } ${tier.inkClass}`} 
-                                        />
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-
-                                <div 
-                                  className="detail-panel rounded-xl overflow-hidden transition-all duration-500"
-                                  style={{ background: PRICING_TIERS[activeTier].gradient }}
-                                >
-                                  <div 
-                                    className="h-[1px] w-full relative overflow-hidden" 
-                                    style={{ background: PRICING_TIERS[activeTier].lineGradient }}
-                                  />
-                                  
-                                  {/* Inner Content Grid */}
-                                  <div key={activeTier} className="p-8 grid grid-cols-1 md:grid-cols-[1fr_220px] gap-8 items-start animate-fade-switch">
-                                    <div className="flex flex-col items-start text-left">
-                                      <span className={`inline-block text-[9px] font-medium tracking-[0.15em] uppercase px-[9px] py-[3px] rounded-[2px] mb-3.5 ${PRICING_TIERS[activeTier].tagClass}`}>
-                                        {PRICING_TIERS[activeTier].num} — {PRICING_TIERS[activeTier].name}
-                                      </span>
-                                      <h5 className="font-editorial text-[46px] font-light text-white/95 leading-none mb-1 tracking-tight">
-                                        {PRICING_TIERS[activeTier].name}
-                                      </h5>
-                                      <span className="font-mono-sos text-[10px] tracking-[0.15em] uppercase text-white/30 mb-5 min-h-[14px]">
-                                        {PRICING_TIERS[activeTier].scope}
-                                      </span>
-                                      <p className="font-inter text-[13px] font-light text-white/60 leading-[1.7] max-w-[320px]">
-                                        {PRICING_TIERS[activeTier].desc}
-                                      </p>
-                                    </div>
-                                    <div className="flex flex-col gap-0 pt-1 text-left">
-                                      <ul className="list-none mb-6">
-                                        {PRICING_TIERS[activeTier].feats.map((feat, idx) => (
-                                          <li key={idx} className="font-inter text-xs font-light text-white/70 py-2 border-b border-white/10 last:border-b-0 flex items-center gap-2.5">
-                                            <span 
-                                              className="w-1.5 h-1.5 rounded-full flex-shrink-0" 
-                                              style={{ background: PRICING_TIERS[activeTier].color }}
-                                            />
-                                            {feat}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                      <div className="pt-4 border-t border-white/15">
-                                        <div className="font-editorial text-[34px] font-normal text-white/95 leading-none tracking-tight">
-                                          {PRICING_TIERS[activeTier].price}
-                                        </div>
-                                        <div className="font-mono-sos text-[10px] tracking-[0.1em] uppercase text-white/30 mt-1 mb-3.5">
-                                          Base rate / 60 min
-                                        </div>
-                                        <button 
-                                          onClick={() => {
-                                            router.push(`/login?tier=${encodeURIComponent(PRICING_TIERS[activeTier].name)}`);
-                                          }}
-                                          className="w-full font-inter text-[11px] font-semibold tracking-wider uppercase py-2.5 px-4 rounded-md border border-white/20 bg-white/5 text-white/80 hover:bg-white/10 hover:border-white/40 hover:text-white transition-all duration-300 cursor-pointer text-center"
-                                        >
-                                          Book Session ↗
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Extensions Section */}
-                                <div className="mt-6 w-full text-left">
-                                  <div className="font-mono-sos text-[9px] tracking-[0.16em] uppercase text-[var(--text-muted)] mb-3">
-                                    Available extensions
-                                  </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full">
-                                    <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[#b8965a] cursor-default">
-                                      <div>
-                                        <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
-                                          Advance Booking
-                                        </span>
-                                        <p className="font-inter text-[11px] text-[var(--text-muted)] font-light mt-0.5">
-                                          Requested during initial scheduling
-                                        </p>
-                                      </div>
-                                      <div className="font-mono-sos text-base font-semibold text-[#b8965a]">
-                                        +40%
-                                      </div>
-                                    </div>
-                                    <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[#b8965a] cursor-default">
-                                      <div>
-                                        <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
-                                          On-Spot Extension
-                                        </span>
-                                        <p className="font-inter text-[11px] text-[var(--text-muted)] font-light mt-0.5">
-                                          Active session (+30 min)
-                                        </p>
-                                      </div>
-                                      <div className="font-mono-sos text-base font-semibold text-[#b8965a]">
-                                        +60%
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Footer Row */}
-                                <div className="mt-6 pt-4 border-t border-[var(--border)] flex flex-col md:flex-row items-center justify-between gap-4 w-full text-left">
-                                  <div className="font-inter text-xs text-[var(--text-muted)] font-light">
-                                    Written summary delivered within 48 hours of every session.
-                                  </div>
-                                  <button 
-                                    onClick={() => {
-                                      router.push("/login?tier=General");
-                                    }}
-                                    className="font-inter text-[11px] font-semibold tracking-wider uppercase border border-[var(--text-primary)] text-[var(--text-primary)] bg-transparent py-2.5 px-6 rounded-[3px] hover:bg-[var(--text-primary)] hover:text-[var(--bg-base)] transition-all duration-300 cursor-pointer"
-                                  >
-                                    Book Session ↗
-                                  </button>
-                                </div>
-
-                              </div>
-
-                            </div>
-                          </div>
-                        </div>
-
-                      </div>
                     </div>
 
                   </div>
@@ -681,7 +513,169 @@ export default function PlatterPage() {
           )}
         </section>
 
-        <div style={{ height: "30vh" }} aria-hidden="true" />
+        <div style={{ height: "15vh" }} aria-hidden="true" />
+
+        {/* How Booking Works — three plain steps, no accordion to open first */}
+        <section ref={addToRefs} className="w-full flex flex-col items-center">
+          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} How Booking Works</h2>
+          <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 text-left">
+            {[
+              { id: "01", title: "Choose", desc: "Pick an expert whose work matches your project." },
+              { id: "02", title: "Brief", desc: "Upload drawings and references to a private vault before the session." },
+              { id: "03", title: "Meet", desc: "Secure video, one hour, with payment held in escrow until it's done." }
+            ].map((step) => (
+              <div key={step.id} className="flex flex-col border-t-2 border-[var(--border-strong)] pt-6">
+                <span className="font-mono-sos text-[10px] tracking-[0.3em] text-[var(--color-orange)] mb-4">{step.id}</span>
+                <h3 className="font-editorial text-3xl text-[var(--text-primary)] tracking-tight mb-3">{step.title}</h3>
+                <p className="font-inter text-sm text-[var(--text-muted)] leading-relaxed font-light">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div style={{ height: "15vh" }} aria-hidden="true" />
+
+        {/* Investment Architecture — pricing lives on its own, in the open, not
+            nested inside any one expert's accordion. Shared across the roster
+            since the tiers describe the project, not the consultant. */}
+        <section ref={addToRefs} className="w-full flex flex-col items-center">
+          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} Investment Architecture</h2>
+
+          <div className="w-full max-w-3xl text-left">
+            <p className="font-inter text-xs font-light text-[var(--text-muted)] mb-7">
+              Select a tier to explore scope and pricing
+            </p>
+
+            <div className="grid grid-cols-3 border border-[var(--border-strong)] rounded-[10px] overflow-hidden bg-[var(--bg-surface-2)] mb-5">
+              {(Object.keys(PRICING_TIERS) as Array<keyof typeof PRICING_TIERS>).map((tierKey) => {
+                const tier = PRICING_TIERS[tierKey];
+                const isActive = activeTier === tierKey;
+                return (
+                  <button
+                    key={tierKey}
+                    onClick={() => setActiveTier(tierKey)}
+                    className={`bg-transparent text-left cursor-pointer relative py-4 px-[18px] border-r border-[var(--border-strong)] last:border-r-0 hover:bg-[var(--bg-surface)] transition-all duration-300 ${
+                      isActive ? "bg-[var(--bg-base)]" : ""
+                    }`}
+                  >
+                    <span className="font-mono-sos text-[9px] font-medium tracking-[0.16em] uppercase text-[#b8965a] block mb-1">
+                      {tier.num}
+                    </span>
+                    <span className="font-editorial text-[21px] font-light text-[var(--text-primary)] block leading-[1.1] mb-1.5">
+                      {tier.name}
+                    </span>
+                    <span className="font-inter text-[11px] text-[var(--text-muted)] block">
+                      {tier.priceText}
+                    </span>
+                    <div
+                      className={`absolute bottom-0 left-0 h-[2px] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                        isActive ? "w-full" : "w-0"
+                      } ${tier.inkClass}`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              className="detail-panel rounded-xl overflow-hidden transition-all duration-500"
+              style={{ background: PRICING_TIERS[activeTier].gradient }}
+            >
+              <div
+                className="h-[1px] w-full relative overflow-hidden"
+                style={{ background: PRICING_TIERS[activeTier].lineGradient }}
+              />
+
+              <div key={activeTier} className="p-8 grid grid-cols-1 md:grid-cols-[1fr_220px] gap-8 items-start animate-fade-switch">
+                <div className="flex flex-col items-start text-left">
+                  <span className={`inline-block text-[9px] font-medium tracking-[0.15em] uppercase px-[9px] py-[3px] rounded-[2px] mb-3.5 ${PRICING_TIERS[activeTier].tagClass}`}>
+                    {PRICING_TIERS[activeTier].num} — {PRICING_TIERS[activeTier].name}
+                  </span>
+                  <h5 className="font-editorial text-[46px] font-light text-white/95 leading-none mb-1 tracking-tight">
+                    {PRICING_TIERS[activeTier].name}
+                  </h5>
+                  <span className="font-mono-sos text-[10px] tracking-[0.15em] uppercase text-white/30 mb-5 min-h-[14px]">
+                    {PRICING_TIERS[activeTier].scope}
+                  </span>
+                  <p className="font-inter text-[13px] font-light text-white/60 leading-[1.7] max-w-[320px]">
+                    {PRICING_TIERS[activeTier].desc}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-0 pt-1 text-left">
+                  <ul className="list-none mb-6">
+                    {PRICING_TIERS[activeTier].feats.map((feat, idx) => (
+                      <li key={idx} className="font-inter text-xs font-light text-white/70 py-2 border-b border-white/10 last:border-b-0 flex items-center gap-2.5">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{ background: PRICING_TIERS[activeTier].color }}
+                        />
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="pt-4 border-t border-white/15">
+                    <div className="font-editorial text-[34px] font-normal text-white/95 leading-none tracking-tight">
+                      {PRICING_TIERS[activeTier].price}
+                    </div>
+                    <div className="font-mono-sos text-[10px] tracking-[0.1em] uppercase text-white/30 mt-1 mb-3.5">
+                      Base rate / 60 min
+                    </div>
+                    <button
+                      onClick={() => {
+                        router.push(`/login?tier=${encodeURIComponent(PRICING_TIERS[activeTier].name)}`);
+                      }}
+                      className="w-full font-inter text-[11px] font-semibold tracking-wider uppercase py-2.5 px-4 rounded-md border border-white/20 bg-white/5 text-white/80 hover:bg-white/10 hover:border-white/40 hover:text-white transition-all duration-300 cursor-pointer text-center"
+                    >
+                      Book Session ↗
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 w-full text-left">
+              <div className="font-mono-sos text-[9px] tracking-[0.16em] uppercase text-[var(--text-muted)] mb-3">
+                Available extensions
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full">
+                <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[#b8965a] cursor-default">
+                  <div>
+                    <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
+                      Advance Booking
+                    </span>
+                    <p className="font-inter text-[11px] text-[var(--text-muted)] font-light mt-0.5">
+                      Requested during initial scheduling
+                    </p>
+                  </div>
+                  <div className="font-mono-sos text-base font-semibold text-[#b8965a]">
+                    +40%
+                  </div>
+                </div>
+                <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[#b8965a] cursor-default">
+                  <div>
+                    <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
+                      On-Spot Extension
+                    </span>
+                    <p className="font-inter text-[11px] text-[var(--text-muted)] font-light mt-0.5">
+                      Active session (+30 min)
+                    </p>
+                  </div>
+                  <div className="font-mono-sos text-base font-semibold text-[#b8965a]">
+                    +60%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-[var(--border)] w-full text-left">
+              <div className="font-inter text-xs text-[var(--text-muted)] font-light">
+                Written summary delivered within 48 hours of every session.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div style={{ height: "15vh" }} aria-hidden="true" />
 
         {/* Standalone Secure Slot CTA */}
         <section ref={addToRefs} className="w-full flex flex-col items-center overflow-visible">
@@ -697,7 +691,7 @@ export default function PlatterPage() {
            </Link>
          </section>
 
-        <div style={{ height: "20vh" }} aria-hidden="true" />
+        <div style={{ height: "10vh" }} aria-hidden="true" />
 
         {/* Let's Talk Contact Form */}
         <section ref={addToRefs} className="w-full border-t border-[var(--border)] bg-[var(--bg-base)] z-10 relative py-24">
@@ -726,18 +720,17 @@ export default function PlatterPage() {
 
             {/* Fully Centered Contact Form (Single Column) */}
             <div className="w-full max-w-xl mx-auto flex flex-col items-center relative z-20">
-              <form 
+              <form
                 className="w-full flex flex-col items-center gap-y-12"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert("Thank you! Your inquiry has been received.");
-                }}
+                onSubmit={handleInquiry}
               >
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Full Name *</label>
-                  <input 
-                    type="text" 
-                    required 
+                  <input
+                    type="text"
+                    name="full_name"
+                    maxLength={200}
+                    required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="Jane Doe"
                   />
@@ -745,9 +738,11 @@ export default function PlatterPage() {
 
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">E-mail *</label>
-                  <input 
-                    type="email" 
-                    required 
+                  <input
+                    type="email"
+                    name="email"
+                    maxLength={320}
+                    required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="jane@example.com"
                   />
@@ -755,8 +750,10 @@ export default function PlatterPage() {
 
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Subject</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
+                    name="subject"
+                    maxLength={300}
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="Project Inquiry"
                   />
@@ -764,9 +761,11 @@ export default function PlatterPage() {
 
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Message *</label>
-                  <textarea 
+                  <textarea
                     rows={1}
-                    required 
+                    name="message"
+                    maxLength={5000}
+                    required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors resize-none rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 min-h-[100px] text-center"
                     placeholder="Tell us about your vision..."
                   ></textarea>
@@ -784,10 +783,25 @@ export default function PlatterPage() {
                   </label>
                 </div>
 
-                <div className="mt-8 text-center w-full">
-                  <button type="submit" className="bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos text-xs tracking-[0.3em] px-12 py-4 uppercase hover:opacity-80 transition-opacity duration-300 w-full md:w-auto cursor-pointer">
-                    Submit Inquiry
+                <div className="mt-8 text-center w-full flex flex-col items-center gap-4">
+                  <button
+                    type="submit"
+                    disabled={inquiryState === "sending"}
+                    className="bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos text-xs tracking-[0.3em] px-12 py-4 uppercase hover:opacity-80 transition-opacity duration-300 w-full md:w-auto cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                  >
+                    {inquiryState === "sending" ? "Sending…" : "Submit Inquiry"}
                   </button>
+
+                  <p
+                    role="status"
+                    aria-live="polite"
+                    className={`font-inter text-sm min-h-[20px] ${
+                      inquiryState === "error" ? "text-[var(--color-orange)]" : "text-[var(--text-muted)]"
+                    }`}
+                  >
+                    {inquiryState === "sent" && "Thanks — we've got it. We'll reply within two working days."}
+                    {inquiryState === "error" && inquiryError}
+                  </p>
                 </div>
 
               </form>
@@ -795,7 +809,7 @@ export default function PlatterPage() {
           </div>
         </section>
 
-        <div style={{ height: "10vh" }} aria-hidden="true" />
+        <div style={{ height: "6vh" }} aria-hidden="true" />
 
       </div>
     </div>

@@ -4,18 +4,27 @@ import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import MorphingLogo from "../home/MorphingLogo";
+import PantoneEyesCard from "../home/PantoneEyesCard";
+import FacadeSectionCut from "./FacadeSectionCut";
+import VeneerStack from "./VeneerStack";
+import VettingColumns from "./VettingColumns";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-// 1. Reordered Manifesto Pillars
+/**
+ * Manifesto pillars — 4 slots, load-bearing in the pinned temple sequence
+ * below. "Organic execution" and "Calibration without compromise" said the
+ * same thing twice ("we adapt" / "we refine, we don't reduce"), so they're
+ * merged into one. The freed slot goes to the vetting standard, echoing
+ * Genesis beat 003 and the VettingColumns graphic above.
+ */
 const MANIFESTO_PILLARS = [
   {
-    short: "Organic.",
-    title: "Organic execution.",
-    description: "Frameworks shouldn't be cages. We adapt to the natural rhythm of your project, allowing it to grow organically rather than forcing it into rigid, predefined boxes."
+    short: "Calibration.",
+    title: "Refine, don't reduce.",
+    description: "A second opinion isn't a cage or a compromise. We adapt to the rhythm of your project and sharpen what's already there — never flattening the vision to fit a template."
   },
   {
     short: "Clarity.",
@@ -28,126 +37,64 @@ const MANIFESTO_PILLARS = [
     description: "Your intellectual property is sacred. Our secure vaults and end-to-end encrypted sessions ensure your ideas stay unequivocally yours."
   },
   {
-    short: "Calibration.",
-    title: "Calibration without compromise.",
-    description: "Seeking a second opinion isn't about diluting your idea. It's about sharpening the edge so it cuts through the market flawlessly. We refine, we don't reduce."
+    short: "Standard.",
+    title: "Measured on what stands.",
+    description: "Every expert here is vetted on built work, not portfolios of intent — permits cleared, projects delivered, peers who'll vouch for them before they take a single session."
   }
 ];
 
-const TIMELINE_MILESTONES = [
+const EDITORIAL_POSTS = [
   {
-    year: "Phase 01",
-    title: "The Observation.",
-    content: "Founders and creators often hit a wall not because they lack passion or skill, but because they are simply too close to the canvas. In the pursuit of building something meaningful, blind spots are inevitable."
+    title: "The Art of the Second Opinion",
+    date: "May 28, 2026",
+    category: "Strategy",
+    excerpt:
+      "Asking someone to poke holes in your work is not an admission that it's broken. It's how you find out which parts actually hold."
   },
   {
-    year: "Phase 02",
-    title: "The Sanctuary.",
-    content: "We established this platform as a sanctuary for ideas. A place where the art of the second opinion is revered, free from the noise, jargon, and generic templates of traditional consulting."
+    title: "Finding True North in Chaotic Markets",
+    date: "May 15, 2026",
+    category: "Growth",
+    excerpt:
+      "Every competitor is shouting a different direction. Here's how we help founders tune that out and pick a heading they can defend."
   },
   {
-    year: "Phase 03",
-    title: "The Collective.",
-    content: "Our collective of experts spanning strategy, architecture, design, and execution came together—all dedicated to helping you find your true north in a chaotic market."
+    title: "Why Minimalist Architecture Scales Better",
+    date: "April 30, 2026",
+    category: "Tech",
+    excerpt:
+      "The systems that survive their own success are rarely the clever ones. They're the ones with fewer moving parts to begin with."
   }
 ];
 
-function NineDotLoop() {
-  const linesRef = useRef<SVGGElement>(null);
-  const pencilRef = useRef<SVGCircleElement>(null);
-
-  useEffect(() => {
-    if (!linesRef.current || !pencilRef.current) return;
-
-    const linesG = linesRef.current;
-    const pencil = pencilRef.current;
-
-    interface Segment {
-      from: { x: number; y: number };
-      to: { x: number; y: number };
-      color: string;
-    }
-
-    const segments: Segment[] = [
-      { from: { x: 140, y: 140 }, to: { x: 20, y: 20 }, color: '#FF5B2E' },
-      { from: { x: 20, y: 20 }, to: { x: 140, y: 20 }, color: '#B8CF4F' },
-      { from: { x: 140, y: 20 }, to: { x: 20, y: 140 }, color: '#7C4DFF' },
-      { from: { x: 20, y: 140 }, to: { x: 20, y: 20 }, color: '#2A0089' },
-    ];
-
-    const ctx = gsap.context(() => {
-      function makeLine(seg: Segment) {
-        const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        l.setAttribute('x1', String(seg.from.x));
-        l.setAttribute('y1', String(seg.from.y));
-        l.setAttribute('x2', String(seg.from.x));
-        l.setAttribute('y2', String(seg.from.y));
-        l.setAttribute('stroke', seg.color);
-        l.setAttribute('stroke-width', '2');
-        l.setAttribute('stroke-linecap', 'round');
-        l.setAttribute('marker-end', 'url(#ah)');
-        linesG.appendChild(l);
-        return l;
-      }
-
-      function runCycle() {
-        linesG.innerHTML = '';
-        const lines = segments.map(makeLine);
-        gsap.set(pencil, { attr: { cx: segments[0].from.x, cy: segments[0].from.y, opacity: 1 } });
-
-        const tl = gsap.timeline({
-          onComplete: () => {
-            gsap.to(pencil, {
-              attr: { opacity: 0 }, duration: 0.3, onComplete: () => {
-                gsap.delayedCall(0.5, runCycle);
-              }
-            });
-          }
-        });
-
-        segments.forEach((seg, i) => {
-          tl.to(lines[i], {
-            attr: { x2: seg.to.x, y2: seg.to.y },
-            duration: 1.0,
-            ease: 'power2.inOut',
-          }, i === 0 ? '+=0.3' : '+=0.15');
-          tl.to(pencil, {
-            attr: { cx: seg.to.x, cy: seg.to.y },
-            duration: 1.0,
-            ease: 'power2.inOut'
-          }, '<');
-        });
-      }
-
-      runCycle();
-    });
-
-    return () => ctx.revert();
-  }, []);
-
-  return (
-    <div className="flex justify-center w-full py-8 pointer-events-none z-10 relative">
-      <svg viewBox="0 0 160 160" className="overflow-visible w-48 h-48 md:w-72 md:h-72">
-        <defs>
-          <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </marker>
-        </defs>
-        <g ref={linesRef} id="lines"></g>
-        <g id="dots">
-          {[
-            { cx: 20, cy: 20 }, { cx: 60, cy: 20 }, { cx: 100, cy: 20 },
-            { cx: 20, cy: 60 }, { cx: 60, cy: 60 }, { cx: 100, cy: 60 },
-            { cx: 20, cy: 100 }, { cx: 60, cy: 100 }, { cx: 100, cy: 100 },
-          ].map((dot, i) => (
-            <circle key={i} cx={dot.cx} cy={dot.cy} r="4" fill="var(--text-primary)" opacity="0.8" />
-          ))}
-        </g>
-        <circle ref={pencilRef} id="pencil" r="4" fill="none" stroke="#FF5B2E" strokeWidth="2" opacity="0" />
-      </svg>
-    </div>
-  );
-}
+/**
+ * The Genesis, rebuilt. "The Observation" is gone — the blind-spot argument
+ * belongs to the Home page now, and repeating it here cost the section its
+ * job, which is proving the collective is worth trusting.
+ */
+const GENESIS_BEATS = [
+  {
+    index: "001",
+    eyebrow: "Why we built it",
+    title: "Every render hides a section.",
+    content:
+      "We built a place where the second opinion is the product, not an upsell — free of the jargon and generic templates of traditional consulting."
+  },
+  {
+    index: "002",
+    eyebrow: "The collective",
+    title: "Invited, not listed.",
+    content:
+      "Strategy, architecture, design and execution. Every expert here is invited, not listed — vetted on built work before they take a single session."
+  },
+  {
+    index: "003",
+    eyebrow: "The standard",
+    title: "Measured on what stands.",
+    content:
+      "No portfolios of intent. We look at what was permitted, what was built, and what is still standing — then we ask the people who worked alongside them."
+  }
+];
 
 export default function UsChoreography() {
   const heroTextRef = useRef<HTMLHeadingElement>(null);
@@ -166,6 +113,7 @@ export default function UsChoreography() {
   const templeRoofTextRef = useRef<HTMLDivElement>(null);
   const horizontalTextsRef = useRef<HTMLDivElement>(null); // The row of text boxes at the end
   
+  const editorialCardsRef = useRef<(HTMLElement | null)[]>([]);
   const formRef = useRef<HTMLDivElement>(null);
   const quoteRef = useRef<HTMLDivElement>(null);
 
@@ -258,6 +206,26 @@ export default function UsChoreography() {
       tl.to({}, { duration: 4 });
     }
 
+    // Editorial cards stagger in as the row comes into view
+    editorialCardsRef.current.forEach((card, i) => {
+      if (!card) return;
+      gsap.fromTo(card,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          delay: i * 0.12,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: card,
+            start: "top 85%",
+            toggleActions: "play none none reverse"
+          }
+        }
+      );
+    });
+
     // Quote Animation
     if (quoteRef.current) {
       gsap.fromTo(quoteRef.current,
@@ -341,30 +309,45 @@ export default function UsChoreography() {
             <div className="w-px h-16 bg-[var(--border-strong)] mx-auto"></div>
           </div>
 
-          <div className="flex flex-col gap-12 md:gap-16 w-full">
-            {TIMELINE_MILESTONES.map((item, index) => {
-              // Alternating: left, right, left
-              const isEven = index % 2 === 0;
-              return (
-                <div 
-                  key={index} 
-                  ref={(el) => { genesisNodesRef.current[index] = el; }}
-                  className={`w-full flex ${isEven ? 'justify-start md:pl-[10vw]' : 'justify-end md:pr-[10vw]'}`}
-                >
-                  <div className={`w-full md:w-[45%] flex flex-col ${isEven ? 'items-start text-left' : 'items-end text-right'}`}>
-                    <div className="font-mono-sos text-[10px] text-[var(--text-muted)] mb-6 tracking-[0.4em] uppercase">
-                      [ {item.year} ]
+          <div className="flex flex-col w-full">
+            {GENESIS_BEATS.map((beat, index) => (
+              <div
+                key={beat.index}
+                ref={(el) => { genesisNodesRef.current[index] = el; }}
+                className="w-full border-t border-[var(--border-strong)] pt-10 md:pt-14 pb-20 md:pb-28"
+              >
+                <div className="flex flex-col md:flex-row md:items-start gap-10 md:gap-16">
+
+                  {/* Left rail: index, eyebrow, headline, body */}
+                  <div className="md:w-[38%] shrink-0 flex flex-col">
+                    <div className="flex items-baseline gap-4 mb-8">
+                      <span className="font-mono-sos text-[10px] tracking-[0.4em] text-[var(--color-orange)]">
+                        {beat.index}
+                      </span>
+                      <span className="font-mono-sos text-[10px] tracking-[0.4em] uppercase text-[var(--text-faint)]">
+                        {beat.eyebrow}
+                      </span>
                     </div>
-                    <h3 className="font-display text-3xl md:text-5xl font-normal mb-6 text-[var(--text-primary)] tracking-tight">
-                      {item.title}
+
+                    <h3 className="font-display text-3xl md:text-5xl font-normal mb-8 text-[var(--text-primary)] tracking-tighter leading-[0.95]">
+                      {beat.title}
                     </h3>
-                    <p className="font-inter text-[var(--text-muted)] text-lg md:text-xl leading-relaxed font-light w-full">
-                      {item.content}
+
+                    <p className="font-inter text-[var(--text-muted)] text-base md:text-lg leading-relaxed font-light">
+                      {beat.content}
                     </p>
                   </div>
+
+                  {/* Right: the graphic that carries the argument */}
+                  <div className="md:w-[62%] w-full">
+                    {index === 0 && <FacadeSectionCut />}
+                    {index === 1 && <VeneerStack />}
+                    {index === 2 && <VettingColumns />}
+                  </div>
+
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
 
         </div>
@@ -455,20 +438,74 @@ export default function UsChoreography() {
         
         {/* Text Above */}
         <h3 className="font-display text-2xl md:text-3xl text-[var(--text-primary)] opacity-80 uppercase tracking-tight mb-4 z-10 relative text-center">
-          Don&apos;t just think it...
+          Keep your eyes on the prize.
         </h3>
 
-        {/* The Nine Dot Loop SVG Animation */}
-        <NineDotLoop />
+        {/* The Pantone Eyes Card */}
+        <div className="flex justify-center w-full py-8 z-10 relative">
+          <PantoneEyesCard />
+        </div>
 
         {/* Text Below */}
-        <h3 className="font-display text-2xl md:text-4xl text-[var(--text-primary)] tracking-tight mt-8 z-10 relative uppercase text-center flex items-center justify-center gap-3 flex-wrap">
-          We Prefer to <div className="inline-flex scale-75 md:scale-100 mx-[-0.5rem]"><MorphingLogo text="ACT" variant="embossed" /></div> Outside the Box
-        </h3>
+        <p className="font-inter text-lg md:text-xl text-[var(--text-muted)] max-w-md mt-8 z-10 relative text-center">
+          Seeking counsel is never a surrender of your vision.
+        </p>
 
       </section>
 
-      {/* 4. Let's Talk: Perfectly Centered with Massive Gap */}
+      {/* 4. Editorial: writing from the collective */}
+      <section className="w-full px-6 py-32 md:py-48 bg-[var(--bg-base)] border-t border-[var(--border)] z-10 relative">
+        <div className="container mx-auto max-w-6xl">
+
+          <div className="flex flex-col items-center justify-center text-center mb-20 md:mb-28">
+            <h2 className="font-display text-4xl md:text-6xl font-normal text-[var(--text-primary)] mb-6 tracking-tight">
+              Editorial.
+            </h2>
+            <p className="font-mono-sos text-[10px] tracking-[0.3em] text-[var(--text-muted)] uppercase mb-8">
+              Thinking out loud
+            </p>
+            <div className="w-px h-16 bg-[var(--border-strong)] mx-auto"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
+            {EDITORIAL_POSTS.map((post, index) => (
+              <article
+                key={post.title}
+                ref={(el) => { editorialCardsRef.current[index] = el; }}
+                className="group flex flex-col text-left cursor-pointer"
+              >
+                <div className="h-52 mb-7 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border)] relative overflow-hidden transition-colors duration-500 group-hover:border-[var(--border-strong)]">
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-tr from-[var(--color-primary)]/12 to-transparent"></div>
+                </div>
+
+                <div className="flex justify-between items-center mb-4">
+                  <span className="font-mono-sos text-[9px] tracking-[0.2em] uppercase text-[var(--color-orange)]">
+                    {post.category}
+                  </span>
+                  <span className="font-mono-sos text-[9px] tracking-[0.15em] text-[var(--text-faint)]">
+                    {post.date}
+                  </span>
+                </div>
+
+                <h3 className="font-display text-2xl md:text-[26px] leading-tight text-[var(--text-primary)] mb-4 tracking-tight transition-colors duration-300 group-hover:text-[var(--color-primary)]">
+                  {post.title}
+                </h3>
+
+                <p className="font-inter text-sm text-[var(--text-muted)] leading-relaxed font-light mb-6">
+                  {post.excerpt}
+                </p>
+
+                <span className="font-mono-sos text-[10px] tracking-[0.2em] uppercase text-[var(--text-primary)] border-b border-[var(--border-strong)] pb-2 w-max transition-colors duration-300 group-hover:border-[var(--color-primary)] group-hover:text-[var(--color-primary)]">
+                  Read on &rarr;
+                </span>
+              </article>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* 5. Let's Talk: Perfectly Centered with Massive Gap */}
       <section className="w-full border-t border-[var(--border)] bg-[var(--bg-base)] z-10 relative">
         <div className="container mx-auto px-6 pt-[100vh] pb-40 md:pt-[200vh] md:pb-64 w-full flex flex-col items-center">
           

@@ -1,17 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import ModeToggle from "../ui/ModeToggle";
+import SosMark from "../shared/SosMark";
 import { useEffect, useState } from "react";
 
 const NAV_ITEMS = [
   { path: "/", label: "Home", num: "001//" },
   { path: "/platter", label: "Platter", num: "002//" },
   { path: "/us", label: "Us", num: "003//" },
-  // { path: "/blog", label: "Blog", num: "004//" },
-  { path: "/login", label: "Login", num: "005//" },
+  { path: "/login", label: "Login", num: "004//" },
 ];
 
 export default function Navbar() {
@@ -52,15 +51,8 @@ export default function Navbar() {
       }}
     >
       <div className="flex items-center gap-2">
-        <Link href="/" className="flex items-center">
-          <Image 
-            src="/SOS Logo.png" 
-            alt="SOS Logo" 
-            width={120} 
-            height={40} 
-            className="h-8 md:h-10 w-auto object-contain dark:invert-0 light:invert" 
-            priority
-          />
+        <Link href="/" className="flex items-center" aria-label="SOS home">
+          <SosMark className="text-[20px] md:text-[26px]" label={null} />
         </Link>
       </div>
 
