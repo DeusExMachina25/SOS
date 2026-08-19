@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Clock, Video, ArrowRight, Edit2, Check, X, ShieldAlert, Award } from "lucide-react";
+import { Bell, Clock, Video, Edit2, Check, X } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { getStoredSessions, getStoredFiles, getProjectPhase, saveProjectPhase, Session, VaultFile } from "@/utils/sessionsStore";
-import { supabase } from "@/utils/supabase/client";
+import { getProjectPhase, saveProjectPhase } from "@/utils/billingMock";
+import { getMyProfile, getMySessions } from "@/lib/data/queries";
+import type { Session } from "@/lib/data/types";
 
 function HoursLineChart() {
   const data = [4, 6.5, 5, 8.5, 6, 4.5, 4];
@@ -176,93 +176,26 @@ function ClientManager() {
 
 export default function ExpertDashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [files, setFiles] = useState<VaultFile[]>([]);
-  const [expertName, setExpertName] = useState("Shravani Reddy");
-  const [expertId, setExpertId] = useState("789e4567-e89b-12d3-a456-426614174000");
+  const [expertName, setExpertName] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     async function loadExpertDashboard() {
-      setFiles(getStoredFiles());
-
-      if (!supabase) {
-        const localSess = getStoredSessions();
-        const filtered = localSess.map(s => ({
-          ...s,
-          expert: "Shravani Reddy"
-        }));
-        setSessions(filtered);
-        return;
-      }
-
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        let currentExpName = "Shravani Reddy";
-        let currentExpId = "789e4567-e89b-12d3-a456-426614174000";
-
-        if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name, id")
-            .eq("id", user.id)
-            .single();
-          
-          if (profile) {
-            currentExpName = profile.full_name;
-            currentExpId = profile.id;
-            setExpertName(profile.full_name);
-            setExpertId(profile.id);
-          }
-        }
-
-        const { data: sessionsData } = await supabase
-          .from("sessions")
-          .select("*")
-          .eq("expert_id", currentExpId)
-          .order("scheduled_at", { ascending: false });
-
-        let mappedSess: Session[] = [];
-        if (sessionsData && sessionsData.length > 0) {
-          const clientIds = Array.from(new Set(sessionsData.map((s: any) => s.client_id)));
-          const { data: clientsData } = await supabase
-            .from("profiles")
-            .select("id, full_name")
-            .in("id", clientIds);
-
-          mappedSess = sessionsData.map((s: any) => {
-            const clientProf = clientsData?.find((c: any) => c.id === s.client_id);
-            const dt = new Date(s.scheduled_at);
-            return {
-              id: s.id,
-              name: "Consultation Session",
-              client: clientProf ? clientProf.full_name : "Client User",
-              expert: currentExpName,
-              date: dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-              time: dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-              status: (s.status === "completed" || s.status === "scheduled") ? s.status : "scheduled",
-              duration: `${s.duration_minutes || 60} min`
-            };
-          });
-        } else {
-          const localSess = getStoredSessions();
-          mappedSess = localSess.map(s => ({
-            ...s,
-            expert: currentExpName
-          }));
-        }
-
-        setSessions(mappedSess);
+        const [profile, mySessions] = await Promise.all([getMyProfile(), getMySessions()]);
+        if (profile) setExpertName(profile.fullName);
+        setSessions(mySessions);
       } catch (err) {
         console.error("Error loading expert dashboard data", err);
-        const localSess = getStoredSessions();
-        setSessions(localSess.map(s => ({ ...s, expert: expertName })));
+        setLoadError(err instanceof Error ? err.message : "Failed to load dashboard");
       }
     }
 
     loadExpertDashboard();
-  }, [expertName]);
+  }, []);
 
-  const mySessions = sessions.filter(s => s.expert === expertName);
-  const nextSession = mySessions.find(s => s.status === "scheduled");
+  // Sessions are already scoped to the signed-in expert by RLS — no client-side filter needed.
+  const nextSession = sessions.find(s => s.status === "scheduled");
 
   return (
     <div className="w-full h-full relative flex flex-col pb-12 xl:pb-0 min-h-0">
@@ -270,7 +203,8 @@ export default function ExpertDashboard() {
       <header className="mb-12 mt-4 flex flex-row justify-between items-end gap-6 shrink-0">
         <div>
           <h1 className="font-inter text-3xl md:text-4xl font-light tracking-[0.18em] text-[var(--text-primary)] uppercase">Overview</h1>
-          <p className="font-mono-sos text-xs text-[var(--text-faint)] mt-2 tracking-widest uppercase">Welcome back, {expertName}</p>
+          <p className="font-mono-sos text-xs text-[var(--text-faint)] mt-2 tracking-widest uppercase">Welcome back{expertName ? `, ${expertName}` : ""}</p>
+          {loadError && <p className="font-mono-sos text-xs text-[var(--color-orange)] mt-2">{loadError}</p>}
         </div>
         <div className="flex gap-4 items-center">
           <button className="relative p-4 rounded-full bg-[var(--bg-surface)] border border-[var(--border-strong)] hover:border-[var(--color-orange)] transition-colors group shadow-lg">
@@ -322,17 +256,17 @@ export default function ExpertDashboard() {
             
             {nextSession ? (
               <div className="flex flex-col h-full">
-                <h2 className="font-display text-3xl font-bold mb-2 text-[var(--text-primary)]">{nextSession.name}</h2>
+                <h2 className="font-display text-3xl font-bold mb-2 text-[var(--text-primary)]">{nextSession.title}</h2>
                 <p className="text-xs text-[var(--color-primary)] font-mono-sos flex items-center gap-2 mb-2">
                   <Clock size={14} /> {nextSession.date} • {nextSession.time}
                 </p>
                 <p className="text-xs text-[var(--text-muted)] font-inter mb-6">
-                  Client: {nextSession.client}
+                  Client: {nextSession.clientName}
                 </p>
-                
+
                 <div className="w-full mt-auto">
-                  <Link 
-                    href={`/dashboard/video-call?sessionId=${nextSession.id}&sessionName=${encodeURIComponent(nextSession.name)}&displayName=${encodeURIComponent(expertName)}`}
+                  <Link
+                    href={`/dashboard/video-call?sessionId=${nextSession.id}&sessionName=${encodeURIComponent(nextSession.title)}&displayName=${encodeURIComponent(expertName)}`}
                     className="w-full flex items-center justify-center gap-2 bg-[var(--bg-surface-2)] hover:bg-[var(--bg-surface)] border border-[var(--border-strong)] text-[var(--text-primary)] py-4 rounded-2xl text-xs font-bold transition-all hover:border-[var(--color-primary)] group/join"
                   >
                     <Video size={16} className="text-[var(--text-muted)] group-hover/join:text-[var(--color-primary)] transition-colors" /> Start Video Call

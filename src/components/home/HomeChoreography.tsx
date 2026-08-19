@@ -9,7 +9,8 @@ import MorphingLogo from "./MorphingLogo";
 import Compass from "./Compass";
 import TypewriterText from "./TypewriterText";
 import MinimalStoryBox from "./MinimalStoryBox";
-import PantoneEyesCard from "./PantoneEyesCard";
+import NineDotLoop from "../shared/NineDotLoop";
+import PositionTrackerBackground from "../shared/PositionTrackerBackground";
 import VideoDiorama from "./VideoDiorama";
 
 if (typeof window !== "undefined") {
@@ -38,7 +39,6 @@ export default function HomeChoreography() {
   const figmaRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLDivElement>(null);
-  const explosionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [compassTiltMode, setCompassTiltMode] = useState<'2d'|'2.5d'|'3d'>('2d');
@@ -60,9 +60,6 @@ export default function HomeChoreography() {
     if (logoRef.current) {
       gsap.set(logoRef.current, { scale: 1, opacity: 1, y: 0, x: 0 });
     }
-    explosionRefs.current.forEach(el => {
-      if (el) gsap.set(el, { opacity: 0, x: 0, y: 0, scale: 0.5, rotation: 0 });
-    });
 
     // Create a master timeline locked to scroll
     const tl = gsap.timeline({
@@ -88,23 +85,6 @@ export default function HomeChoreography() {
       .to(typewriterRef.current, { opacity: 1, y: 0, x: "-15vw", duration: 1.5 }, 0)
       .to(compassRef.current, { opacity: 1, y: 0, x: "15vw", duration: 1.5 }, 0.5);
 
-    explosionRefs.current.forEach((el, i) => {
-      if (!el) return;
-      const total = explosionRefs.current.length;
-      const angle = (Math.PI * 2 * i) / total;
-      const radiusX = 35 + Math.random() * 15; 
-      const radiusY = 35 + Math.random() * 15; 
-      const x = Math.cos(angle) * radiusX + "vw";
-      const y = Math.sin(angle) * radiusY + "vh";
-      const rotation = (Math.random() - 0.5) * 360;
-      const finalScale = 0.5 + Math.random() * 0.5;
-
-      tl.to(el, {
-        x, y, rotation, scale: finalScale, opacity: 0.12,
-        duration: 3, ease: "power2.out"
-      }, 0);
-    });
-      
     // Phase 2: Typewriter exits left, Compass shifts left, Narrative 1a enters right
     tl.to(typewriterRef.current, { opacity: 0, x: "-50vw", duration: 1.5 }, 2.0)
       .to(compassRef.current, { x: "-20vw", duration: 1.5 }, 2.0) 
@@ -154,17 +134,9 @@ export default function HomeChoreography() {
         >
           {/* Aurora Lighting Background */}
           <div className="aurora-bg"></div>
-          
-          {/* LOGO EXPLOSION FIELD (Hidden initially, scatters on scroll) */}
-          {[...Array(12)].map((_, i) => (
-            <div 
-              key={i} 
-              ref={(el) => { explosionRefs.current[i] = el; }}
-              className="absolute z-0 pointer-events-none text-[3rem] md:text-[6rem] leading-none opacity-0"
-            >
-              <MorphingLogo variant="exploded" />
-            </div>
-          ))}
+
+          {/* Position-tracker grid — fades in once the logo has flown through */}
+          <PositionTrackerBackground trackRef={scrollRef} />
 
           {/* MAIN LOGO - Initial opening, shrinks and disappears */}
           <div ref={logoRef} className="absolute z-1 pointer-events-none text-[8rem] md:text-[15rem] leading-none">
@@ -185,18 +157,20 @@ export default function HomeChoreography() {
           </div>
 
           <div ref={narrative1aRef} className="absolute z-20 pointer-events-auto">
-            <MinimalStoryBox 
-              title="A Leap of Faith"
+            <MinimalStoryBox
+              title="Too Close to the Canvas"
               paragraphs={[
-                "Every monumental space begins with a solitary leap of faith. A line drawn across a blank canvas."
+                "Every project is a leap of faith. You can either jump or hold on for dear life…",
+                "If you're too close to the canvas, you restrict yourself from reaching out… and the further you carry it without any direction, the harder it becomes to make others see what you do."
               ]}
             />
           </div>
 
           <div ref={narrative1bRef} className="absolute z-20 pointer-events-auto">
-            <MinimalStoryBox 
+            <MinimalStoryBox
+              title="Why a Second Opinion"
               paragraphs={[
-                "A quiet intuition about how morning light should trace the edge of a load-bearing wall, or how a space might dictate the rhythm of the lives lived around it."
+                "Second Opinions see beyond the original facade and a fresh set of eyes can be the veneer to your plywood. Speak to one of our vetted experts who has no stake in your plan except making it truly yours."
               ]}
             />
           </div>
@@ -206,43 +180,48 @@ export default function HomeChoreography() {
           </div>
 
           <div ref={narrative2aRef} className="absolute z-20 pointer-events-auto">
-            <MinimalStoryBox 
-              title="The Expanse of the Void"
+            <MinimalStoryBox
+              title="How a Session Works"
               paragraphs={[
-                "Between the initial spark of creativity and the pouring of concrete lies an expanse of the void."
+                "Choose an expert from the Platter. Pick a time. Share drawings, briefs and references to a private vault before you meet."
               ]}
             />
           </div>
 
           <div ref={narrative2bRef} className="absolute z-20 pointer-events-auto">
-            <MinimalStoryBox 
+            <MinimalStoryBox
+              title="Grounded in Trust"
               paragraphs={[
-                "When you are too close to the canvas, blind spots emerge, not from a lack of skill, but from an excess of passion."
+                "You meet over secure video with your files at hand. Payment is held in escrow and released around the session. We believe that a true partnership can only be grounded in trust…",
+                "Why don't we reassess our borders?"
               ]}
             />
           </div>
           <div ref={figmaRef} className="absolute z-30 pointer-events-auto scale-110">
-            <PantoneEyesCard />
+            <NineDotLoop />
           </div>
 
           <div ref={narrative3Ref} className="absolute z-20 pointer-events-auto">
-            <MinimalStoryBox 
+            <MinimalStoryBox
               paragraphs={[
-                "Keep your eyes on the prize."
+                "Don't just think it..."
               ]}
             />
           </div>
 
           <div ref={ctaRef} className="absolute z-40 pointer-events-auto flex flex-col items-center gap-8">
-            <p className="font-inter text-lg text-[var(--text-muted)] max-w-md text-center mb-6">
-              Seeking counsel is never a surrender of your vision. 
-            </p>
+            <div className="font-display text-2xl md:text-3xl text-[var(--text-primary)] tracking-tight uppercase text-center mb-2 flex items-center justify-center gap-3 flex-wrap">
+              We Prefer to <span className="inline-flex scale-75 md:scale-90"><MorphingLogo text="ACT" variant="embossed" /></span> Outside the Box
+            </div>
             <div className="flex flex-col items-center gap-6">
               <div className="flex gap-6">
-                <Link href="/login" className="btn-sos-filled">
-                  Login
+                <Link href="/platter" className="btn-sos-filled">
+                  Find Your Expert
                 </Link>
               </div>
+              <Link href="/login" className="font-mono-sos text-[0.625rem] text-[var(--text-muted)] hover:text-[var(--color-primary)] transition-colors">
+                Already a member? Log in
+              </Link>
               <p className="font-display text-sm md:text-base text-[var(--text-faint)] tracking-[0.2em] uppercase">
                 Find a Compass
               </p>

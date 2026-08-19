@@ -11,6 +11,7 @@ import TypewriterText from "../home/TypewriterText";
 import MinimalStoryBox from "../home/MinimalStoryBox";
 import PantoneEyesCard from "../home/PantoneEyesCard";
 import InteractiveNineDot from "../home/InteractiveNineDot";
+import PositionTrackerBackground from "../shared/PositionTrackerBackground";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -352,7 +353,10 @@ export default function HomusChoreography() {
         >
           {/* Aurora Lighting Background */}
           <div className="aurora-bg"></div>
-          
+
+          {/* Position-tracker grid — fades in once the logo has flown through */}
+          <PositionTrackerBackground trackRef={scrollRef} revealStart={0.05} revealEnd={0.10} />
+
           {/* LOGO EXPLOSION FIELD (Hidden initially, scatters on scroll) */}
           {[...Array(12)].map((_, i) => (
             <div 

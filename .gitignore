@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# MCP server config — contains a Supabase service_role token
+.mcp.json
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Redundant archive of the extracted logo folder
+public/assets/*.zip
