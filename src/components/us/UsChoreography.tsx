@@ -5,17 +5,26 @@ import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import PantoneEyesCard from "../home/PantoneEyesCard";
+import FacadeSectionCut from "./FacadeSectionCut";
+import VeneerStack from "./VeneerStack";
+import VettingColumns from "./VettingColumns";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-// 1. Reordered Manifesto Pillars
+/**
+ * Manifesto pillars — 4 slots, load-bearing in the pinned temple sequence
+ * below. "Organic execution" and "Calibration without compromise" said the
+ * same thing twice ("we adapt" / "we refine, we don't reduce"), so they're
+ * merged into one. The freed slot goes to the vetting standard, echoing
+ * Genesis beat 003 and the VettingColumns graphic above.
+ */
 const MANIFESTO_PILLARS = [
   {
-    short: "Organic.",
-    title: "Organic execution.",
-    description: "Frameworks shouldn't be cages. We adapt to the natural rhythm of your project, allowing it to grow organically rather than forcing it into rigid, predefined boxes."
+    short: "Calibration.",
+    title: "Refine, don't reduce.",
+    description: "A second opinion isn't a cage or a compromise. We adapt to the rhythm of your project and sharpen what's already there — never flattening the vision to fit a template."
   },
   {
     short: "Clarity.",
@@ -28,9 +37,9 @@ const MANIFESTO_PILLARS = [
     description: "Your intellectual property is sacred. Our secure vaults and end-to-end encrypted sessions ensure your ideas stay unequivocally yours."
   },
   {
-    short: "Calibration.",
-    title: "Calibration without compromise.",
-    description: "Seeking a second opinion isn't about diluting your idea. It's about sharpening the edge so it cuts through the market flawlessly. We refine, we don't reduce."
+    short: "Standard.",
+    title: "Measured on what stands.",
+    description: "Every expert here is vetted on built work, not portfolios of intent — permits cleared, projects delivered, peers who'll vouch for them before they take a single session."
   }
 ];
 
@@ -58,21 +67,32 @@ const EDITORIAL_POSTS = [
   }
 ];
 
-const TIMELINE_MILESTONES = [
+/**
+ * The Genesis, rebuilt. "The Observation" is gone — the blind-spot argument
+ * belongs to the Home page now, and repeating it here cost the section its
+ * job, which is proving the collective is worth trusting.
+ */
+const GENESIS_BEATS = [
   {
-    year: "Phase 01",
-    title: "The Observation.",
-    content: "Founders and creators often hit a wall not because they lack passion or skill, but because they are simply too close to the canvas. In the pursuit of building something meaningful, blind spots are inevitable."
+    index: "001",
+    eyebrow: "Why we built it",
+    title: "Every render hides a section.",
+    content:
+      "We built a place where the second opinion is the product, not an upsell — free of the jargon and generic templates of traditional consulting."
   },
   {
-    year: "Phase 02",
-    title: "The Sanctuary.",
-    content: "We established this platform as a sanctuary for ideas. A place where the art of the second opinion is revered, free from the noise, jargon, and generic templates of traditional consulting."
+    index: "002",
+    eyebrow: "The collective",
+    title: "Invited, not listed.",
+    content:
+      "Strategy, architecture, design and execution. Every expert here is invited, not listed — vetted on built work before they take a single session."
   },
   {
-    year: "Phase 03",
-    title: "The Collective.",
-    content: "Our collective of experts spanning strategy, architecture, design, and execution came together—all dedicated to helping you find your true north in a chaotic market."
+    index: "003",
+    eyebrow: "The standard",
+    title: "Measured on what stands.",
+    content:
+      "No portfolios of intent. We look at what was permitted, what was built, and what is still standing — then we ask the people who worked alongside them."
   }
 ];
 
@@ -289,30 +309,45 @@ export default function UsChoreography() {
             <div className="w-px h-16 bg-[var(--border-strong)] mx-auto"></div>
           </div>
 
-          <div className="flex flex-col gap-12 md:gap-16 w-full">
-            {TIMELINE_MILESTONES.map((item, index) => {
-              // Alternating: left, right, left
-              const isEven = index % 2 === 0;
-              return (
-                <div 
-                  key={index} 
-                  ref={(el) => { genesisNodesRef.current[index] = el; }}
-                  className={`w-full flex ${isEven ? 'justify-start md:pl-[10vw]' : 'justify-end md:pr-[10vw]'}`}
-                >
-                  <div className={`w-full md:w-[45%] flex flex-col ${isEven ? 'items-start text-left' : 'items-end text-right'}`}>
-                    <div className="font-mono-sos text-[10px] text-[var(--text-muted)] mb-6 tracking-[0.4em] uppercase">
-                      [ {item.year} ]
+          <div className="flex flex-col w-full">
+            {GENESIS_BEATS.map((beat, index) => (
+              <div
+                key={beat.index}
+                ref={(el) => { genesisNodesRef.current[index] = el; }}
+                className="w-full border-t border-[var(--border-strong)] pt-10 md:pt-14 pb-20 md:pb-28"
+              >
+                <div className="flex flex-col md:flex-row md:items-start gap-10 md:gap-16">
+
+                  {/* Left rail: index, eyebrow, headline, body */}
+                  <div className="md:w-[38%] shrink-0 flex flex-col">
+                    <div className="flex items-baseline gap-4 mb-8">
+                      <span className="font-mono-sos text-[10px] tracking-[0.4em] text-[var(--color-orange)]">
+                        {beat.index}
+                      </span>
+                      <span className="font-mono-sos text-[10px] tracking-[0.4em] uppercase text-[var(--text-faint)]">
+                        {beat.eyebrow}
+                      </span>
                     </div>
-                    <h3 className="font-display text-3xl md:text-5xl font-normal mb-6 text-[var(--text-primary)] tracking-tight">
-                      {item.title}
+
+                    <h3 className="font-display text-3xl md:text-5xl font-normal mb-8 text-[var(--text-primary)] tracking-tighter leading-[0.95]">
+                      {beat.title}
                     </h3>
-                    <p className="font-inter text-[var(--text-muted)] text-lg md:text-xl leading-relaxed font-light w-full">
-                      {item.content}
+
+                    <p className="font-inter text-[var(--text-muted)] text-base md:text-lg leading-relaxed font-light">
+                      {beat.content}
                     </p>
                   </div>
+
+                  {/* Right: the graphic that carries the argument */}
+                  <div className="md:w-[62%] w-full">
+                    {index === 0 && <FacadeSectionCut />}
+                    {index === 1 && <VeneerStack />}
+                    {index === 2 && <VettingColumns />}
+                  </div>
+
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
 
         </div>
