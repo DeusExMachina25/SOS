@@ -104,10 +104,16 @@
 /* ═══════════════════════════════════════════════════════
    BASE & NOISE OVERLAY
 ════════════════════════════════════════════════════════*/
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Must stay inside @layer base. Tailwind v4 puts every utility in
+   @layer utilities, and an unlayered rule outranks any layered one
+   regardless of specificity — so an unlayered wildcard reset silently
+   nullifies every p-*, px-*, m-*, mt-* utility in the entire app. */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html {
