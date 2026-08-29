@@ -41,9 +41,10 @@ interface ExpertProfile {
 }
 
 /**
- * All three architects sit in the "architecture" field. Fashion and Travel
- * are surfaced in the field-pie as inactive divisions — no experts, no
- * bookings — until SOS opens those sides of the practice.
+ * One expert per division. The three pricing tiers describe architecture
+ * engagements only, so they sit with Shravani's field; the other divisions
+ * quote per project. Fashion is the one field still unstaffed and shows in
+ * the field-pie as inactive.
  */
 const DEFAULT_EXPERTS: ExpertProfile[] = [
   {
@@ -53,45 +54,45 @@ const DEFAULT_EXPERTS: ExpertProfile[] = [
     email: "shravani@sos.com",
     role: "expert",
     field: "architecture",
-    expert_role: "Principal Architect, Residential",
-    bio: "Two decades of independent residential practice — structural planning, material selection, and landscape integration for ground-up builds.",
-    tags: ["RESIDENTIAL ARCHITECTURE", "STRUCTURAL PLANNING", "MATERIAL SELECTION"],
+    expert_role: "Principal Architect & Interior Designer",
+    bio: "Two decades of independent residential practice across town and country — from interiors and spatial flow in urban apartments, to structural planning and material selection on ground-up builds, to master planning across rural and peri-urban plots.",
+    tags: ["RESIDENTIAL ARCHITECTURE", "INTERIOR DESIGN", "MASTER PLANNING"],
     disciplines: [
-      { id: "01", title: "Site & Structural Strategy", desc: "Reading the plot, load paths, and foundation strategy before a single wall is drawn." },
-      { id: "02", title: "Material & Detailing", desc: "Choosing materials and junctions that age well, not just render well." },
-      { id: "03", title: "Landscape Integration", desc: "Tying the built form to the site — light, water, and green cover." }
+      { id: "01", title: "Interiors & Spatial Flow", desc: "How a city footprint should actually be used — circulation, storage logic, and material honesty, room by room." },
+      { id: "02", title: "Site & Structural Strategy", desc: "Reading the plot, load paths, and foundations before a single wall is drawn, then detailing junctions that age well." },
+      { id: "03", title: "Master Planning & Compliance", desc: "Contours, drainage, and phased development across larger plots — planned so it survives contact with approval." }
     ]
   },
   {
     id: "789e4567-e89b-12d3-a456-426614174001",
-    full_name: "Karan Malhotra",
+    full_name: "Sudhamshu Reddy",
     phone: "+919876543211",
-    email: "karan@sos.com",
+    email: "sudhamshu@sos.com",
     role: "expert",
-    field: "architecture",
-    expert_role: "Interior & Spatial Strategist",
-    bio: "Specializing in spatial strategy for compact living — flow, storage logic, and material honesty within constrained footprints.",
-    tags: ["SPATIAL PLANNING", "INTERIOR FLOW", "MATERIAL HONESTY"],
+    field: "sustainability",
+    expert_role: "Renewable Systems Engineer",
+    bio: "Renewable energy, waste systems, and additive manufacturing — designed into a project from the start rather than retrofitted onto a finished one.",
+    tags: ["RENEWABLE SYSTEMS", "WASTE MANAGEMENT", "3D PRINTING"],
     disciplines: [
-      { id: "01", title: "Spatial Zoning", desc: "Mapping how a small footprint should actually be used, room by room." },
-      { id: "02", title: "Flow & Circulation", desc: "Removing the friction between rooms before it becomes a habit." },
-      { id: "03", title: "Material Honesty", desc: "Finishes that do their job without pretending to be something else." }
+      { id: "01", title: "Renewable Systems", desc: "Solar, storage, and load planning sized to what the building actually draws." },
+      { id: "02", title: "Waste Management", desc: "Segregation, composting, and water recovery designed in, not bolted on." },
+      { id: "03", title: "Additive Manufacturing", desc: "3D-printed components and formwork — and when printing is the wrong answer." }
     ]
   },
   {
     id: "789e4567-e89b-12d3-a456-426614174002",
-    full_name: "Ananya Sen",
+    full_name: "Yasasvi Jampana",
     phone: "+919876543212",
-    email: "ananya@sos.com",
+    email: "yasasvi@sos.com",
     role: "expert",
-    field: "architecture",
-    expert_role: "Landscape & Site Planning Lead",
-    bio: "Master planning and zoning compliance for large-scale plots — topographical reading, phased development, and full site utilisation strategy.",
-    tags: ["MASTER PLANNING", "ZONING COMPLIANCE", "TOPOGRAPHY"],
+    field: "travel",
+    expert_role: "Travel Experience Curator",
+    bio: "Curated travel — routing and pacing built around the places actually worth stopping for, and the ground logistics that decide whether the trip holds together.",
+    tags: ["ITINERARY DESIGN", "ROUTE PLANNING", "CURATED STAYS"],
     disciplines: [
-      { id: "01", title: "Topographical Reading", desc: "Understanding a site's contours, drainage, and orientation before planning a single structure." },
-      { id: "02", title: "Master Planning", desc: "Sequencing what gets built where, and in what order, across a large plot." },
-      { id: "03", title: "Zoning & Compliance", desc: "Navigating regulation so the plan survives contact with approval." }
+      { id: "01", title: "Route & Pacing", desc: "How far to move each day, and when the answer is to stay put." },
+      { id: "02", title: "Curated Stays", desc: "Choosing places worth the detour rather than the ones with the best rating." },
+      { id: "03", title: "Ground Logistics", desc: "Permits, transfers, and the parts of a trip that quietly go wrong." }
     ]
   }
 ];
@@ -105,11 +106,11 @@ const PRICING_TIERS = {
     scope: "\u00a0",
     desc: "Focused spatial strategy for compact living — optimising flow, material selection, and interior logic within constrained footprints.",
     feats: ["Spatial optimisation", "Interior flow strategy", "Material selection"],
-    color: "#c9a46a",
-    gradient: "linear-gradient(145deg, #272420 0%, #3a3228 45%, #2c2720 100%)",
-    lineGradient: "linear-gradient(90deg, transparent 5%, #c9a46a 50%, transparent 95%)",
-    tagClass: "text-[#c9a46a] bg-[rgba(201,164,106,0.15)]",
-    inkClass: "bg-[#c9a46a]"
+    color: "#FFDAB9",
+    gradient: "linear-gradient(145deg, #2B232C 0%, #3D3438 45%, #211B25 100%)",
+    lineGradient: "linear-gradient(90deg, transparent 5%, #FFDAB9 50%, transparent 95%)",
+    tagClass: "text-[#FFDAB9] bg-[rgba(255,218,185,0.15)]",
+    inkClass: "bg-[#FFDAB9]"
   },
   vil: {
     num: "Tier 02",
@@ -119,11 +120,11 @@ const PRICING_TIERS = {
     scope: "\u00a0",
     desc: "End-to-end architectural development — blueprints, landscape integration, and structural elegance for independent residential builds.",
     feats: ["Architectural blueprint", "Landscape integration", "Structural elegance"],
-    color: "#6aaa8c",
-    gradient: "linear-gradient(145deg, #192920 0%, #213829 45%, #172318 100%)",
-    lineGradient: "linear-gradient(90deg, transparent 5%, #6aaa8c 50%, transparent 95%)",
-    tagClass: "text-[#6aaa8c] bg-[rgba(106,170,140,0.15)]",
-    inkClass: "bg-[#6aaa8c]"
+    color: "#8F81AE",
+    gradient: "linear-gradient(145deg, #221D2E 0%, #312A3F 45%, #1D1828 100%)",
+    lineGradient: "linear-gradient(90deg, transparent 5%, #8F81AE 50%, transparent 95%)",
+    tagClass: "text-[#8F81AE] bg-[rgba(143,129,174,0.15)]",
+    inkClass: "bg-[#8F81AE]"
   },
   sit: {
     num: "Tier 03",
@@ -133,11 +134,11 @@ const PRICING_TIERS = {
     scope: "Up to 1 acre",
     desc: "Master planning and zoning compliance for large-scale plots — topographical analysis and full site utilisation strategy.",
     feats: ["Master planning", "Topographical layout", "Zoning compliance"],
-    color: "#9c7ec4",
-    gradient: "linear-gradient(145deg, #201c2c 0%, #2d2438 45%, #1c1826 100%)",
-    lineGradient: "linear-gradient(90deg, transparent 5%, #9c7ec4 50%, transparent 95%)",
-    tagClass: "text-[#9c7ec4] bg-[rgba(156,126,196,0.15)]",
-    inkClass: "bg-[#9c7ec4]"
+    color: "#E8A88C",
+    gradient: "linear-gradient(145deg, #281E27 0%, #392B30 45%, #201823 100%)",
+    lineGradient: "linear-gradient(90deg, transparent 5%, #E8A88C 50%, transparent 95%)",
+    tagClass: "text-[#E8A88C] bg-[rgba(232,168,140,0.15)]",
+    inkClass: "bg-[#E8A88C]"
   }
 };
 
@@ -345,7 +346,7 @@ export default function PlatterPage() {
         <header ref={addToRefs} className="flex flex-col items-center w-full">
           <h1 className="font-editorial text-7xl md:text-9xl text-[var(--text-primary)] mb-8 tracking-tighter drop-shadow-lg">The Platter</h1>
           <p className="font-inter text-xl text-[var(--text-muted)] max-w-2xl font-light leading-relaxed">
-            A curated roster of architects, vetted on built work, available for a single honest session on your project.
+            A curated roster across three active divisions, each vetted on delivered work, available for a single honest session on your project.
           </p>
         </header>
 
@@ -353,19 +354,14 @@ export default function PlatterPage() {
 
         {/* Expanded Expert Profile - Moved to Top */}
         <section ref={addToRefs} className="w-full flex flex-col items-center">
-          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} The Architects</h2>
+          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} The Collective</h2>
           
           {loadingExperts ? (
             <div className="w-full max-w-5xl flex flex-col items-center animate-pulse">
-              {/* Carousel Skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-12">
-                {Array(3).fill(null).map((_, i) => (
-                  <div key={i} className="flex flex-col p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] h-32 space-y-4">
-                    <div className="h-3 bg-[var(--bg-surface-2)] rounded w-1/3" />
-                    <div className="h-6 bg-[var(--bg-surface-2)] rounded w-2/3" />
-                    <div className="h-3 bg-[var(--bg-surface-2)] rounded w-1/2" />
-                  </div>
-                ))}
+              {/* Field selector skeleton — one slice per field, not per expert */}
+              <div className="w-full max-w-[520px] mb-12 flex flex-col items-center gap-4">
+                <div className="w-full aspect-[460/320] bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl" />
+                <div className="h-3 w-40 bg-[var(--bg-surface-2)] rounded" />
               </div>
               {/* Active Section Skeleton */}
               <div className="w-full flex flex-col md:flex-row gap-12 items-center md:items-start text-left bg-[var(--bg-surface)] border border-[var(--border)] rounded-[40px] p-10 md:p-16 shadow-2xl backdrop-blur-md">
@@ -543,7 +539,8 @@ export default function PlatterPage() {
 
           <div className="w-full max-w-3xl text-left">
             <p className="font-inter text-xs font-light text-[var(--text-muted)] mb-7">
-              Select a tier to explore scope and pricing
+              Select a tier to explore scope and pricing. Architecture engagements only —
+              sustainability and travel sessions are quoted per project.
             </p>
 
             <div className="grid grid-cols-3 border border-[var(--border-strong)] rounded-[10px] overflow-hidden bg-[var(--bg-surface-2)] mb-5">
@@ -558,7 +555,7 @@ export default function PlatterPage() {
                       isActive ? "bg-[var(--bg-base)]" : ""
                     }`}
                   >
-                    <span className="font-mono-sos text-[9px] font-medium tracking-[0.16em] uppercase text-[#b8965a] block mb-1">
+                    <span className="font-mono-sos text-[9px] font-medium tracking-[0.16em] uppercase text-[var(--color-orange)] block mb-1">
                       {tier.num}
                     </span>
                     <span className="font-editorial text-[21px] font-light text-[var(--text-primary)] block leading-[1.1] mb-1.5">
@@ -638,7 +635,7 @@ export default function PlatterPage() {
                 Available extensions
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full">
-                <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[#b8965a] cursor-default">
+                <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[var(--color-orange)] cursor-default">
                   <div>
                     <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
                       Advance Booking
@@ -647,11 +644,11 @@ export default function PlatterPage() {
                       Requested during initial scheduling
                     </p>
                   </div>
-                  <div className="font-mono-sos text-base font-semibold text-[#b8965a]">
+                  <div className="font-mono-sos text-base font-semibold text-[var(--color-orange)]">
                     +40%
                   </div>
                 </div>
-                <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[#b8965a] cursor-default">
+                <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[var(--color-orange)] cursor-default">
                   <div>
                     <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
                       On-Spot Extension
@@ -660,7 +657,7 @@ export default function PlatterPage() {
                       Active session (+30 min)
                     </p>
                   </div>
-                  <div className="font-mono-sos text-base font-semibold text-[#b8965a]">
+                  <div className="font-mono-sos text-base font-semibold text-[var(--color-orange)]">
                     +60%
                   </div>
                 </div>

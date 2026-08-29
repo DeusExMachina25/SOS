@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-export type FieldKey = "architecture" | "fashion" | "travel";
+export type FieldKey = "architecture" | "fashion" | "sustainability" | "travel";
 
 export interface PieExpert {
   id: string;
@@ -20,13 +20,14 @@ interface FieldPieProps {
 }
 
 const FIELDS: { key: FieldKey; name: string; cssVar: string; tagline: string; active: boolean }[] = [
-  { key: "architecture", name: "Architecture", cssVar: "--color-primary", tagline: "Space, structure, material", active: true },
-  { key: "fashion", name: "Fashion", cssVar: "--color-orange", tagline: "Brand, collection, direction", active: false },
-  { key: "travel", name: "Travel", cssVar: "--color-green", tagline: "Route, pacing, logistics", active: false },
+  { key: "architecture", name: "Architecture", cssVar: "--field-1", tagline: "Space, structure, material", active: true },
+  { key: "fashion", name: "Fashion", cssVar: "--field-2", tagline: "Brand, collection, direction", active: false },
+  { key: "sustainability", name: "Sustainability", cssVar: "--field-3", tagline: "Energy, waste, fabrication", active: true },
+  { key: "travel", name: "Travel", cssVar: "--field-4", tagline: "Route, pacing, logistics", active: true },
 ];
 
 /* Light-theme values, used for the server render before the real tokens resolve. */
-const FALLBACK_PALETTE = ["#30009C", "#FF5B2E", "#8B9E30"];
+const FALLBACK_PALETTE = ["#5F4B8B", "#130F1C", "#7A5C45", "#42375F"];
 
 const CX = 230;
 const CY = 138;
@@ -261,6 +262,43 @@ function Model({ field, ox, oy, base }: { field: FieldKey; ox: number; oy: numbe
     );
   }
 
+  if (field === "sustainability") {
+    /* a tilted solar array beside a digester tank, blades turning overhead */
+    const panel = facePath([
+      p3(ox - 16, oy + 7, 9),
+      p3(ox + 3, oy + 7, 22),
+      p3(ox + 3, oy - 5, 22),
+      p3(ox - 16, oy - 5, 9),
+    ]);
+    const legA = p3(ox - 13, oy + 1, 0);
+    const legB = p3(ox - 13, oy + 1, 10);
+    const legC = p3(ox + 1, oy + 1, 0);
+    const legD = p3(ox + 1, oy + 1, 21);
+    const hub = p3(ox + 19, oy - 6, 40);
+    const mastB = p3(ox + 19, oy - 6, 0);
+    return (
+      <>
+        <GroundShadow ox={ox} oy={oy + 3} r={27} op={0.2} />
+        <line x1={mastB[0]} y1={mastB[1]} x2={hub[0]} y2={hub[1]} stroke={shade(base, 1.15)} strokeWidth="1.6" strokeLinecap="round" />
+        <g className="fp-bob" style={{ animationDelay: "0.4s" }}>
+          {[0, 120, 240].map((deg) => {
+            const a = (deg * Math.PI) / 180;
+            const tipx = hub[0] + Math.cos(a) * 11;
+            const tipy = hub[1] + Math.sin(a) * 11;
+            return (
+              <line key={deg} x1={hub[0]} y1={hub[1]} x2={tipx} y2={tipy} stroke={shade(base, 1.45)} strokeWidth="1.6" strokeLinecap="round" />
+            );
+          })}
+        </g>
+        <circle cx={hub[0]} cy={hub[1]} r="2.2" fill={shade(base, 1.6)} />
+        <IsoCylinder ox={ox - 22} oy={oy + 9} r={8} h={14} base={base} bands />
+        <line x1={legA[0]} y1={legA[1]} x2={legB[0]} y2={legB[1]} stroke={shade(base, 0.7)} strokeWidth="1.4" />
+        <line x1={legC[0]} y1={legC[1]} x2={legD[0]} y2={legD[1]} stroke={shade(base, 0.7)} strokeWidth="1.4" />
+        <path className="fp-glint" d={panel} fill={shade(base, 1.3)} stroke={shade(base, 0.55)} strokeWidth="0.8" />
+      </>
+    );
+  }
+
   /* travel — a paper dart riding above a marker post */
   const anchor = p3(ox + 2, oy, 50);
   const at = (p: [number, number]) => [anchor[0] + p[0], anchor[1] + p[1]] as [number, number];
@@ -294,7 +332,7 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
   useEffect(() => {
     const read = () => {
       const cs = getComputedStyle(document.documentElement);
-      setPalette(FIELDS.map((f) => cs.getPropertyValue(f.cssVar).trim() || "#888888"));
+      setPalette(FIELDS.map((f) => cs.getPropertyValue(f.cssVar).trim() || "#5F4B8B"));
     };
     read();
     const mo = new MutationObserver(read);
@@ -475,8 +513,12 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
             </p>
           ) : (
             <div
-              className="grid gap-4 justify-center"
-              style={{ gridTemplateColumns: `repeat(${Math.min(openExperts.length, 3)}, minmax(0, 1fr))` }}
+              className="grid gap-4 justify-center mx-auto"
+              style={{
+                gridTemplateColumns: `repeat(${Math.min(openExperts.length, 3)}, minmax(0, 1fr))`,
+                /* a lone card shouldn't stretch the full row */
+                maxWidth: openExperts.length === 1 ? 340 : undefined
+              }}
             >
               {openExperts.map((e, k) => {
                 const accent = `var(${FIELDS[openField].cssVar})`;
@@ -495,7 +537,7 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
                       animationDelay: `${(k * 0.11).toFixed(2)}s`,
                     }}
                   >
-                    <span className="absolute inset-0 bg-gradient-to-t from-[rgba(6,4,14,0.92)] via-[rgba(6,4,14,0.5)] to-[rgba(6,4,14,0.05)]" />
+                    <span className="absolute inset-0 bg-gradient-to-t from-[rgba(19,15,28,0.94)] via-[rgba(19,15,28,0.55)] to-[rgba(19,15,28,0.05)]" />
                     <span className="absolute left-0 right-0 bottom-0 p-6 pr-16 block">
                       <span className="block font-mono-sos text-[10px] mb-2" style={{ color: accent }}>
                         {e.expert_role}
@@ -510,7 +552,7 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
                         rel="noopener noreferrer"
                         onClick={(ev) => ev.stopPropagation()}
                         aria-label={`Visit ${e.full_name}'s site`}
-                        className="absolute right-5 bottom-5 w-10 h-10 rounded-full border border-white/40 bg-white/10 text-white flex items-center justify-center hover:bg-white hover:text-[#14101f] transition-colors"
+                        className="absolute right-5 bottom-5 w-10 h-10 rounded-full border border-white/40 bg-white/10 text-white flex items-center justify-center hover:bg-white hover:text-[#130F1C] transition-colors"
                       >
                         ↗
                       </a>
