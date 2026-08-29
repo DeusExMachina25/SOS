@@ -253,7 +253,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative bg-[var(--bg-base)] overflow-hidden">
       {/* Background Cinematic Lighting */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-[#2A0089]/5 rounded-full blur-[200px] pointer-events-none z-0"></div>
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-[#5F4B8B]/10 rounded-full blur-[200px] pointer-events-none z-0"></div>
 
       <div className="w-full max-w-[500px] relative z-10 my-24 md:my-32">
         

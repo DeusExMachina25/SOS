@@ -178,7 +178,7 @@ export default function InteractiveNineDot() {
       </div>
 
       {/* SVG Canvas */}
-      <div className="relative w-full aspect-square bg-[#0b0818]/60 border border-[var(--border)] rounded-2xl overflow-hidden cursor-crosshair group">
+      <div className="relative w-full aspect-square bg-[var(--bg-base)]/60 border border-[var(--border)] rounded-2xl overflow-hidden cursor-crosshair group">
         <svg 
           viewBox="0 0 400 400" 
           className="w-full h-full"
