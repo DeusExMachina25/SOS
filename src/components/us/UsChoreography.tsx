@@ -33,8 +33,8 @@ const MANIFESTO_PILLARS = [
   },
   {
     short: "Security.",
-    title: "Secure collaboration.",
-    description: "Your intellectual property is sacred. Our secure vaults and end-to-end encrypted sessions ensure your ideas stay unequivocally yours."
+    title: "Your drawings stay yours.",
+    description: "Plans, elevations, site surveys, and the half-formed sketches in between. Everything you share sits in an encrypted vault, and nothing leaves the session without you."
   },
   {
     short: "Standard.",
@@ -52,18 +52,18 @@ const EDITORIAL_POSTS = [
       "Asking someone to poke holes in your work is not an admission that it's broken. It's how you find out which parts actually hold."
   },
   {
-    title: "Finding True North in Chaotic Markets",
+    title: "Reading a Site Before You Draw on It",
     date: "May 15, 2026",
-    category: "Growth",
+    category: "Site",
     excerpt:
-      "Every competitor is shouting a different direction. Here's how we help founders tune that out and pick a heading they can defend."
+      "Contours, drainage, and where the light actually falls in December. The plot tells you what it wants long before the first sketch does."
   },
   {
-    title: "Why Minimalist Architecture Scales Better",
+    title: "The Rooms People Actually Use",
     date: "April 30, 2026",
-    category: "Tech",
+    category: "Interiors",
     excerpt:
-      "The systems that survive their own success are rarely the clever ones. They're the ones with fewer moving parts to begin with."
+      "Every plan has a room that looks generous on paper and sits empty for a decade. Here's how to catch it while it's still a line."
   }
 ];
 
@@ -301,7 +301,7 @@ export default function UsChoreography() {
       {/* 2. The Genesis: Cleaned Up ZigZag Layout */}
       <section ref={genesisSectionRef} className="w-full px-6 py-32 md:py-48 relative border-t border-[var(--border)] z-10 mt-16">
         
-        <div className="container mx-auto max-w-7xl relative z-10 translate-x-[5vh]">
+        <div className="container mx-auto max-w-7xl relative z-10">
           
           <div className="flex flex-col items-center justify-center text-center mb-24 md:mb-32">
             <h2 className="font-display text-4xl md:text-6xl font-normal text-[var(--text-primary)] mb-6 tracking-tight">The Genesis.</h2>

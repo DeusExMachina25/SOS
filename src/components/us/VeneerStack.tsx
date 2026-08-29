@@ -73,7 +73,9 @@ export default function VeneerStack() {
   }, []);
 
   return (
-    <div ref={rootRef} className="w-full py-24 md:py-40">
+    /* Padding must exceed the largest OFFSET (96px) so the exploded veneer
+       and base slab never collide with the beats above and below. */
+    <div ref={rootRef} className="w-full py-32 md:py-44">
       <div className="mx-auto w-full max-w-3xl flex flex-col">
         {PLIES.map((ply, i) => {
           const isVeneer = ply.kind === "veneer";
