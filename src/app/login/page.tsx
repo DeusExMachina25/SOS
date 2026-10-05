@@ -40,6 +40,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  /**
+   * Dev-only login shortcuts. Every bypass below is gated on this — without it
+   * the fixed test credentials work in production and hand out expert sessions.
+   *
+   * The shortcuts sign in for real, as the seeded accounts from
+   * scripts/seed-dev-users.mjs (client@sos.com / expert@sos.com, password
+   * "password") — not a fake cookie. proxy.ts checks Postgres via the real
+   * Supabase session, so a fake cookie never actually got past it; this was a
+   * dead bypass that appeared to work (redirected) but always bounced back to
+   * /login. If Supabase isn't configured at all, there's nothing to sign into,
+   * so that one case still falls back to the fake cookie for local UI-only
+   * testing.
+   */
+  const isDev = process.env.NODE_ENV === "development";
+  const DEV_EMAIL = { client: "client@sos.com", expert: "expert@sos.com" };
+  const DEV_PASSWORD = "password";
+
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
     const cleanedVal = val.trim();
@@ -71,7 +89,7 @@ export default function LoginPage() {
     if (inputType === "email") {
       // Magic Link Flow
       try {
-        if (cleanedInput.toLowerCase() === "test@sos.com" || !supabase) {
+        if (isDev && (cleanedInput.toLowerCase() === "test@sos.com" || !supabase)) {
           // Dev bypass
           setTimeout(() => {
             setMagicLinkSent(true);
@@ -79,6 +97,7 @@ export default function LoginPage() {
           }, 1200);
           return;
         }
+        if (!supabase) throw new Error("Auth is not configured.");
 
         const { error } = await supabase.auth.signInWithOtp({
           email: cleanedInput,
@@ -107,7 +126,7 @@ export default function LoginPage() {
       }
 
       try {
-        if (phoneNum === "0000000000" || !supabase) {
+        if (isDev && (phoneNum === "0000000000" || !supabase)) {
           // Dev bypass
           setTimeout(() => {
             setOtpSent(true);
@@ -115,6 +134,7 @@ export default function LoginPage() {
           }, 1200);
           return;
         }
+        if (!supabase) throw new Error("Auth is not configured.");
 
         const { error } = await supabase.auth.signInWithOtp({
           phone: `+91${phoneNum}`,
@@ -146,14 +166,27 @@ export default function LoginPage() {
       phoneNum = phoneNum.slice(2);
     }
 
+    const isDevShortcut = isDev && phoneNum === "0000000000" && otp === "123456";
+
     try {
-      // Temporary Dev Bypass
-      if ((phoneNum === "0000000000" && otp === "123456") || !supabase) {
+      if (isDevShortcut && !supabase) {
+        // Nothing to sign into — fall back to the fake cookie so the UI is
+        // still walkable when Supabase env vars are absent entirely.
         setTimeout(() => {
-          // Set Trusted Device Cookie (30 days)
           document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
           router.push("/dashboard/client");
         }, 1000);
+        return;
+      }
+      if (!supabase) throw new Error("Auth is not configured.");
+
+      if (isDevShortcut) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: DEV_EMAIL.client,
+          password: DEV_PASSWORD,
+        });
+        if (error) throw new Error(`${error.message} — run scripts/seed-dev-users.mjs`);
+        router.push("/dashboard/client");
         return;
       }
 
@@ -192,10 +225,27 @@ export default function LoginPage() {
     }
   };
 
-  // Set Trusted Device Cookie on Magic Link mock success
-  const handleSimulatedMagicLinkVerify = () => {
-    document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-    router.push("/dashboard/client");
+  // Dev-only: simulates clicking the magic link, by actually signing in as
+  // the seeded dev client. Gated on isDev at both the handler and the button
+  // that calls it — this must never be reachable in production, since it
+  // would let any visitor sign in as the seeded test account for real.
+  const handleSimulatedMagicLinkVerify = async () => {
+    if (!isDev) return;
+    if (!supabase) {
+      document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
+      router.push("/dashboard/client");
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: DEV_EMAIL.client,
+        password: DEV_PASSWORD,
+      });
+      if (error) throw new Error(`${error.message} — run scripts/seed-dev-users.mjs`);
+      router.push("/dashboard/client");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Dev sign-in failed");
+    }
   };
 
   const handleExpertLogin = async (e: React.FormEvent) => {
@@ -211,21 +261,28 @@ export default function LoginPage() {
     }
     setLoading(true);
 
+    const isDevShortcut = isDev && email === "test@sos.com" && password === "password";
+
     try {
-      // Temporary Dev Bypass
-      if ((email === "test@sos.com" && password === "password") || !supabase) {
+      if (isDevShortcut && !supabase) {
+        // Nothing to sign into — fall back to the fake cookie so the UI is
+        // still walkable when Supabase env vars are absent entirely.
         setTimeout(() => {
           document.cookie = `trusted_device_token=dev-token-expert; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
           router.push("/dashboard/expert");
         }, 1000);
         return;
       }
+      if (!supabase) throw new Error("Auth is not configured.");
+
+      const signInEmail = isDevShortcut ? DEV_EMAIL.expert : email;
+      const signInPassword = isDevShortcut ? DEV_PASSWORD : password;
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: signInEmail,
+        password: signInPassword,
       });
-      if (error) throw error;
+      if (error) throw new Error(isDevShortcut ? `${error.message} — run scripts/seed-dev-users.mjs` : error.message);
       
       if (data?.user) {
         const { data: profile, error: profileErr } = await supabase
@@ -414,16 +471,18 @@ export default function LoginPage() {
                   We sent a secure magic link to <strong className="text-[var(--text-primary)]">{clientInput}</strong>. Open it on this device or your PC to enter the dashboard.
                 </p>
 
-                {/* Simulated Bypass verification button for testing convenience */}
-                <div className="pt-4">
-                  <button 
-                    type="button"
-                    onClick={handleSimulatedMagicLinkVerify}
-                    className="w-full bg-white/[0.04] hover:bg-white/[0.08] border border-[var(--border-strong)] text-[var(--text-primary)] font-mono-sos font-bold tracking-[0.25em] uppercase text-[10px] py-5 rounded-none transition-all"
-                  >
-                    💡 Verify Simulated Link
-                  </button>
-                </div>
+                {/* Dev-only shortcut — never rendered in production */}
+                {isDev && (
+                  <div className="pt-4">
+                    <button
+                      type="button"
+                      onClick={handleSimulatedMagicLinkVerify}
+                      className="w-full bg-white/[0.04] hover:bg-white/[0.08] border border-[var(--border-strong)] text-[var(--text-primary)] font-mono-sos font-bold tracking-[0.25em] uppercase text-[10px] py-5 rounded-none transition-all"
+                    >
+                      💡 Verify Simulated Link (dev)
+                    </button>
+                  </div>
+                )}
 
                 <button 
                   type="button" 

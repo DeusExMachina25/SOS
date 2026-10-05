@@ -1,9 +1,9 @@
 -- Contact inquiries submitted from the public marketing pages.
 --
--- Deliberately NOT placed in supabase/migrations/ with a 0001_ prefix: the
--- feature/marketplace-backend branch already owns 0001–0010 there, and adding a
--- competing 0001 on main would collide when those branches are reconciled.
--- Run this standalone in the Supabase SQL editor. It is idempotent.
+-- Numbered into the migration sequence after the marketplace-backend merge.
+-- (It was previously standalone to avoid colliding with 0001–0010.)
+
+-- Idempotent; safe to re-run.
 
 create table if not exists public.inquiries (
     id         uuid primary key default gen_random_uuid(),
