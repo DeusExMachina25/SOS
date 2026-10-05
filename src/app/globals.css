@@ -334,7 +334,7 @@ body::before {
 }
 .nav-link {
   font-family: 'Inter', sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -342,12 +342,13 @@ body::before {
   text-decoration: none;
   transition: color 0.3s;
   position: relative;
-  padding: 4px 0;
+  /* 12px of vertical padding gives a ~40px tap target; the underline sits at its visual baseline */
+  padding: 12px 0;
 }
 .nav-link::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 0;
+  bottom: 8px; left: 0;
   width: 0%;
   height: 1px;
   background: var(--text-primary);
@@ -396,6 +397,14 @@ body::before {
 }
 .btn-sos:hover::before {
   left: 100%;
+}
+/* Primary call to action: bigger target and type than the standard pill. */
+.btn-sos-lg {
+  min-height: 56px;
+  padding: 1.1rem 2.75rem;
+  font-size: 13px;
+  letter-spacing: 3px;
+  font-weight: 600;
 }
 .btn-sos-filled {
   background: var(--text-primary);
@@ -883,4 +892,12 @@ body::before {
     animation: none;
   }
   .fp-card { animation: none; opacity: 1; transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   INTRO PRELOADER — never shown again within a session
+════════════════════════════════════════════════════════*/
+html.sos-seen .sos-preloader { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .sos-preloader { display: none !important; }
 }

@@ -15,10 +15,10 @@ vi.mock('next/navigation', () => ({
 // Mock framer-motion to prevent JSDOM animation issues in tests
 vi.mock('framer-motion', () => ({
   motion: {
-    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    span: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => <span {...props}>{children}</span>,
+    div: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => <div {...props}>{children}</div>,
   },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
+  AnimatePresence: ({ children }: React.PropsWithChildren<Record<string, unknown>>) => <>{children}</>,
 }));
 
 // Mock Supabase client

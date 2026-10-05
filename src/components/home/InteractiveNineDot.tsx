@@ -145,6 +145,7 @@ export default function InteractiveNineDot() {
   useEffect(() => {
     if (connectedDots.size === 9) {
       if (lineCount <= 4) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from drawn lines
         setSolved(true);
         setErrorMsg(null);
       } else {

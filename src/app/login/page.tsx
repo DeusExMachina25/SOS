@@ -4,13 +4,32 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
 import { motion } from "framer-motion";
-import { 
-  Mail, 
-  Smartphone, 
-  ArrowLeft, 
-  Loader2,
-  Lock
-} from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+
+/** Turns raw auth/network errors into something a person can act on. */
+function friendlyAuthError(err: unknown, fallback: string): string {
+  const msg = err instanceof Error ? err.message : "";
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg))
+    return "We can't reach the server. Check your connection and try again.";
+  if (/rate limit|too many|for security purposes/i.test(msg))
+    return "Too many attempts. Please wait a minute and try again.";
+  if (/invalid login credentials/i.test(msg)) return "That email and password don't match.";
+  if (/expired|otp.*invalid|invalid.*otp|token.*invalid/i.test(msg))
+    return "That code is wrong or has expired. Request a new one.";
+  return msg || fallback;
+}
+
+/** Where to go after signing in: the page the route guard bounced them from, if it belongs to their dashboard. */
+function postLoginPath(role: "client" | "expert"): string {
+  const base = `/dashboard/${role}`;
+  try {
+    const from = new URLSearchParams(window.location.search).get("redirectedFrom");
+    if (from && (from === base || from.startsWith(base + "/"))) return from;
+  } catch {
+    /* ignore */
+  }
+  return base;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -102,13 +121,13 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithOtp({
           email: cleanedInput,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard/client`,
+            emailRedirectTo: `${window.location.origin}${postLoginPath("client")}`,
           }
         });
         if (error) throw error;
         setMagicLinkSent(true);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to send magic link");
+        setError(friendlyAuthError(err, "Failed to send magic link"));
       } finally {
         setLoading(false);
       }
@@ -142,7 +161,7 @@ export default function LoginPage() {
         if (error) throw error;
         setOtpSent(true);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to send OTP");
+        setError(friendlyAuthError(err, "Failed to send OTP"));
       } finally {
         setLoading(false);
       }
@@ -174,7 +193,7 @@ export default function LoginPage() {
         // still walkable when Supabase env vars are absent entirely.
         setTimeout(() => {
           document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-          router.push("/dashboard/client");
+          router.push(postLoginPath("client"));
         }, 1000);
         return;
       }
@@ -186,7 +205,7 @@ export default function LoginPage() {
           password: DEV_PASSWORD,
         });
         if (error) throw new Error(`${error.message} — run scripts/seed-dev-users.mjs`);
-        router.push("/dashboard/client");
+        router.push(postLoginPath("client"));
         return;
       }
 
@@ -216,10 +235,9 @@ export default function LoginPage() {
         }
       }
       
-      document.cookie = `trusted_device_token=client-token-${Date.now()}; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-      router.push("/dashboard/client");
+      router.push(postLoginPath("client"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid OTP");
+      setError(friendlyAuthError(err, "Invalid OTP"));
     } finally {
       setLoading(false);
     }
@@ -233,7 +251,7 @@ export default function LoginPage() {
     if (!isDev) return;
     if (!supabase) {
       document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-      router.push("/dashboard/client");
+      router.push(postLoginPath("client"));
       return;
     }
     try {
@@ -242,9 +260,9 @@ export default function LoginPage() {
         password: DEV_PASSWORD,
       });
       if (error) throw new Error(`${error.message} — run scripts/seed-dev-users.mjs`);
-      router.push("/dashboard/client");
+      router.push(postLoginPath("client"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Dev sign-in failed");
+      setError(friendlyAuthError(err, "Dev sign-in failed"));
     }
   };
 
@@ -269,7 +287,7 @@ export default function LoginPage() {
         // still walkable when Supabase env vars are absent entirely.
         setTimeout(() => {
           document.cookie = `trusted_device_token=dev-token-expert; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-          router.push("/dashboard/expert");
+          router.push(postLoginPath("expert"));
         }, 1000);
         return;
       }
@@ -298,10 +316,9 @@ export default function LoginPage() {
         }
       }
       
-      document.cookie = `trusted_device_token=expert-token-${Date.now()}; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-      router.push("/dashboard/expert");
+      router.push(postLoginPath("expert"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid credentials");
+      setError(friendlyAuthError(err, "Invalid credentials"));
     } finally {
       setLoading(false);
     }
@@ -392,6 +409,7 @@ export default function LoginPage() {
                       onChange={handlePhoneChange}
                       maxLength={inputType === "phone" ? 10 : undefined}
                       className="flex-1 bg-transparent outline-none font-inter text-lg font-light tracking-wide text-[var(--text-primary)] placeholder-[var(--text-faint)]"
+                      aria-label="Phone number or email"
                       placeholder="phone number or email"
                     />
                   </div>
@@ -506,7 +524,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(""); }}
                   className="w-full bg-transparent border-b border-[var(--border)] group-focus-within:border-[var(--text-primary)] transition-colors pb-6 outline-none font-inter text-lg font-light tracking-wide text-[var(--text-primary)] placeholder-[var(--text-faint)]"
-                  placeholder="expert@sos.com"
+                  placeholder="you@example.com"
                 />
               </div>
               <div className="relative group">
