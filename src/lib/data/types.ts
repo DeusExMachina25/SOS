@@ -116,7 +116,7 @@ export interface BusyRange {
   endsAt: string;
 }
 
-export type PaymentMethod = "razorpay_mock" | "upi_direct";
+export type PaymentMethod = "razorpay" | "razorpay_mock" | "upi_direct";
 export type PaymentTxnStatus = "created" | "processing" | "paid" | "failed" | "refunded";
 
 export interface Payment {

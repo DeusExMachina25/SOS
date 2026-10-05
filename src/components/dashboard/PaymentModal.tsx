@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, CreditCard, Smartphone, Copy, Check, Loader2 } from "lucide-react";
-import { payMockRazorpay, markUpiPaymentSent } from "@/lib/data/queries";
+import { payWithRazorpay, payMockRazorpay, markUpiPaymentSent, getPaymentForSession } from "@/lib/data/queries";
 import { formatInr } from "@/lib/data/format";
 import type { Payment } from "@/lib/data/types";
 
@@ -33,6 +33,25 @@ export default function PaymentModal({
   const [loading, setLoading] = useState<"razorpay" | "upi" | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+
+  const isProd = process.env.NODE_ENV === "production";
+
+  const handleRazorpay = async () => {
+    setError("");
+    setLoading("razorpay");
+    try {
+      const paid = await payWithRazorpay(sessionId);
+      if (paid) {
+        const payment = await getPaymentForSession(sessionId);
+        if (payment) onPaid?.(payment);
+        onClose();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Payment failed");
+    } finally {
+      setLoading(null);
+    }
+  };
 
   const handleMockRazorpay = async () => {
     setError("");
@@ -145,24 +164,32 @@ export default function PaymentModal({
                   )}
                 </div>
 
-                {/* Razorpay — mocked demo */}
-                <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl opacity-90">
+                {/* Razorpay — card / UPI / netbanking checkout */}
+                <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl">
                   <div className="flex items-center gap-3 mb-2">
                     <CreditCard size={20} className="text-[var(--color-primary)]" />
-                    <h3 className="font-bold text-[var(--text-primary)]">Pay via Razorpay</h3>
-                    <span className="text-[9px] uppercase tracking-widest font-bold text-[var(--color-orange)] bg-[var(--color-orange)]/10 px-2 py-1 rounded-full border border-[var(--color-orange)]/20">Demo</span>
+                    <h3 className="font-bold text-[var(--text-primary)]">Pay online</h3>
                   </div>
                   <p className="text-xs text-[var(--text-muted)] mb-4">
-                    Escrow checkout — currently simulated while Route approval is pending. No real charge will occur.
+                    Cards, UPI and netbanking via Razorpay. Your payment is held securely and released to your expert around the session.
                   </p>
                   <button
-                    onClick={handleMockRazorpay}
+                    onClick={handleRazorpay}
                     disabled={loading !== null}
-                    className="w-full py-3 rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-strong)] text-[var(--text-primary)] text-sm font-bold hover:border-[var(--color-primary)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/40 text-[var(--text-primary)] text-sm font-bold hover:bg-[var(--color-primary)]/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {loading === "razorpay" ? <Loader2 size={16} className="animate-spin" /> : null}
-                    Simulate Razorpay Payment
+                    Pay {formatInr(amountInr)}
                   </button>
+                  {!isProd && (
+                    <button
+                      onClick={handleMockRazorpay}
+                      disabled={loading !== null}
+                      className="mt-3 w-full py-2 rounded-xl border border-dashed border-[var(--border-strong)] text-[var(--text-faint)] text-xs font-mono-sos uppercase tracking-widest hover:text-[var(--text-primary)] transition-all disabled:opacity-50"
+                    >
+                      Dev only: simulate payment
+                    </button>
+                  )}
                 </div>
               </div>
             </>

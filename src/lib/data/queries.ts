@@ -382,6 +382,68 @@ export async function payMockRazorpay(sessionId: string): Promise<Payment> {
   return mapPayment(body.payment as PaymentRow);
 }
 
+declare global {
+  interface Window {
+    Razorpay?: new (opts: Record<string, unknown>) => { open(): void; on(e: string, cb: () => void): void };
+  }
+}
+
+function loadRazorpayScript(): Promise<void> {
+  if (typeof window === "undefined") return Promise.reject(new Error("No window"));
+  if (window.Razorpay) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Could not load the payment window"));
+    document.body.appendChild(s);
+  });
+}
+
+/**
+ * Real Razorpay Checkout. The server creates the order at the session's own
+ * price and verifies the signature; the browser never decides what was paid.
+ * Resolves true when paid, false if the user dismissed the window.
+ */
+export async function payWithRazorpay(
+  sessionId: string,
+  prefill: { name?: string; email?: string | null } = {}
+): Promise<boolean> {
+  const orderRes = await fetch("/api/payments/razorpay/order", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId }),
+  });
+  const order = await orderRes.json();
+  if (!orderRes.ok) throw new Error(order.error ?? "Could not start payment");
+  await loadRazorpayScript();
+
+  return new Promise<boolean>((resolve, reject) => {
+    const rzp = new window.Razorpay!({
+      key: order.keyId,
+      order_id: order.orderId,
+      amount: order.amount,
+      currency: order.currency,
+      name: "SOS",
+      description: "Expert consultation",
+      prefill: { name: prefill.name, email: prefill.email ?? order.email ?? undefined },
+      theme: { color: "#7B4DFF" },
+      modal: { ondismiss: () => resolve(false) },
+      handler: async (r: Record<string, string>) => {
+        const res = await fetch("/api/payments/razorpay/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, ...r }),
+        });
+        if (res.ok) resolve(true);
+        else reject(new Error((await res.json()).error ?? "Payment could not be verified"));
+      },
+    });
+    rzp.on("payment.failed", () => reject(new Error("Payment failed. Please try again.")));
+    rzp.open();
+  });
+}
+
 /** Client records that they sent payment directly to the expert's UPI ID. */
 export async function markUpiPaymentSent(
   sessionId: string,
@@ -417,11 +479,7 @@ export async function confirmUpiPaymentReceived(sessionId: string): Promise<void
     .eq("method", "upi_direct");
   if (paymentError) throw new Error(`Failed to confirm payment: ${paymentError.message}`);
 
-  const { error: sessionError } = await sb
-    .from("sessions")
-    .update({ payment_status: "released" })
-    .eq("id", sessionId);
-  if (sessionError) throw new Error(`Failed to update session: ${sessionError.message}`);
+  // sessions.payment_status is derived from the payment by a DB trigger.
 }
 
 /** Sets the signed-in expert's UPI payout ID, shown to clients at checkout. */

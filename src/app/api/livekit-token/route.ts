@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   // expert_id, so a non-participant simply gets no row back (not a leak).
   const { data: session, error: sessionError } = await supabase
     .from("sessions")
-    .select("id, title, client_id, expert_id")
+    .select("id, title, client_id, expert_id, status, starts_at, ends_at, payment_status")
     .eq("id", sessionId)
     .single();
 
@@ -47,6 +47,29 @@ export async function GET(request: NextRequest) {
       { error: "Session not found or you are not a participant" },
       { status: 404 }
     );
+  }
+
+  if (session.status === "cancelled") {
+    return NextResponse.json({ error: "This session was cancelled" }, { status: 409 });
+  }
+  if (session.payment_status === "unpaid") {
+    return NextResponse.json(
+      { error: "This session has not been paid for yet" },
+      { status: 402 }
+    );
+  }
+  // Doors open 15 minutes before the start and close 60 minutes after the end.
+  const now = Date.now();
+  const opens = session.starts_at ? new Date(session.starts_at).getTime() - 15 * 60_000 : 0;
+  const closes = session.ends_at ? new Date(session.ends_at).getTime() + 60 * 60_000 : Infinity;
+  if (now < opens) {
+    return NextResponse.json(
+      { error: "The room opens 15 minutes before the session starts" },
+      { status: 425 }
+    );
+  }
+  if (now > closes) {
+    return NextResponse.json({ error: "This session has ended" }, { status: 410 });
   }
 
   const { data: profile } = await supabase
@@ -60,7 +83,11 @@ export async function GET(request: NextRequest) {
   const roomName = `SOS-Session-${sessionId.replace(/-/g, "")}`;
 
   if (!apiKey || !apiSecret) {
-    console.warn("LiveKit API credentials missing. Returning mock room token.");
+    if (process.env.NODE_ENV === "production") {
+      console.error("LiveKit API credentials are not configured.");
+      return NextResponse.json({ error: "Video is not available right now" }, { status: 503 });
+    }
+    console.warn("LiveKit API credentials missing. Returning mock room token (dev only).");
     return NextResponse.json({
       token: `mock_token_${Date.now()}`,
       room: roomName,

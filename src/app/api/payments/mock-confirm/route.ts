@@ -23,6 +23,11 @@ export const dynamic = "force-dynamic";
  * modeling the real system, where only our backend ever triggers a transfer.
  */
 export async function POST(request: NextRequest) {
+  // Never available in production: it would let a client mark a session paid
+  // without paying. Real payments go through /api/payments/razorpay/*.
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   const { sessionId } = await request.json();
   if (!sessionId) {
     return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
