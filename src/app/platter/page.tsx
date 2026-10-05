@@ -8,6 +8,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ParallaxBoxes from "@/components/ParallaxBoxes";
 import FieldPie, { type FieldKey } from "@/components/platter/FieldPie";
 import { supabase } from "@/utils/supabase/client";
+import { submitInquiry } from "@/lib/inquiries";
+import { formatInr } from "@/lib/data/format";
 
 const ANGLE_FONTS = [
   "font-futuristic",
@@ -33,6 +35,10 @@ interface ExpertProfile {
   role: string;
   expert_role?: string;
   bio?: string;
+  /** Portrait from `public_experts.avatar_url`; a monogram is shown when absent. */
+  avatar_url?: string | null;
+  /** Flat price of a 60-minute session, in rupees, from public_experts. */
+  session_rate_inr?: number | null;
   tags?: string[];
   disciplines?: { id: string; title: string; desc: string }[];
   /* Which pie segment this expert sits under. No column for this exists in
@@ -41,10 +47,8 @@ interface ExpertProfile {
 }
 
 /**
- * One expert per division. The three pricing tiers describe architecture
- * engagements only, so they sit with Shravani's field; the other divisions
- * quote per project. Fashion is the one field still unstaffed and shows in
- * the field-pie as inactive.
+ * One expert per division. Prices are not stored here: they come from each
+ * expert's `session_rate_inr` in the database.
  */
 const DEFAULT_EXPERTS: ExpertProfile[] = [
   {
@@ -97,50 +101,21 @@ const DEFAULT_EXPERTS: ExpertProfile[] = [
   }
 ];
 
-const PRICING_TIERS = {
-  apt: {
-    num: "Tier 01",
-    name: "Apartment",
-    priceText: "₹ 2,499 / base",
-    price: "₹ 2,499",
-    scope: "\u00a0",
-    desc: "Focused spatial strategy for compact living — optimising flow, material selection, and interior logic within constrained footprints.",
-    feats: ["Spatial optimisation", "Interior flow strategy", "Material selection"],
-    color: "#FFDAB9",
-    gradient: "linear-gradient(145deg, #2B232C 0%, #3D3438 45%, #211B25 100%)",
-    lineGradient: "linear-gradient(90deg, transparent 5%, #FFDAB9 50%, transparent 95%)",
-    tagClass: "text-[#FFDAB9] bg-[rgba(255,218,185,0.15)]",
-    inkClass: "bg-[#FFDAB9]"
-  },
-  vil: {
-    num: "Tier 02",
-    name: "Villa",
-    priceText: "₹ 4,999 / base",
-    price: "₹ 4,999",
-    scope: "\u00a0",
-    desc: "End-to-end architectural development — blueprints, landscape integration, and structural elegance for independent residential builds.",
-    feats: ["Architectural blueprint", "Landscape integration", "Structural elegance"],
-    color: "#8F81AE",
-    gradient: "linear-gradient(145deg, #221D2E 0%, #312A3F 45%, #1D1828 100%)",
-    lineGradient: "linear-gradient(90deg, transparent 5%, #8F81AE 50%, transparent 95%)",
-    tagClass: "text-[#8F81AE] bg-[rgba(143,129,174,0.15)]",
-    inkClass: "bg-[#8F81AE]"
-  },
-  sit: {
-    num: "Tier 03",
-    name: "Site Plan",
-    priceText: "₹ 7,999 / base",
-    price: "₹ 7,999",
-    scope: "Up to 1 acre",
-    desc: "Master planning and zoning compliance for large-scale plots — topographical analysis and full site utilisation strategy.",
-    feats: ["Master planning", "Topographical layout", "Zoning compliance"],
-    color: "#E8A88C",
-    gradient: "linear-gradient(145deg, #281E27 0%, #392B30 45%, #201823 100%)",
-    lineGradient: "linear-gradient(90deg, transparent 5%, #E8A88C 50%, transparent 95%)",
-    tagClass: "text-[#E8A88C] bg-[rgba(232,168,140,0.15)]",
-    inkClass: "bg-[#E8A88C]"
-  }
-};
+/**
+ * Portraits for experts, keyed by lower-case full name. Drop the image into
+ * `public/experts/` (portrait crop, about 1200 x 1500, JPG or WebP) and add a
+ * line here, e.g.  "shravani reddy": "/experts/shravani-reddy.jpg".
+ * A photo set on the expert in the database (`avatar_url`) always wins; with
+ * neither, the page shows a monogram.
+ */
+const EXPERT_PHOTOS: Record<string, string> = {};
+
+function withPhotos(list: ExpertProfile[]): ExpertProfile[] {
+  return list.map((e) => ({
+    ...e,
+    avatar_url: e.avatar_url || EXPERT_PHOTOS[e.full_name.trim().toLowerCase()] || null,
+  }));
+}
 
 export default function PlatterPage() {
   const router = useRouter();
@@ -155,9 +130,8 @@ export default function PlatterPage() {
   const [letterStyles, setLetterStyles] = useState<{font: string, color: string}[]>(
     Array(5).fill({ font: ANGLE_FONTS[0], color: ANGLE_COLORS[0] })
   );
-  // UI States for Pricing (collapsible per-expert accordions)
+  // UI state for the collapsible per-expert accordions
   const [openSections, setOpenSections] = useState<{ [expertId: string]: { disciplines: boolean; terms: boolean } }>({});
-  const [activeTier, setActiveTier] = useState<"apt" | "vil" | "sit">("apt");
 
   // Contact form
   const [inquiryState, setInquiryState] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -166,29 +140,14 @@ export default function PlatterPage() {
   const handleInquiry = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
-    const data = new FormData(form);
 
     setInquiryState("sending");
     setInquiryError("");
 
-    if (!supabase) {
+    const result = await submitInquiry(new FormData(form), "platter");
+    if (!result.ok) {
       setInquiryState("error");
-      setInquiryError("We can't reach the server right now. Email us at hello@sos.com instead.");
-      return;
-    }
-
-    const { error } = await supabase.from("inquiries").insert({
-      full_name: String(data.get("full_name") ?? "").trim(),
-      email: String(data.get("email") ?? "").trim(),
-      subject: String(data.get("subject") ?? "").trim() || null,
-      message: String(data.get("message") ?? "").trim(),
-      source: "platter",
-    });
-
-    if (error) {
-      console.error("Inquiry submission failed", error);
-      setInquiryState("error");
-      setInquiryError("That didn't send. Try again, or email us at hello@sos.com.");
+      setInquiryError(result.error);
       return;
     }
 
@@ -240,7 +199,7 @@ export default function PlatterPage() {
   useEffect(() => {
     async function loadExperts() {
       if (!supabase) {
-        setExperts(DEFAULT_EXPERTS);
+        setExperts(withPhotos(DEFAULT_EXPERTS));
         setSelectedExpertId(DEFAULT_EXPERTS[0].id);
         setLoadingExperts(false);
         return;
@@ -252,26 +211,39 @@ export default function PlatterPage() {
         // browser.
         const { data, error } = await supabase
           .from("public_experts")
-          .select("id, full_name");
+          .select("id, full_name, professional_title, bio, avatar_url, specialties, session_rate_inr");
         if (error) throw error;
         if (data && data.length > 0) {
-          const merged = data.map((p, idx) => {
-            const defaultExp = DEFAULT_EXPERTS[idx] || DEFAULT_EXPERTS[0];
+          const curated = new Map(
+            DEFAULT_EXPERTS.map((e) => [e.full_name.trim().toLowerCase(), e])
+          );
+          const merged: ExpertProfile[] = data.map((p) => {
+            const base = curated.get(p.full_name.trim().toLowerCase());
             return {
-              ...defaultExp,
+              phone: null,
+              email: null,
+              role: "expert",
+              ...base,
               id: p.id,
-              full_name: p.full_name
+              full_name: p.full_name,
+              expert_role: p.professional_title || base?.expert_role,
+              bio: p.bio || base?.bio,
+              avatar_url: p.avatar_url,
+              session_rate_inr: p.session_rate_inr,
+              tags: p.specialties?.length
+                ? p.specialties.map((s: string) => s.toUpperCase())
+                : base?.tags,
             };
           });
-          setExperts(merged);
+          setExperts(withPhotos(merged));
           setSelectedExpertId(merged[0].id);
         } else {
-          setExperts(DEFAULT_EXPERTS);
+          setExperts(withPhotos(DEFAULT_EXPERTS));
           setSelectedExpertId(DEFAULT_EXPERTS[0].id);
         }
       } catch (err) {
         console.error("Error loading experts", err);
-        setExperts(DEFAULT_EXPERTS);
+        setExperts(withPhotos(DEFAULT_EXPERTS));
         setSelectedExpertId(DEFAULT_EXPERTS[0].id);
       } finally {
         setLoadingExperts(false);
@@ -388,7 +360,16 @@ export default function PlatterPage() {
               <FieldPie
                 experts={experts}
                 selectedExpertId={selectedExpertId}
-                onSelect={setSelectedExpertId}
+                onSelect={(id) => {
+                  setSelectedExpertId(id);
+                  // bring the profile into view, otherwise picking an expert looks like it did nothing
+                  requestAnimationFrame(() =>
+                    document.getElementById("expert-profile")?.scrollIntoView({
+                      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+                      block: "start",
+                    })
+                  );
+                }}
               />
 
               {/* Spacious Active Profile Details Card */}
@@ -396,16 +377,43 @@ export default function PlatterPage() {
                 const activeExpert = experts.find((e) => e.id === selectedExpertId) || experts[0];
                 if (!activeExpert) return null;
                 return (
-                  <div key={activeExpert.id} className="w-full flex flex-col gap-16 items-center md:items-start text-left bg-[var(--bg-surface)] border border-[var(--border)] rounded-[40px] p-10 md:p-16 shadow-2xl backdrop-blur-md">
+                  <div key={activeExpert.id} id="expert-profile" className="w-full scroll-mt-28 flex flex-col gap-16 items-center md:items-start text-left bg-[var(--bg-surface)] border border-[var(--border)] rounded-[40px] p-10 md:p-16 shadow-2xl backdrop-blur-md">
                     
                     <div className="w-full flex flex-col lg:flex-row gap-16 items-center lg:items-start">
                       
-                      {/* Cinematic Photo Placeholder */}
+                      {/* Portrait: the real photo when one is on file, otherwise a monogram. */}
                       <div className="w-full max-w-sm lg:w-[350px] h-[480px] bg-[var(--bg-surface-2)] rounded-[32px] border border-[var(--border-strong)] flex-shrink-0 relative overflow-hidden grayscale hover:grayscale-0 transition-all duration-700 shadow-lg">
-                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] to-transparent opacity-80" />
-                        <div className="absolute inset-0 flex items-center justify-center font-mono-sos text-[var(--text-faint)] text-[10px] uppercase tracking-widest">
-                          Dossier {activeExpert.id.slice(0, 8)}
+                        <div
+                          role="img"
+                          aria-label={`${activeExpert.full_name}, ${activeExpert.expert_role ?? "expert"}`}
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                        >
+                          <span className="font-editorial text-[9rem] leading-none text-[var(--text-primary)] opacity-80 select-none">
+                            {activeExpert.full_name
+                              .split(/\s+/)
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((w) => w[0]?.toUpperCase())
+                              .join("")}
+                          </span>
+                          <span className="font-mono-sos text-xs uppercase tracking-[0.25em] text-[var(--text-muted)] px-6 text-center">
+                            {activeExpert.expert_role}
+                          </span>
                         </div>
+                        {activeExpert.avatar_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={activeExpert.avatar_url}
+                            src={activeExpert.avatar_url}
+                            alt={`Portrait of ${activeExpert.full_name}`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(ev) => {
+                              ev.currentTarget.style.display = "none";
+                            }}
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] to-transparent opacity-60 pointer-events-none" />
                       </div>
 
                       {/* Profile Information */}
@@ -532,142 +540,56 @@ export default function PlatterPage() {
 
         <div style={{ height: "15vh" }} aria-hidden="true" />
 
-        {/* Investment Architecture — pricing lives on its own, in the open, not
-            nested inside any one expert's accordion. Shared across the roster
-            since the tiers describe the project, not the consultant. */}
+        {/* Investment: one flat rate per expert, taken from the same record the
+            checkout charges, so the price shown is always the price paid. */}
         <section ref={addToRefs} className="w-full flex flex-col items-center">
-          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} Investment Architecture</h2>
+          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} Investment</h2>
 
           <div className="w-full max-w-3xl text-left">
-            <p className="font-inter text-xs font-light text-[var(--text-muted)] mb-7">
-              Select a tier to explore scope and pricing. Architecture engagements only —
-              sustainability and travel sessions are quoted per project.
+            <p className="font-inter text-sm font-light text-[var(--text-muted)] mb-7">
+              One flat rate per 60-minute session, set by each expert. The price you see here is the price you pay.
             </p>
 
-            <div className="grid grid-cols-3 border border-[var(--border-strong)] rounded-[10px] overflow-hidden bg-[var(--bg-surface-2)] mb-5">
-              {(Object.keys(PRICING_TIERS) as Array<keyof typeof PRICING_TIERS>).map((tierKey) => {
-                const tier = PRICING_TIERS[tierKey];
-                const isActive = activeTier === tierKey;
-                return (
+            <ul className="border border-[var(--border-strong)] rounded-[10px] overflow-hidden bg-[var(--bg-surface-2)]">
+              {experts.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-5 md:p-6 border-b border-[var(--border-strong)] last:border-b-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="font-editorial text-[22px] font-light text-[var(--text-primary)] leading-tight">
+                      {e.full_name}
+                    </div>
+                    <div className="font-mono-sos text-[10px] tracking-[0.14em] uppercase text-[var(--text-muted)] mt-1">
+                      {e.expert_role}
+                    </div>
+                  </div>
+                  <div className="sm:text-right shrink-0">
+                    <div className="font-editorial text-[30px] font-normal text-[var(--text-primary)] leading-none tracking-tight">
+                      {e.session_rate_inr ? formatInr(e.session_rate_inr) : "On request"}
+                    </div>
+                    {e.session_rate_inr ? (
+                      <div className="font-mono-sos text-[10px] tracking-[0.1em] uppercase text-[var(--text-muted)] mt-1">
+                        per 60 min
+                      </div>
+                    ) : null}
+                  </div>
                   <button
-                    key={tierKey}
-                    onClick={() => setActiveTier(tierKey)}
-                    className={`bg-transparent text-left cursor-pointer relative py-4 px-[18px] border-r border-[var(--border-strong)] last:border-r-0 hover:bg-[var(--bg-surface)] transition-all duration-300 ${
-                      isActive ? "bg-[var(--bg-base)]" : ""
-                    }`}
+                    onClick={() => {
+                      localStorage.setItem("platter_selected_expert", e.id);
+                      router.push("/login");
+                    }}
+                    className="btn-sos shrink-0 sm:min-w-[9rem]"
                   >
-                    <span className="font-mono-sos text-[9px] font-medium tracking-[0.16em] uppercase text-[var(--color-orange)] block mb-1">
-                      {tier.num}
-                    </span>
-                    <span className="font-editorial text-[21px] font-light text-[var(--text-primary)] block leading-[1.1] mb-1.5">
-                      {tier.name}
-                    </span>
-                    <span className="font-inter text-[11px] text-[var(--text-muted)] block">
-                      {tier.priceText}
-                    </span>
-                    <div
-                      className={`absolute bottom-0 left-0 h-[2px] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                        isActive ? "w-full" : "w-0"
-                      } ${tier.inkClass}`}
-                    />
+                    Book session
                   </button>
-                );
-              })}
-            </div>
-
-            <div
-              className="detail-panel rounded-xl overflow-hidden transition-all duration-500"
-              style={{ background: PRICING_TIERS[activeTier].gradient }}
-            >
-              <div
-                className="h-[1px] w-full relative overflow-hidden"
-                style={{ background: PRICING_TIERS[activeTier].lineGradient }}
-              />
-
-              <div key={activeTier} className="p-8 grid grid-cols-1 md:grid-cols-[1fr_220px] gap-8 items-start animate-fade-switch">
-                <div className="flex flex-col items-start text-left">
-                  <span className={`inline-block text-[9px] font-medium tracking-[0.15em] uppercase px-[9px] py-[3px] rounded-[2px] mb-3.5 ${PRICING_TIERS[activeTier].tagClass}`}>
-                    {PRICING_TIERS[activeTier].num} — {PRICING_TIERS[activeTier].name}
-                  </span>
-                  <h5 className="font-editorial text-[46px] font-light text-white/95 leading-none mb-1 tracking-tight">
-                    {PRICING_TIERS[activeTier].name}
-                  </h5>
-                  <span className="font-mono-sos text-[10px] tracking-[0.15em] uppercase text-white/30 mb-5 min-h-[14px]">
-                    {PRICING_TIERS[activeTier].scope}
-                  </span>
-                  <p className="font-inter text-[13px] font-light text-white/60 leading-[1.7] max-w-[320px]">
-                    {PRICING_TIERS[activeTier].desc}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-0 pt-1 text-left">
-                  <ul className="list-none mb-6">
-                    {PRICING_TIERS[activeTier].feats.map((feat, idx) => (
-                      <li key={idx} className="font-inter text-xs font-light text-white/70 py-2 border-b border-white/10 last:border-b-0 flex items-center gap-2.5">
-                        <span
-                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                          style={{ background: PRICING_TIERS[activeTier].color }}
-                        />
-                        {feat}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="pt-4 border-t border-white/15">
-                    <div className="font-editorial text-[34px] font-normal text-white/95 leading-none tracking-tight">
-                      {PRICING_TIERS[activeTier].price}
-                    </div>
-                    <div className="font-mono-sos text-[10px] tracking-[0.1em] uppercase text-white/30 mt-1 mb-3.5">
-                      Base rate / 60 min
-                    </div>
-                    <button
-                      onClick={() => {
-                        router.push(`/login?tier=${encodeURIComponent(PRICING_TIERS[activeTier].name)}`);
-                      }}
-                      className="w-full font-inter text-[11px] font-semibold tracking-wider uppercase py-2.5 px-4 rounded-md border border-white/20 bg-white/5 text-white/80 hover:bg-white/10 hover:border-white/40 hover:text-white transition-all duration-300 cursor-pointer text-center"
-                    >
-                      Book Session ↗
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 w-full text-left">
-              <div className="font-mono-sos text-[9px] tracking-[0.16em] uppercase text-[var(--text-muted)] mb-3">
-                Available extensions
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full">
-                <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[var(--color-orange)] cursor-default">
-                  <div>
-                    <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
-                      Advance Booking
-                    </span>
-                    <p className="font-inter text-[11px] text-[var(--text-muted)] font-light mt-0.5">
-                      Requested during initial scheduling
-                    </p>
-                  </div>
-                  <div className="font-mono-sos text-base font-semibold text-[var(--color-orange)]">
-                    +40%
-                  </div>
-                </div>
-                <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[var(--color-orange)] cursor-default">
-                  <div>
-                    <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
-                      On-Spot Extension
-                    </span>
-                    <p className="font-inter text-[11px] text-[var(--text-muted)] font-light mt-0.5">
-                      Active session (+30 min)
-                    </p>
-                  </div>
-                  <div className="font-mono-sos text-base font-semibold text-[var(--color-orange)]">
-                    +60%
-                  </div>
-                </div>
-              </div>
-            </div>
+                </li>
+              ))}
+            </ul>
 
             <div className="mt-6 pt-4 border-t border-[var(--border)] w-full text-left">
               <div className="font-inter text-xs text-[var(--text-muted)] font-light">
-                Written summary delivered within 48 hours of every session.
+                A written summary is delivered within 48 hours of every session.
               </div>
             </div>
           </div>
@@ -719,14 +641,18 @@ export default function PlatterPage() {
             {/* Fully Centered Contact Form (Single Column) */}
             <div className="w-full max-w-xl mx-auto flex flex-col items-center relative z-20">
               <form
-                className="w-full flex flex-col items-center gap-y-12"
+                className="w-full flex flex-col items-center gap-y-12 relative"
                 onSubmit={handleInquiry}
               >
+              <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                <label>Leave this field empty<input type="text" name="website" tabIndex={-1} autoComplete="off" /></label>
+              </div>
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Full Name *</label>
                   <input
                     type="text"
                     name="full_name"
+                    aria-label="Full name"
                     maxLength={200}
                     required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
@@ -739,6 +665,7 @@ export default function PlatterPage() {
                   <input
                     type="email"
                     name="email"
+                    aria-label="Email"
                     maxLength={320}
                     required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
@@ -751,6 +678,7 @@ export default function PlatterPage() {
                   <input
                     type="text"
                     name="subject"
+                    aria-label="Subject"
                     maxLength={300}
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="Project Inquiry"
@@ -762,6 +690,7 @@ export default function PlatterPage() {
                   <textarea
                     rows={1}
                     name="message"
+                    aria-label="Message"
                     maxLength={5000}
                     required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors resize-none rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 min-h-[100px] text-center"
@@ -777,7 +706,7 @@ export default function PlatterPage() {
                     className="w-4 h-4 rounded-sm border-[var(--border-strong)] bg-transparent text-[var(--text-primary)] focus:ring-[var(--text-primary)] focus:ring-offset-0 focus:ring-offset-[var(--bg-base)] cursor-pointer"
                   />
                   <label htmlFor="privacy" className="ml-3 font-inter text-sm text-[var(--text-muted)] cursor-pointer select-none">
-                    I acknowledge the <a href="#" className="text-[var(--text-primary)] hover:underline transition-colors">privacy policy</a>.
+                    I acknowledge the <a href="/privacy" target="_blank" rel="noopener" className="text-[var(--text-primary)] underline underline-offset-4 transition-colors">privacy policy</a>.
                   </label>
                 </div>
 

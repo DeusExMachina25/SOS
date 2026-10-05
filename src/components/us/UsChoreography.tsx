@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -8,6 +8,7 @@ import PantoneEyesCard from "../home/PantoneEyesCard";
 import FacadeSectionCut from "./FacadeSectionCut";
 import VeneerStack from "./VeneerStack";
 import VettingColumns from "./VettingColumns";
+import { submitInquiry } from "@/lib/inquiries";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -97,6 +98,24 @@ const GENESIS_BEATS = [
 ];
 
 export default function UsChoreography() {
+  const [inquiryState, setInquiryState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [inquiryError, setInquiryError] = useState("");
+
+  const handleInquiry = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    setInquiryState("sending");
+    setInquiryError("");
+    const result = await submitInquiry(new FormData(form), "us");
+    if (!result.ok) {
+      setInquiryState("error");
+      setInquiryError(result.error);
+      return;
+    }
+    form.reset();
+    setInquiryState("sent");
+  };
+
   const heroTextRef = useRef<HTMLHeadingElement>(null);
   const heroImageRef = useRef<HTMLImageElement>(null);
   
@@ -533,13 +552,20 @@ export default function UsChoreography() {
 
           {/* Fully Centered Contact Form (Single Column) */}
           <div ref={formRef} className="w-full max-w-xl mx-auto flex flex-col items-center relative z-20">
-            <form className="w-full flex flex-col items-center gap-y-16">
+            <form className="w-full flex flex-col items-center gap-y-16 relative" onSubmit={handleInquiry}>
+              <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                <label>Leave this field empty<input type="text" name="website" tabIndex={-1} autoComplete="off" /></label>
+              </div>
               
               <div className="relative group w-full text-center">
                 <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-4 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Full Name *</label>
                 <input 
-                  type="text" 
-                  required 
+                  type="text"
+                  name="full_name"
+                    aria-label="Full name"
+                  maxLength={200}
+                  autoComplete="name"
+                  required
                   className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-3 text-[var(--text-primary)] font-inter text-xl focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                   placeholder="Jane Doe"
                 />
@@ -548,8 +574,12 @@ export default function UsChoreography() {
               <div className="relative group w-full text-center">
                 <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-4 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">E-mail *</label>
                 <input 
-                  type="email" 
-                  required 
+                  type="email"
+                  name="email"
+                    aria-label="Email"
+                  maxLength={320}
+                  autoComplete="email"
+                  required  
                   className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-3 text-[var(--text-primary)] font-inter text-xl focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                   placeholder="jane@example.com"
                 />
@@ -558,7 +588,10 @@ export default function UsChoreography() {
               <div className="relative group w-full text-center">
                 <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-4 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Subject</label>
                 <input 
-                  type="text" 
+                  type="text"
+                  name="subject"
+                    aria-label="Subject"
+                  maxLength={300}
                   className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-3 text-[var(--text-primary)] font-inter text-xl focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                   placeholder="Project Inquiry"
                 />
@@ -568,7 +601,10 @@ export default function UsChoreography() {
                 <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-4 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Message *</label>
                 <textarea 
                   rows={1}
-                  required 
+                  name="message"
+                    aria-label="Message"
+                  maxLength={5000}
+                  required  
                   className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-3 text-[var(--text-primary)] font-inter text-xl focus:outline-none focus:border-[var(--text-primary)] transition-colors resize-none rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 min-h-[120px] text-center"
                   placeholder="Tell us about your vision..."
                 ></textarea>
@@ -582,14 +618,28 @@ export default function UsChoreography() {
                   className="w-4 h-4 rounded-sm border-[var(--border-strong)] bg-transparent text-[var(--text-primary)] focus:ring-[var(--text-primary)] focus:ring-offset-0 focus:ring-offset-[var(--bg-base)] cursor-pointer"
                 />
                 <label htmlFor="privacy" className="ml-4 font-inter text-sm text-[var(--text-muted)] cursor-pointer select-none">
-                  I acknowledge the <a href="#" className="text-[var(--text-primary)] hover:underline transition-colors">privacy policy</a>.
+                  I acknowledge the <a href="/privacy" target="_blank" rel="noopener" className="text-[var(--text-primary)] underline underline-offset-4 transition-colors">privacy policy</a>.
                 </label>
               </div>
 
               <div className="mt-12 text-center w-full">
-                <button type="submit" className="bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos text-xs tracking-[0.3em] px-16 py-6 uppercase hover:opacity-80 transition-opacity duration-300 w-full md:w-auto">
-                  Submit Inquiry
+                <button
+                  type="submit"
+                  disabled={inquiryState === "sending"}
+                  className="bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos text-xs tracking-[0.3em] px-16 py-6 uppercase hover:opacity-80 transition-opacity duration-300 w-full md:w-auto cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                >
+                  {inquiryState === "sending" ? "Sending…" : "Submit Inquiry"}
                 </button>
+                <p
+                  role="status"
+                  aria-live="polite"
+                  className={`mt-6 font-inter text-sm min-h-[20px] ${
+                    inquiryState === "error" ? "text-[var(--color-orange)]" : "text-[var(--text-muted)]"
+                  }`}
+                >
+                  {inquiryState === "sent" && "Thanks — we've got it. We'll reply within two working days."}
+                  {inquiryState === "error" && inquiryError}
+                </p>
               </div>
 
             </form>

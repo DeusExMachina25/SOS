@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-export type FieldKey = "architecture" | "fashion" | "sustainability" | "travel";
+export type FieldKey = "architecture" | "sustainability" | "travel";
 
 export interface PieExpert {
   id: string;
@@ -11,6 +11,8 @@ export interface PieExpert {
   bio?: string;
   field?: FieldKey;
   site?: string;
+  /** Real portrait; the generated duotone is used only when this is absent. */
+  avatar_url?: string | null;
 }
 
 interface FieldPieProps {
@@ -19,15 +21,14 @@ interface FieldPieProps {
   onSelect: (id: string) => void;
 }
 
-const FIELDS: { key: FieldKey; name: string; cssVar: string; tagline: string; active: boolean }[] = [
-  { key: "architecture", name: "Architecture", cssVar: "--field-1", tagline: "Space, structure, material", active: true },
-  { key: "fashion", name: "Fashion", cssVar: "--field-2", tagline: "Brand, collection, direction", active: false },
-  { key: "sustainability", name: "Sustainability", cssVar: "--field-3", tagline: "Energy, waste, fabrication", active: true },
-  { key: "travel", name: "Travel", cssVar: "--field-4", tagline: "Route, pacing, logistics", active: true },
+const FIELDS: { key: FieldKey; name: string; cssVar: string; tagline: string }[] = [
+  { key: "architecture", name: "Architecture", cssVar: "--field-1", tagline: "Space, structure, material" },
+  { key: "sustainability", name: "Sustainability", cssVar: "--field-3", tagline: "Energy, waste, fabrication" },
+  { key: "travel", name: "Travel", cssVar: "--field-4", tagline: "Route, pacing, logistics" },
 ];
 
 /* Light-theme values, used for the server render before the real tokens resolve. */
-const FALLBACK_PALETTE = ["#5F4B8B", "#130F1C", "#7A5C45", "#42375F"];
+const FALLBACK_PALETTE = ["#5F4B8B", "#7A5C45", "#42375F"];
 
 const CX = 230;
 const CY = 138;
@@ -238,30 +239,6 @@ function Model({ field, ox, oy, base }: { field: FieldKey; ox: number; oy: numbe
     );
   }
 
-  if (field === "fashion") {
-    const pinB = p3(ox + 17, oy - 7, 0);
-    const pinT = p3(ox + 17, oy - 7, 38);
-    const tA = p3(ox + 8, oy + 3, 29);
-    const tB = p3(ox + 17, oy - 7, 36);
-    return (
-      <>
-        <GroundShadow ox={ox + 2} oy={oy + 2} r={26} op={0.22} />
-        <line x1={pinB[0]} y1={pinB[1]} x2={pinT[0]} y2={pinT[1]} stroke={shade(base, 1.25)} strokeWidth="1.7" strokeLinecap="round" />
-        <IsoCylinder ox={ox - 3} oy={oy + 3} r={16} h={17} base={base} bands />
-        <IsoCylinder ox={ox - 3} oy={oy + 3} r={11} h={30} base={base} bands />
-        <path
-          className="fp-thread"
-          d={`M${tA[0].toFixed(1)},${tA[1].toFixed(1)} Q${((tA[0] + tB[0]) / 2).toFixed(1)},${(Math.min(tA[1], tB[1]) - 7).toFixed(1)} ${tB[0].toFixed(1)},${tB[1].toFixed(1)}`}
-          fill="none"
-          stroke={shade(base, 1.4)}
-          strokeWidth="1"
-          strokeLinecap="round"
-        />
-        <circle className="fp-glint" cx={pinT[0]} cy={pinT[1]} r="3.6" fill={shade(base, 1.6)} />
-      </>
-    );
-  }
-
   if (field === "sustainability") {
     /* a tilted solar array beside a digester tank, blades turning overhead */
     const panel = facePath([
@@ -402,7 +379,6 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
                   fill={base}
                   stroke="var(--bg-base)"
                   strokeWidth="2"
-                  opacity={FIELDS[i].active ? 1 : 0.45}
                 />
                 <g className="fp-lift" style={{ transform: `translateY(-${rise}px)` }}>
                   <g className={`fp-bob${FIELDS[i].key === "travel" ? " fp-drift" : ""}`} style={{ animationDelay: `${(i * 0.7).toFixed(1)}s` }}>
@@ -420,7 +396,7 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
               <g key={f.key}>
                 <text
                   x={lx}
-                  y={f.active ? ly : ly - 7}
+                  y={ly}
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className="font-inter pointer-events-none"
@@ -428,30 +404,12 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
                     fontSize: 13,
                     fill: on ? "var(--text-primary)" : "var(--text-muted)",
                     fontWeight: on ? 600 : 400,
-                    opacity: (focus !== null && !on ? 0.3 : 1) * (f.active ? 1 : 0.6),
+                    opacity: focus !== null && !on ? 0.3 : 1,
                     transition: "fill 0.4s, opacity 0.45s",
                   }}
                 >
                   {f.name}
                 </text>
-                {!f.active && (
-                  <text
-                    x={lx}
-                    y={ly + 9}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="font-mono-sos pointer-events-none"
-                    style={{
-                      fontSize: 8,
-                      letterSpacing: "0.14em",
-                      fill: "var(--text-faint)",
-                      opacity: focus !== null && !on ? 0.3 : 1,
-                      transition: "opacity 0.45s",
-                    }}
-                  >
-                    SOON
-                  </text>
-                )}
               </g>
             );
           })}
@@ -485,9 +443,7 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
             <div>
               <div className="font-editorial text-xl text-[var(--text-primary)]">{FIELDS[openField].name}</div>
               <div className="font-mono-sos text-[10px] text-[var(--text-muted)] mt-1">
-                {FIELDS[openField].active
-                  ? `${openExperts.length} ${openExperts.length === 1 ? "expert" : "experts"} available`
-                  : "Coming soon"}
+                {`${openExperts.length} ${openExperts.length === 1 ? "expert" : "experts"} available`}
               </div>
             </div>
             <button
@@ -498,16 +454,7 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
             </button>
           </div>
 
-          {!FIELDS[openField].active ? (
-            <div className="text-center py-10">
-              <p className="font-editorial text-lg text-[var(--text-muted)] mb-2">
-                {FIELDS[openField].name} isn&rsquo;t open yet.
-              </p>
-              <p className="font-inter text-sm text-[var(--text-faint)] max-w-sm mx-auto">
-                We&rsquo;re starting with architecture. This division opens once we do.
-              </p>
-            </div>
-          ) : openExperts.length === 0 ? (
+          {openExperts.length === 0 ? (
             <p className="font-inter text-sm text-[var(--text-muted)] text-center py-10">
               No experts listed in this field yet.
             </p>
@@ -531,7 +478,9 @@ export default function FieldPie({ experts, selectedExpertId, onSelect }: FieldP
                       isActive ? "ring-1 ring-[var(--text-primary)]" : ""
                     }`}
                     style={{
-                      backgroundImage: placeholderPhoto(palette[openField], k + FIELDS[openField].name.length),
+                      backgroundImage: e.avatar_url
+                        ? `url("${e.avatar_url.replace(/"/g, "%22")}")`
+                        : placeholderPhoto(palette[openField], k + FIELDS[openField].name.length),
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                       animationDelay: `${(k * 0.11).toFixed(2)}s`,
