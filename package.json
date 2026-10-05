@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:db": "node scripts/db-test.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -33,6 +34,7 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.61.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",

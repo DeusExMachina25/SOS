@@ -17,6 +17,10 @@
 
 begin;
 
+-- Helper functions below reference tables created later in this file; skip body
+-- validation so the migration also runs on a brand-new database.
+set local check_function_bodies = off;
+
 -- ----------------------------------------------------------------------------
 -- 0. Extensions & private schema
 -- ----------------------------------------------------------------------------
