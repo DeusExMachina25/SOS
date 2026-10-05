@@ -120,7 +120,11 @@ export default function ExpertSessionsPage() {
                     <h3 className="font-display text-xl font-bold text-[var(--text-primary)] mb-1">{session.title}</h3>
                     <p className="text-sm text-[var(--text-muted)] font-inter">Client: {session.clientName}</p>
                   </div>
-                  {session.status === 'scheduled' ? (
+                  {session.status === 'scheduled' && session.paymentStatus === 'unpaid' ? (
+                    <p className="text-[11px] font-mono-sos uppercase tracking-widest text-[var(--text-muted)] self-center text-center sm:text-right">
+                      The call room opens once the client has paid
+                    </p>
+                  ) : session.status === 'scheduled' ? (
                     <div className="px-3 py-1 bg-[var(--color-orange)]/10 text-[var(--color-orange)] text-[10px] font-bold rounded-full uppercase tracking-widest border border-[var(--color-orange)]/20">
                       Upcoming
                     </div>
@@ -158,15 +162,18 @@ export default function ExpertSessionsPage() {
                   )}
                   {session.status === 'scheduled' ? (
                     <Link
-                      href={`/dashboard/video-call?sessionId=${session.id}&sessionName=${encodeURIComponent(session.title)}&displayName=${encodeURIComponent(session.expertName)}`}
+                      href={`/dashboard/video-call?sessionId=${session.id}&sessionName=${encodeURIComponent(session.title)}`}
                       className="btn-sos-filled px-6 py-3 text-xs w-full sm:w-auto text-center justify-center bg-[var(--color-orange)] hover:bg-[var(--color-orange)]/90 text-[var(--bg-base)] border-transparent shadow-md transition-colors rounded-2xl"
                     >
                       <Video size={16} className="mr-2 inline" /> Join Video Call
                     </Link>
                   ) : (
-                    <button className="px-6 py-3 text-xs w-full sm:w-auto text-center justify-center font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors rounded-2xl bg-[var(--bg-surface-2)] border border-[var(--border-strong)]">
-                      View Notes
-                    </button>
+                    <Link
+                      href="/dashboard/expert/vault"
+                      className="px-6 py-3 text-xs w-full sm:w-auto text-center justify-center font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors rounded-2xl bg-[var(--bg-surface-2)] border border-[var(--border-strong)]"
+                    >
+                      Files &amp; notes
+                    </Link>
                   )}
                 </div>
               </div>
