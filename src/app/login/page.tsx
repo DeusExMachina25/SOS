@@ -4,13 +4,32 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/client";
 import { motion } from "framer-motion";
-import { 
-  Mail, 
-  Smartphone, 
-  ArrowLeft, 
-  Loader2,
-  Lock
-} from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+
+/** Turns raw auth/network errors into something a person can act on. */
+function friendlyAuthError(err: unknown, fallback: string): string {
+  const msg = err instanceof Error ? err.message : "";
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg))
+    return "We can't reach the server. Check your connection and try again.";
+  if (/rate limit|too many|for security purposes/i.test(msg))
+    return "Too many attempts. Please wait a minute and try again.";
+  if (/invalid login credentials/i.test(msg)) return "That email and password don't match.";
+  if (/expired|otp.*invalid|invalid.*otp|token.*invalid/i.test(msg))
+    return "That code is wrong or has expired. Request a new one.";
+  return msg || fallback;
+}
+
+/** Where to go after signing in: the page the route guard bounced them from, if it belongs to their dashboard. */
+function postLoginPath(role: "client" | "expert"): string {
+  const base = `/dashboard/${role}`;
+  try {
+    const from = new URLSearchParams(window.location.search).get("redirectedFrom");
+    if (from && (from === base || from.startsWith(base + "/"))) return from;
+  } catch {
+    /* ignore */
+  }
+  return base;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,6 +58,24 @@ export default function LoginPage() {
   // Status States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  /**
+   * Dev-only login shortcuts. Every bypass below is gated on this — without it
+   * the fixed test credentials work in production and hand out expert sessions.
+   *
+   * The shortcuts sign in for real, as the seeded accounts from
+   * scripts/seed-dev-users.mjs (client@sos.com / expert@sos.com, password
+   * "password") — not a fake cookie. proxy.ts checks Postgres via the real
+   * Supabase session, so a fake cookie never actually got past it; this was a
+   * dead bypass that appeared to work (redirected) but always bounced back to
+   * /login. If Supabase isn't configured at all, there's nothing to sign into,
+   * so that one case still falls back to the fake cookie for local UI-only
+   * testing.
+   */
+  const isDev = process.env.NODE_ENV === "development";
+  const DEV_EMAIL = { client: "client@sos.com", expert: "expert@sos.com" };
+  const DEV_PASSWORD = "password";
+
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
@@ -71,7 +108,7 @@ export default function LoginPage() {
     if (inputType === "email") {
       // Magic Link Flow
       try {
-        if (cleanedInput.toLowerCase() === "test@sos.com" || !supabase) {
+        if (isDev && (cleanedInput.toLowerCase() === "test@sos.com" || !supabase)) {
           // Dev bypass
           setTimeout(() => {
             setMagicLinkSent(true);
@@ -79,17 +116,18 @@ export default function LoginPage() {
           }, 1200);
           return;
         }
+        if (!supabase) throw new Error("Auth is not configured.");
 
         const { error } = await supabase.auth.signInWithOtp({
           email: cleanedInput,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard/client`,
+            emailRedirectTo: `${window.location.origin}${postLoginPath("client")}`,
           }
         });
         if (error) throw error;
         setMagicLinkSent(true);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to send magic link");
+        setError(friendlyAuthError(err, "Failed to send magic link"));
       } finally {
         setLoading(false);
       }
@@ -107,7 +145,7 @@ export default function LoginPage() {
       }
 
       try {
-        if (phoneNum === "0000000000" || !supabase) {
+        if (isDev && (phoneNum === "0000000000" || !supabase)) {
           // Dev bypass
           setTimeout(() => {
             setOtpSent(true);
@@ -115,6 +153,7 @@ export default function LoginPage() {
           }, 1200);
           return;
         }
+        if (!supabase) throw new Error("Auth is not configured.");
 
         const { error } = await supabase.auth.signInWithOtp({
           phone: `+91${phoneNum}`,
@@ -122,7 +161,7 @@ export default function LoginPage() {
         if (error) throw error;
         setOtpSent(true);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to send OTP");
+        setError(friendlyAuthError(err, "Failed to send OTP"));
       } finally {
         setLoading(false);
       }
@@ -146,14 +185,27 @@ export default function LoginPage() {
       phoneNum = phoneNum.slice(2);
     }
 
+    const isDevShortcut = isDev && phoneNum === "0000000000" && otp === "123456";
+
     try {
-      // Temporary Dev Bypass
-      if ((phoneNum === "0000000000" && otp === "123456") || !supabase) {
+      if (isDevShortcut && !supabase) {
+        // Nothing to sign into — fall back to the fake cookie so the UI is
+        // still walkable when Supabase env vars are absent entirely.
         setTimeout(() => {
-          // Set Trusted Device Cookie (30 days)
           document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-          router.push("/dashboard/client");
+          router.push(postLoginPath("client"));
         }, 1000);
+        return;
+      }
+      if (!supabase) throw new Error("Auth is not configured.");
+
+      if (isDevShortcut) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: DEV_EMAIL.client,
+          password: DEV_PASSWORD,
+        });
+        if (error) throw new Error(`${error.message} — run scripts/seed-dev-users.mjs`);
+        router.push(postLoginPath("client"));
         return;
       }
 
@@ -183,19 +235,35 @@ export default function LoginPage() {
         }
       }
       
-      document.cookie = `trusted_device_token=client-token-${Date.now()}; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-      router.push("/dashboard/client");
+      router.push(postLoginPath("client"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid OTP");
+      setError(friendlyAuthError(err, "Invalid OTP"));
     } finally {
       setLoading(false);
     }
   };
 
-  // Set Trusted Device Cookie on Magic Link mock success
-  const handleSimulatedMagicLinkVerify = () => {
-    document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-    router.push("/dashboard/client");
+  // Dev-only: simulates clicking the magic link, by actually signing in as
+  // the seeded dev client. Gated on isDev at both the handler and the button
+  // that calls it — this must never be reachable in production, since it
+  // would let any visitor sign in as the seeded test account for real.
+  const handleSimulatedMagicLinkVerify = async () => {
+    if (!isDev) return;
+    if (!supabase) {
+      document.cookie = `trusted_device_token=dev-token-client; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
+      router.push(postLoginPath("client"));
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: DEV_EMAIL.client,
+        password: DEV_PASSWORD,
+      });
+      if (error) throw new Error(`${error.message} — run scripts/seed-dev-users.mjs`);
+      router.push(postLoginPath("client"));
+    } catch (err) {
+      setError(friendlyAuthError(err, "Dev sign-in failed"));
+    }
   };
 
   const handleExpertLogin = async (e: React.FormEvent) => {
@@ -211,21 +279,28 @@ export default function LoginPage() {
     }
     setLoading(true);
 
+    const isDevShortcut = isDev && email === "test@sos.com" && password === "password";
+
     try {
-      // Temporary Dev Bypass
-      if ((email === "test@sos.com" && password === "password") || !supabase) {
+      if (isDevShortcut && !supabase) {
+        // Nothing to sign into — fall back to the fake cookie so the UI is
+        // still walkable when Supabase env vars are absent entirely.
         setTimeout(() => {
           document.cookie = `trusted_device_token=dev-token-expert; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-          router.push("/dashboard/expert");
+          router.push(postLoginPath("expert"));
         }, 1000);
         return;
       }
+      if (!supabase) throw new Error("Auth is not configured.");
+
+      const signInEmail = isDevShortcut ? DEV_EMAIL.expert : email;
+      const signInPassword = isDevShortcut ? DEV_PASSWORD : password;
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: signInEmail,
+        password: signInPassword,
       });
-      if (error) throw error;
+      if (error) throw new Error(isDevShortcut ? `${error.message} — run scripts/seed-dev-users.mjs` : error.message);
       
       if (data?.user) {
         const { data: profile, error: profileErr } = await supabase
@@ -241,10 +316,9 @@ export default function LoginPage() {
         }
       }
       
-      document.cookie = `trusted_device_token=expert-token-${Date.now()}; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax; Secure`;
-      router.push("/dashboard/expert");
+      router.push(postLoginPath("expert"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid credentials");
+      setError(friendlyAuthError(err, "Invalid credentials"));
     } finally {
       setLoading(false);
     }
@@ -253,7 +327,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative bg-[var(--bg-base)] overflow-hidden">
       {/* Background Cinematic Lighting */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-[#2A0089]/5 rounded-full blur-[200px] pointer-events-none z-0"></div>
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-[#5F4B8B]/10 rounded-full blur-[200px] pointer-events-none z-0"></div>
 
       <div className="w-full max-w-[500px] relative z-10 my-24 md:my-32">
         
@@ -335,6 +409,7 @@ export default function LoginPage() {
                       onChange={handlePhoneChange}
                       maxLength={inputType === "phone" ? 10 : undefined}
                       className="flex-1 bg-transparent outline-none font-inter text-lg font-light tracking-wide text-[var(--text-primary)] placeholder-[var(--text-faint)]"
+                      aria-label="Phone number or email"
                       placeholder="phone number or email"
                     />
                   </div>
@@ -414,16 +489,18 @@ export default function LoginPage() {
                   We sent a secure magic link to <strong className="text-[var(--text-primary)]">{clientInput}</strong>. Open it on this device or your PC to enter the dashboard.
                 </p>
 
-                {/* Simulated Bypass verification button for testing convenience */}
-                <div className="pt-4">
-                  <button 
-                    type="button"
-                    onClick={handleSimulatedMagicLinkVerify}
-                    className="w-full bg-white/[0.04] hover:bg-white/[0.08] border border-[var(--border-strong)] text-[var(--text-primary)] font-mono-sos font-bold tracking-[0.25em] uppercase text-[10px] py-5 rounded-none transition-all"
-                  >
-                    💡 Verify Simulated Link
-                  </button>
-                </div>
+                {/* Dev-only shortcut — never rendered in production */}
+                {isDev && (
+                  <div className="pt-4">
+                    <button
+                      type="button"
+                      onClick={handleSimulatedMagicLinkVerify}
+                      className="w-full bg-white/[0.04] hover:bg-white/[0.08] border border-[var(--border-strong)] text-[var(--text-primary)] font-mono-sos font-bold tracking-[0.25em] uppercase text-[10px] py-5 rounded-none transition-all"
+                    >
+                      💡 Verify Simulated Link (dev)
+                    </button>
+                  </div>
+                )}
 
                 <button 
                   type="button" 
@@ -447,7 +524,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(""); }}
                   className="w-full bg-transparent border-b border-[var(--border)] group-focus-within:border-[var(--text-primary)] transition-colors pb-6 outline-none font-inter text-lg font-light tracking-wide text-[var(--text-primary)] placeholder-[var(--text-faint)]"
-                  placeholder="expert@sos.com"
+                  placeholder="you@example.com"
                 />
               </div>
               <div className="relative group">

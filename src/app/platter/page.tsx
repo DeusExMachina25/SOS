@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ParallaxBoxes from "@/components/ParallaxBoxes";
+import FieldPie, { type FieldKey } from "@/components/platter/FieldPie";
 import { supabase } from "@/utils/supabase/client";
+import { submitInquiry } from "@/lib/inquiries";
+import { formatInr } from "@/lib/data/format";
 
 const ANGLE_FONTS = [
   "font-futuristic",
@@ -32,10 +35,21 @@ interface ExpertProfile {
   role: string;
   expert_role?: string;
   bio?: string;
+  /** Portrait from `public_experts.avatar_url`; a monogram is shown when absent. */
+  avatar_url?: string | null;
+  /** Flat price of a 60-minute session, in rupees, from public_experts. */
+  session_rate_inr?: number | null;
   tags?: string[];
   disciplines?: { id: string; title: string; desc: string }[];
+  /* Which pie segment this expert sits under. No column for this exists in
+     `profiles` yet, so it travels with the hardcoded metadata below. */
+  field?: FieldKey;
 }
 
+/**
+ * One expert per division. Prices are not stored here: they come from each
+ * expert's `session_rate_inr` in the database.
+ */
 const DEFAULT_EXPERTS: ExpertProfile[] = [
   {
     id: "789e4567-e89b-12d3-a456-426614174000",
@@ -43,90 +57,65 @@ const DEFAULT_EXPERTS: ExpertProfile[] = [
     phone: "+919876543210",
     email: "shravani@sos.com",
     role: "expert",
-    expert_role: "Lead Systems Architect",
-    bio: "Specializing in macro-level technical architecture, high-availability workflows, and secure digital defense layers. Bringing unmatched precision to critical emergency software environments.",
-    tags: ["SYSTEMS DESIGN", "SCALABILITY", "SECURITY"],
+    field: "architecture",
+    expert_role: "Principal Architect & Interior Designer",
+    bio: "Two decades of independent residential practice across town and country — from interiors and spatial flow in urban apartments, to structural planning and material selection on ground-up builds, to master planning across rural and peri-urban plots.",
+    tags: ["RESIDENTIAL ARCHITECTURE", "INTERIOR DESIGN", "MASTER PLANNING"],
     disciplines: [
-      { id: "01", title: "Architectural Strategy", desc: "Defining your true north, security protocols, and long-term tech stack narrative." },
-      { id: "02", title: "Technical Planning", desc: "Building scalable blueprints, database optimization, and cloud architecture." },
-      { id: "03", title: "Security Auditing", desc: "Securing emergency pipelines, defense mapping, and threat vector analysis." }
+      { id: "01", title: "Interiors & Spatial Flow", desc: "How a city footprint should actually be used — circulation, storage logic, and material honesty, room by room." },
+      { id: "02", title: "Site & Structural Strategy", desc: "Reading the plot, load paths, and foundations before a single wall is drawn, then detailing junctions that age well." },
+      { id: "03", title: "Master Planning & Compliance", desc: "Contours, drainage, and phased development across larger plots — planned so it survives contact with approval." }
     ]
   },
   {
     id: "789e4567-e89b-12d3-a456-426614174001",
-    full_name: "Karan Malhotra",
+    full_name: "Sudhamshu Reddy",
     phone: "+919876543211",
-    email: "karan@sos.com",
+    email: "sudhamshu@sos.com",
     role: "expert",
-    expert_role: "Chief Urban Strategist",
-    bio: "Specializing in brand architecture, market positioning, and structural aesthetic growth. Bringing minimalist logic and stark planning to modern corporate digital footprints.",
-    tags: ["BRAND SYSTEMS", "UX STRATEGY", "POSITIONING"],
+    field: "sustainability",
+    expert_role: "Renewable Systems Engineer",
+    bio: "Renewable energy, waste systems, and additive manufacturing — designed into a project from the start rather than retrofitted onto a finished one.",
+    tags: ["RENEWABLE SYSTEMS", "WASTE MANAGEMENT", "3D PRINTING"],
     disciplines: [
-      { id: "01", title: "Brand Zoning", desc: "Establishing corporate typography, identity guidelines, and layout grids." },
-      { id: "02", title: "Market Alignment", desc: "Analyzing audience footprints, competitor grids, and positioning maps." },
-      { id: "03", title: "Design System Scaling", desc: "Structuring reusable Figma systems, atomic tokens, and visual standards." }
+      { id: "01", title: "Renewable Systems", desc: "Solar, storage, and load planning sized to what the building actually draws." },
+      { id: "02", title: "Waste Management", desc: "Segregation, composting, and water recovery designed in, not bolted on." },
+      { id: "03", title: "Additive Manufacturing", desc: "3D-printed components and formwork — and when printing is the wrong answer." }
     ]
   },
   {
     id: "789e4567-e89b-12d3-a456-426614174002",
-    full_name: "Ananya Sen",
+    full_name: "Yasasvi Jampana",
     phone: "+919876543212",
-    email: "ananya@sos.com",
+    email: "yasasvi@sos.com",
     role: "expert",
-    expert_role: "Lead Design Director",
-    bio: "Specializing in human-computer choreography, high-fidelity motion systems, and brutalist design language. Bringing sensory aesthetics and pixel perfection to luxury branding.",
-    tags: ["INTERFACE MOTION", "SENSORY GRAPHICS", "BRUTALISM"],
+    field: "travel",
+    expert_role: "Travel Experience Curator",
+    bio: "Curated travel — routing and pacing built around the places actually worth stopping for, and the ground logistics that decide whether the trip holds together.",
+    tags: ["ITINERARY DESIGN", "ROUTE PLANNING", "CURATED STAYS"],
     disciplines: [
-      { id: "01", title: "Motion Choreography", desc: "Choreographing dynamic page loads, interactive feedback, and SVG loops." },
-      { id: "02", title: "Sensory Interface Design", desc: "Building rich micro-interactions, custom scroll rigs, and dark mode dynamics." },
+      { id: "01", title: "Route & Pacing", desc: "How far to move each day, and when the answer is to stay put." },
+      { id: "02", title: "Curated Stays", desc: "Choosing places worth the detour rather than the ones with the best rating." },
+      { id: "03", title: "Ground Logistics", desc: "Permits, transfers, and the parts of a trip that quietly go wrong." }
     ]
   }
 ];
 
-const PRICING_TIERS = {
-  apt: {
-    num: "Tier 01",
-    name: "Apartment",
-    priceText: "₹ 2,499 / base",
-    price: "₹ 2,499",
-    scope: "\u00a0",
-    desc: "Focused spatial strategy for compact living — optimising flow, material selection, and interior logic within constrained footprints.",
-    feats: ["Spatial optimisation", "Interior flow strategy", "Material selection"],
-    color: "#c9a46a",
-    gradient: "linear-gradient(145deg, #272420 0%, #3a3228 45%, #2c2720 100%)",
-    lineGradient: "linear-gradient(90deg, transparent 5%, #c9a46a 50%, transparent 95%)",
-    tagClass: "text-[#c9a46a] bg-[rgba(201,164,106,0.15)]",
-    inkClass: "bg-[#c9a46a]"
-  },
-  vil: {
-    num: "Tier 02",
-    name: "Villa",
-    priceText: "₹ 4,999 / base",
-    price: "₹ 4,999",
-    scope: "\u00a0",
-    desc: "End-to-end architectural development — blueprints, landscape integration, and structural elegance for independent residential builds.",
-    feats: ["Architectural blueprint", "Landscape integration", "Structural elegance"],
-    color: "#6aaa8c",
-    gradient: "linear-gradient(145deg, #192920 0%, #213829 45%, #172318 100%)",
-    lineGradient: "linear-gradient(90deg, transparent 5%, #6aaa8c 50%, transparent 95%)",
-    tagClass: "text-[#6aaa8c] bg-[rgba(106,170,140,0.15)]",
-    inkClass: "bg-[#6aaa8c]"
-  },
-  sit: {
-    num: "Tier 03",
-    name: "Site Plan",
-    priceText: "₹ 7,999 / base",
-    price: "₹ 7,999",
-    scope: "Up to 1 acre",
-    desc: "Master planning and zoning compliance for large-scale plots — topographical analysis and full site utilisation strategy.",
-    feats: ["Master planning", "Topographical layout", "Zoning compliance"],
-    color: "#9c7ec4",
-    gradient: "linear-gradient(145deg, #201c2c 0%, #2d2438 45%, #1c1826 100%)",
-    lineGradient: "linear-gradient(90deg, transparent 5%, #9c7ec4 50%, transparent 95%)",
-    tagClass: "text-[#9c7ec4] bg-[rgba(156,126,196,0.15)]",
-    inkClass: "bg-[#9c7ec4]"
-  }
-};
+/**
+ * Portraits for experts, keyed by lower-case full name. Drop the image into
+ * `public/experts/` (portrait crop, about 1200 x 1500, JPG or WebP) and add a
+ * line here, e.g.  "shravani reddy": "/experts/shravani-reddy.jpg".
+ * A photo set on the expert in the database (`avatar_url`) always wins; with
+ * neither, the page shows a monogram.
+ */
+const EXPERT_PHOTOS: Record<string, string> = {};
+
+function withPhotos(list: ExpertProfile[]): ExpertProfile[] {
+  return list.map((e) => ({
+    ...e,
+    avatar_url: e.avatar_url || EXPERT_PHOTOS[e.full_name.trim().toLowerCase()] || null,
+  }));
+}
 
 export default function PlatterPage() {
   const router = useRouter();
@@ -141,9 +130,30 @@ export default function PlatterPage() {
   const [letterStyles, setLetterStyles] = useState<{font: string, color: string}[]>(
     Array(5).fill({ font: ANGLE_FONTS[0], color: ANGLE_COLORS[0] })
   );
-  // UI States for Pricing (collapsible per-expert accordions)
+  // UI state for the collapsible per-expert accordions
   const [openSections, setOpenSections] = useState<{ [expertId: string]: { disciplines: boolean; terms: boolean } }>({});
-  const [activeTier, setActiveTier] = useState<"apt" | "vil" | "sit">("apt");
+
+  // Contact form
+  const [inquiryState, setInquiryState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [inquiryError, setInquiryError] = useState("");
+
+  const handleInquiry = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+
+    setInquiryState("sending");
+    setInquiryError("");
+
+    const result = await submitInquiry(new FormData(form), "platter");
+    if (!result.ok) {
+      setInquiryState("error");
+      setInquiryError(result.error);
+      return;
+    }
+
+    form.reset();
+    setInquiryState("sent");
+  };
 
   const toggleSection = (expertId: string, section: "disciplines" | "terms") => {
     setOpenSections(prev => {
@@ -189,37 +199,51 @@ export default function PlatterPage() {
   useEffect(() => {
     async function loadExperts() {
       if (!supabase) {
-        setExperts(DEFAULT_EXPERTS);
+        setExperts(withPhotos(DEFAULT_EXPERTS));
         setSelectedExpertId(DEFAULT_EXPERTS[0].id);
         setLoadingExperts(false);
         return;
       }
       try {
+        // Reads the public view, not `profiles` directly: RLS restricts that
+        // table to authenticated users, and this is a public page. The view
+        // also exposes only id + full_name, so no contact details reach the
+        // browser.
         const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("role", "expert");
+          .from("public_experts")
+          .select("id, full_name, professional_title, bio, avatar_url, specialties, session_rate_inr");
         if (error) throw error;
         if (data && data.length > 0) {
-          const merged = data.map((p, idx) => {
-            const defaultExp = DEFAULT_EXPERTS[idx] || DEFAULT_EXPERTS[0];
+          const curated = new Map(
+            DEFAULT_EXPERTS.map((e) => [e.full_name.trim().toLowerCase(), e])
+          );
+          const merged: ExpertProfile[] = data.map((p) => {
+            const base = curated.get(p.full_name.trim().toLowerCase());
             return {
-              ...defaultExp,
+              phone: null,
+              email: null,
+              role: "expert",
+              ...base,
               id: p.id,
               full_name: p.full_name,
-              email: p.email,
-              phone: p.phone
+              expert_role: p.professional_title || base?.expert_role,
+              bio: p.bio || base?.bio,
+              avatar_url: p.avatar_url,
+              session_rate_inr: p.session_rate_inr,
+              tags: p.specialties?.length
+                ? p.specialties.map((s: string) => s.toUpperCase())
+                : base?.tags,
             };
           });
-          setExperts(merged);
+          setExperts(withPhotos(merged));
           setSelectedExpertId(merged[0].id);
         } else {
-          setExperts(DEFAULT_EXPERTS);
+          setExperts(withPhotos(DEFAULT_EXPERTS));
           setSelectedExpertId(DEFAULT_EXPERTS[0].id);
         }
       } catch (err) {
         console.error("Error loading experts", err);
-        setExperts(DEFAULT_EXPERTS);
+        setExperts(withPhotos(DEFAULT_EXPERTS));
         setSelectedExpertId(DEFAULT_EXPERTS[0].id);
       } finally {
         setLoadingExperts(false);
@@ -286,7 +310,7 @@ export default function PlatterPage() {
         </div>
       </section>
 
-      <div style={{ height: "30vh" }} aria-hidden="true" />
+      <div style={{ height: "15vh" }} aria-hidden="true" />
 
       {/* Main Container for the rest of the page */}
       <div className="container mx-auto px-6 max-w-6xl flex flex-col items-center text-center pb-[20vh]">
@@ -295,27 +319,22 @@ export default function PlatterPage() {
         <header ref={addToRefs} className="flex flex-col items-center w-full">
           <h1 className="font-editorial text-7xl md:text-9xl text-[var(--text-primary)] mb-8 tracking-tighter drop-shadow-lg">The Platter</h1>
           <p className="font-inter text-xl text-[var(--text-muted)] max-w-2xl font-light leading-relaxed">
-            A curated selection of expert consultations designed to elevate your brand, strategy, and execution.
+            A curated roster across three active divisions, each vetted on delivered work, available for a single honest session on your project.
           </p>
         </header>
 
-        <div style={{ height: "30vh" }} aria-hidden="true" />
+        <div style={{ height: "15vh" }} aria-hidden="true" />
 
         {/* Expanded Expert Profile - Moved to Top */}
         <section ref={addToRefs} className="w-full flex flex-col items-center">
-          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} The Architects</h2>
+          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} The Collective</h2>
           
           {loadingExperts ? (
             <div className="w-full max-w-5xl flex flex-col items-center animate-pulse">
-              {/* Carousel Skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-12">
-                {Array(3).fill(null).map((_, i) => (
-                  <div key={i} className="flex flex-col p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] h-32 space-y-4">
-                    <div className="h-3 bg-[var(--bg-surface-2)] rounded w-1/3" />
-                    <div className="h-6 bg-[var(--bg-surface-2)] rounded w-2/3" />
-                    <div className="h-3 bg-[var(--bg-surface-2)] rounded w-1/2" />
-                  </div>
-                ))}
+              {/* Field selector skeleton — one slice per field, not per expert */}
+              <div className="w-full max-w-[520px] mb-12 flex flex-col items-center gap-4">
+                <div className="w-full aspect-[460/320] bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl" />
+                <div className="h-3 w-40 bg-[var(--bg-surface-2)] rounded" />
               </div>
               {/* Active Section Skeleton */}
               <div className="w-full flex flex-col md:flex-row gap-12 items-center md:items-start text-left bg-[var(--bg-surface)] border border-[var(--border)] rounded-[40px] p-10 md:p-16 shadow-2xl backdrop-blur-md">
@@ -337,55 +356,64 @@ export default function PlatterPage() {
           ) : (
             <div className="w-full max-w-5xl flex flex-col items-center">
               
-              {/* Horizontal Carousel Selector */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-12">
-                {experts.map((expert) => {
-                  const isActive = selectedExpertId === expert.id;
-                  return (
-                    <button
-                      key={expert.id}
-                      onClick={() => setSelectedExpertId(expert.id)}
-                      className={`flex flex-col text-left p-6 rounded-2xl border transition-all duration-500 cursor-pointer ${
-                        isActive 
-                          ? "bg-[var(--bg-surface-2)] border-[var(--color-primary)] shadow-[0_0_30px_rgba(124,77,255,0.15)] scale-[1.02]" 
-                          : "bg-[var(--bg-surface)] border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-2)]/50 hover:scale-[1.01]"
-                      }`}
-                    >
-                      <span className="font-mono-sos text-[9px] text-[var(--text-faint)] uppercase tracking-wider mb-3">
-                        Dossier {expert.id.slice(0, 8)}
-                      </span>
-                      <h3 className="font-editorial text-2xl mb-1 text-[var(--text-primary)] transition-colors duration-300">
-                        {expert.full_name}
-                      </h3>
-                      <span className="font-mono-sos text-[10px] text-[var(--color-primary)] uppercase tracking-widest mt-2">
-                        {expert.expert_role}
-                      </span>
-                      <div className="w-full mt-4 flex items-center justify-between">
-                        <span className="font-mono-sos text-[9px] text-[var(--text-muted)] tracking-wider">
-                          {isActive ? "ACTIVE PROFILE" : "SELECT PROFILE"}
-                        </span>
-                        <span className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive ? "bg-[var(--color-primary)] animate-pulse" : "bg-transparent"}`} />
-                      </div>
-                    </button>
+              {/* Field selector — picking an expert drives the profile card below */}
+              <FieldPie
+                experts={experts}
+                selectedExpertId={selectedExpertId}
+                onSelect={(id) => {
+                  setSelectedExpertId(id);
+                  // bring the profile into view, otherwise picking an expert looks like it did nothing
+                  requestAnimationFrame(() =>
+                    document.getElementById("expert-profile")?.scrollIntoView({
+                      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+                      block: "start",
+                    })
                   );
-                })}
-              </div>
+                }}
+              />
 
               {/* Spacious Active Profile Details Card */}
               {(() => {
                 const activeExpert = experts.find((e) => e.id === selectedExpertId) || experts[0];
                 if (!activeExpert) return null;
                 return (
-                  <div key={activeExpert.id} className="w-full flex flex-col gap-16 items-center md:items-start text-left bg-[var(--bg-surface)] border border-[var(--border)] rounded-[40px] p-10 md:p-16 shadow-2xl backdrop-blur-md">
+                  <div key={activeExpert.id} id="expert-profile" className="w-full scroll-mt-28 flex flex-col gap-16 items-center md:items-start text-left bg-[var(--bg-surface)] border border-[var(--border)] rounded-[40px] p-10 md:p-16 shadow-2xl backdrop-blur-md">
                     
                     <div className="w-full flex flex-col lg:flex-row gap-16 items-center lg:items-start">
                       
-                      {/* Cinematic Photo Placeholder */}
+                      {/* Portrait: the real photo when one is on file, otherwise a monogram. */}
                       <div className="w-full max-w-sm lg:w-[350px] h-[480px] bg-[var(--bg-surface-2)] rounded-[32px] border border-[var(--border-strong)] flex-shrink-0 relative overflow-hidden grayscale hover:grayscale-0 transition-all duration-700 shadow-lg">
-                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] to-transparent opacity-80" />
-                        <div className="absolute inset-0 flex items-center justify-center font-mono-sos text-[var(--text-faint)] text-[10px] uppercase tracking-widest">
-                          Dossier {activeExpert.id.slice(0, 8)}
+                        <div
+                          role="img"
+                          aria-label={`${activeExpert.full_name}, ${activeExpert.expert_role ?? "expert"}`}
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                        >
+                          <span className="font-editorial text-[9rem] leading-none text-[var(--text-primary)] opacity-80 select-none">
+                            {activeExpert.full_name
+                              .split(/\s+/)
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((w) => w[0]?.toUpperCase())
+                              .join("")}
+                          </span>
+                          <span className="font-mono-sos text-xs uppercase tracking-[0.25em] text-[var(--text-muted)] px-6 text-center">
+                            {activeExpert.expert_role}
+                          </span>
                         </div>
+                        {activeExpert.avatar_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={activeExpert.avatar_url}
+                            src={activeExpert.avatar_url}
+                            alt={`Portrait of ${activeExpert.full_name}`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(ev) => {
+                              ev.currentTarget.style.display = "none";
+                            }}
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] to-transparent opacity-60 pointer-events-none" />
                       </div>
 
                       {/* Profile Information */}
@@ -481,197 +509,6 @@ export default function PlatterPage() {
                         </div>
                       </div>
 
-                      {/* Accordion Item 2: Engagement Terms */}
-                      <div>
-                        <button
-                          onClick={() => toggleSection(activeExpert.id, "terms")}
-                          className={`w-full py-8 flex items-center justify-between text-left group cursor-pointer focus:outline-none border-b transition-all duration-300 ${
-                            openSections[activeExpert.id]?.terms 
-                              ? "border-[var(--color-orange)] bg-gradient-to-r from-[var(--color-orange)]/3 to-transparent px-4" 
-                              : "border-[var(--border)] hover:border-[var(--color-orange)]/40 hover:px-2"
-                          }`}
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-editorial text-3xl md:text-4xl tracking-tight text-[var(--text-primary)]">
-                              Investment Architecture
-                            </span>
-                            <span className="font-mono-sos text-[9px] tracking-[0.2em] text-[var(--text-muted)] uppercase mt-2 opacity-60">
-                              Engagement terms, pricing models, and available add-ons
-                            </span>
-                          </div>
-                          <div className="relative w-8 h-8 flex items-center justify-center">
-                            <div className={`absolute w-4 h-[1px] transition-colors duration-300 ${
-                              openSections[activeExpert.id]?.terms ? "bg-[var(--color-orange)]" : "bg-[var(--text-muted)] group-hover:bg-[var(--text-primary)]"
-                            }`}></div>
-                            <div className={`absolute h-4 w-[1px] transition-all duration-500 ${
-                              openSections[activeExpert.id]?.terms ? "bg-[var(--color-orange)] rotate-90 opacity-0" : "bg-[var(--text-muted)] group-hover:bg-[var(--text-primary)] rotate-0"
-                            }`}></div>
-                          </div>
-                        </button>
-
-                        {/* Collapsible Content */}
-                        <div className={`grid transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${openSections[activeExpert.id]?.terms ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-                          <div className="overflow-hidden">
-                            <div className="md:pl-16 pb-12 pt-8">
-                              
-                              {/* Translated Selector Panel */}
-                              <div className="w-full text-left max-w-3xl">
-                                
-                                <div className="font-mono-sos text-[10px] font-medium tracking-[0.16em] uppercase text-[#b8965a] mb-1.5">
-                                  Structure &amp; Consulting
-                                </div>
-                                <h4 className="font-editorial text-4xl font-light text-[var(--text-primary)] tracking-tight leading-none mb-1">
-                                  Investment Architecture
-                                </h4>
-                                <p className="font-inter text-xs font-light text-[var(--text-muted)] mb-7">
-                                  Select a tier to explore scope and pricing
-                                </p>
-
-                                <div className="grid grid-cols-3 border border-black/10 dark:border-white/10 rounded-[10px] overflow-hidden bg-[#eee9e2] dark:bg-[#151221] mb-5">
-                                  {(Object.keys(PRICING_TIERS) as Array<keyof typeof PRICING_TIERS>).map((tierKey) => {
-                                    const tier = PRICING_TIERS[tierKey];
-                                    const isActive = activeTier === tierKey;
-                                    return (
-                                      <button
-                                        key={tierKey}
-                                        onClick={() => setActiveTier(tierKey)}
-                                        className={`bg-transparent text-left cursor-pointer relative py-4 px-[18px] border-r border-black/10 dark:border-white/10 last:border-r-0 hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-300 ${
-                                          isActive ? "bg-white dark:bg-[#201c30]" : ""
-                                        }`}
-                                      >
-                                        <span className="font-mono-sos text-[9px] font-medium tracking-[0.16em] uppercase text-[#b8965a] block mb-1">
-                                          {tier.num}
-                                        </span>
-                                        <span className="font-editorial text-[21px] font-light text-[var(--text-primary)] block leading-[1.1] mb-1.5">
-                                          {tier.name}
-                                        </span>
-                                        <span className="font-inter text-[11px] text-[var(--text-muted)] block">
-                                          {tier.priceText}
-                                        </span>
-                                        <div 
-                                          className={`absolute bottom-0 left-0 h-[2px] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                                            isActive ? "w-full" : "w-0"
-                                          } ${tier.inkClass}`} 
-                                        />
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-
-                                <div 
-                                  className="detail-panel rounded-xl overflow-hidden transition-all duration-500"
-                                  style={{ background: PRICING_TIERS[activeTier].gradient }}
-                                >
-                                  <div 
-                                    className="h-[1px] w-full relative overflow-hidden" 
-                                    style={{ background: PRICING_TIERS[activeTier].lineGradient }}
-                                  />
-                                  
-                                  {/* Inner Content Grid */}
-                                  <div key={activeTier} className="p-8 grid grid-cols-1 md:grid-cols-[1fr_220px] gap-8 items-start animate-fade-switch">
-                                    <div className="flex flex-col items-start text-left">
-                                      <span className={`inline-block text-[9px] font-medium tracking-[0.15em] uppercase px-[9px] py-[3px] rounded-[2px] mb-3.5 ${PRICING_TIERS[activeTier].tagClass}`}>
-                                        {PRICING_TIERS[activeTier].num} — {PRICING_TIERS[activeTier].name}
-                                      </span>
-                                      <h5 className="font-editorial text-[46px] font-light text-white/95 leading-none mb-1 tracking-tight">
-                                        {PRICING_TIERS[activeTier].name}
-                                      </h5>
-                                      <span className="font-mono-sos text-[10px] tracking-[0.15em] uppercase text-white/30 mb-5 min-h-[14px]">
-                                        {PRICING_TIERS[activeTier].scope}
-                                      </span>
-                                      <p className="font-inter text-[13px] font-light text-white/60 leading-[1.7] max-w-[320px]">
-                                        {PRICING_TIERS[activeTier].desc}
-                                      </p>
-                                    </div>
-                                    <div className="flex flex-col gap-0 pt-1 text-left">
-                                      <ul className="list-none mb-6">
-                                        {PRICING_TIERS[activeTier].feats.map((feat, idx) => (
-                                          <li key={idx} className="font-inter text-xs font-light text-white/70 py-2 border-b border-white/10 last:border-b-0 flex items-center gap-2.5">
-                                            <span 
-                                              className="w-1.5 h-1.5 rounded-full flex-shrink-0" 
-                                              style={{ background: PRICING_TIERS[activeTier].color }}
-                                            />
-                                            {feat}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                      <div className="pt-4 border-t border-white/15">
-                                        <div className="font-editorial text-[34px] font-normal text-white/95 leading-none tracking-tight">
-                                          {PRICING_TIERS[activeTier].price}
-                                        </div>
-                                        <div className="font-mono-sos text-[10px] tracking-[0.1em] uppercase text-white/30 mt-1 mb-3.5">
-                                          Base rate / 60 min
-                                        </div>
-                                        <button 
-                                          onClick={() => {
-                                            router.push(`/login?tier=${encodeURIComponent(PRICING_TIERS[activeTier].name)}`);
-                                          }}
-                                          className="w-full font-inter text-[11px] font-semibold tracking-wider uppercase py-2.5 px-4 rounded-md border border-white/20 bg-white/5 text-white/80 hover:bg-white/10 hover:border-white/40 hover:text-white transition-all duration-300 cursor-pointer text-center"
-                                        >
-                                          Book Session ↗
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Extensions Section */}
-                                <div className="mt-6 w-full text-left">
-                                  <div className="font-mono-sos text-[9px] tracking-[0.16em] uppercase text-[var(--text-muted)] mb-3">
-                                    Available extensions
-                                  </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full">
-                                    <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[#b8965a] cursor-default">
-                                      <div>
-                                        <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
-                                          Advance Booking
-                                        </span>
-                                        <p className="font-inter text-[11px] text-[var(--text-muted)] font-light mt-0.5">
-                                          Requested during initial scheduling
-                                        </p>
-                                      </div>
-                                      <div className="font-mono-sos text-base font-semibold text-[#b8965a]">
-                                        +40%
-                                      </div>
-                                    </div>
-                                    <div className="bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-lg py-3 px-4 flex items-center justify-between transition-all duration-300 hover:border-[#b8965a] cursor-default">
-                                      <div>
-                                        <span className="font-editorial text-[17px] font-normal text-[var(--text-primary)] leading-snug">
-                                          On-Spot Extension
-                                        </span>
-                                        <p className="font-inter text-[11px] text-[var(--text-muted)] font-light mt-0.5">
-                                          Active session (+30 min)
-                                        </p>
-                                      </div>
-                                      <div className="font-mono-sos text-base font-semibold text-[#b8965a]">
-                                        +60%
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Footer Row */}
-                                <div className="mt-6 pt-4 border-t border-[var(--border)] flex flex-col md:flex-row items-center justify-between gap-4 w-full text-left">
-                                  <div className="font-inter text-xs text-[var(--text-muted)] font-light">
-                                    Written summary delivered within 48 hours of every session.
-                                  </div>
-                                  <button 
-                                    onClick={() => {
-                                      router.push("/login?tier=General");
-                                    }}
-                                    className="font-inter text-[11px] font-semibold tracking-wider uppercase border border-[var(--text-primary)] text-[var(--text-primary)] bg-transparent py-2.5 px-6 rounded-[3px] hover:bg-[var(--text-primary)] hover:text-[var(--bg-base)] transition-all duration-300 cursor-pointer"
-                                  >
-                                    Book Session ↗
-                                  </button>
-                                </div>
-
-                              </div>
-
-                            </div>
-                          </div>
-                        </div>
-
-                      </div>
                     </div>
 
                   </div>
@@ -681,7 +518,84 @@ export default function PlatterPage() {
           )}
         </section>
 
-        <div style={{ height: "30vh" }} aria-hidden="true" />
+        <div style={{ height: "15vh" }} aria-hidden="true" />
+
+        {/* How Booking Works — three plain steps, no accordion to open first */}
+        <section ref={addToRefs} className="w-full flex flex-col items-center">
+          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} How Booking Works</h2>
+          <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 text-left">
+            {[
+              { id: "01", title: "Choose", desc: "Pick an expert whose work matches your project." },
+              { id: "02", title: "Brief", desc: "Upload drawings and references to a private vault before the session." },
+              { id: "03", title: "Meet", desc: "Secure video, one hour, with payment held in escrow until it's done." }
+            ].map((step) => (
+              <div key={step.id} className="flex flex-col border-t-2 border-[var(--border-strong)] pt-6">
+                <span className="font-mono-sos text-[10px] tracking-[0.3em] text-[var(--color-orange)] mb-4">{step.id}</span>
+                <h3 className="font-editorial text-3xl text-[var(--text-primary)] tracking-tight mb-3">{step.title}</h3>
+                <p className="font-inter text-sm text-[var(--text-muted)] leading-relaxed font-light">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div style={{ height: "15vh" }} aria-hidden="true" />
+
+        {/* Investment: one flat rate per expert, taken from the same record the
+            checkout charges, so the price shown is always the price paid. */}
+        <section ref={addToRefs} className="w-full flex flex-col items-center">
+          <h2 className="font-mono-sos text-xs tracking-widest text-[var(--text-muted)] uppercase mb-12">{"//"} Investment</h2>
+
+          <div className="w-full max-w-3xl text-left">
+            <p className="font-inter text-sm font-light text-[var(--text-muted)] mb-7">
+              One flat rate per 60-minute session, set by each expert. The price you see here is the price you pay.
+            </p>
+
+            <ul className="border border-[var(--border-strong)] rounded-[10px] overflow-hidden bg-[var(--bg-surface-2)]">
+              {experts.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-5 md:p-6 border-b border-[var(--border-strong)] last:border-b-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="font-editorial text-[22px] font-light text-[var(--text-primary)] leading-tight">
+                      {e.full_name}
+                    </div>
+                    <div className="font-mono-sos text-[10px] tracking-[0.14em] uppercase text-[var(--text-muted)] mt-1">
+                      {e.expert_role}
+                    </div>
+                  </div>
+                  <div className="sm:text-right shrink-0">
+                    <div className="font-editorial text-[30px] font-normal text-[var(--text-primary)] leading-none tracking-tight">
+                      {e.session_rate_inr ? formatInr(e.session_rate_inr) : "On request"}
+                    </div>
+                    {e.session_rate_inr ? (
+                      <div className="font-mono-sos text-[10px] tracking-[0.1em] uppercase text-[var(--text-muted)] mt-1">
+                        per 60 min
+                      </div>
+                    ) : null}
+                  </div>
+                  <button
+                    onClick={() => {
+                      localStorage.setItem("platter_selected_expert", e.id);
+                      router.push("/login");
+                    }}
+                    className="btn-sos shrink-0 sm:min-w-[9rem]"
+                  >
+                    Book session
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-6 pt-4 border-t border-[var(--border)] w-full text-left">
+              <div className="font-inter text-xs text-[var(--text-muted)] font-light">
+                A written summary is delivered within 48 hours of every session.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div style={{ height: "15vh" }} aria-hidden="true" />
 
         {/* Standalone Secure Slot CTA */}
         <section ref={addToRefs} className="w-full flex flex-col items-center overflow-visible">
@@ -697,7 +611,7 @@ export default function PlatterPage() {
            </Link>
          </section>
 
-        <div style={{ height: "20vh" }} aria-hidden="true" />
+        <div style={{ height: "10vh" }} aria-hidden="true" />
 
         {/* Let's Talk Contact Form */}
         <section ref={addToRefs} className="w-full border-t border-[var(--border)] bg-[var(--bg-base)] z-10 relative py-24">
@@ -726,18 +640,21 @@ export default function PlatterPage() {
 
             {/* Fully Centered Contact Form (Single Column) */}
             <div className="w-full max-w-xl mx-auto flex flex-col items-center relative z-20">
-              <form 
-                className="w-full flex flex-col items-center gap-y-12"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert("Thank you! Your inquiry has been received.");
-                }}
+              <form
+                className="w-full flex flex-col items-center gap-y-12 relative"
+                onSubmit={handleInquiry}
               >
+              <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                <label>Leave this field empty<input type="text" name="website" tabIndex={-1} autoComplete="off" /></label>
+              </div>
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Full Name *</label>
-                  <input 
-                    type="text" 
-                    required 
+                  <input
+                    type="text"
+                    name="full_name"
+                    aria-label="Full name"
+                    maxLength={200}
+                    required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="Jane Doe"
                   />
@@ -745,9 +662,12 @@ export default function PlatterPage() {
 
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">E-mail *</label>
-                  <input 
-                    type="email" 
-                    required 
+                  <input
+                    type="email"
+                    name="email"
+                    aria-label="Email"
+                    maxLength={320}
+                    required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="jane@example.com"
                   />
@@ -755,8 +675,11 @@ export default function PlatterPage() {
 
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Subject</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
+                    name="subject"
+                    aria-label="Subject"
+                    maxLength={300}
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 text-center"
                     placeholder="Project Inquiry"
                   />
@@ -764,9 +687,12 @@ export default function PlatterPage() {
 
                 <div className="relative group w-full text-center">
                   <label className="block font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] mb-3 uppercase transition-colors group-focus-within:text-[var(--text-primary)] text-center">Message *</label>
-                  <textarea 
+                  <textarea
                     rows={1}
-                    required 
+                    name="message"
+                    aria-label="Message"
+                    maxLength={5000}
+                    required
                     className="w-full bg-transparent border-b border-[var(--border-strong)] px-0 py-2 text-[var(--text-primary)] font-inter text-lg focus:outline-none focus:border-[var(--text-primary)] transition-colors resize-none rounded-none placeholder-[var(--text-muted)] placeholder-opacity-30 min-h-[100px] text-center"
                     placeholder="Tell us about your vision..."
                   ></textarea>
@@ -780,14 +706,29 @@ export default function PlatterPage() {
                     className="w-4 h-4 rounded-sm border-[var(--border-strong)] bg-transparent text-[var(--text-primary)] focus:ring-[var(--text-primary)] focus:ring-offset-0 focus:ring-offset-[var(--bg-base)] cursor-pointer"
                   />
                   <label htmlFor="privacy" className="ml-3 font-inter text-sm text-[var(--text-muted)] cursor-pointer select-none">
-                    I acknowledge the <a href="#" className="text-[var(--text-primary)] hover:underline transition-colors">privacy policy</a>.
+                    I acknowledge the <a href="/privacy" target="_blank" rel="noopener" className="text-[var(--text-primary)] underline underline-offset-4 transition-colors">privacy policy</a>.
                   </label>
                 </div>
 
-                <div className="mt-8 text-center w-full">
-                  <button type="submit" className="bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos text-xs tracking-[0.3em] px-12 py-4 uppercase hover:opacity-80 transition-opacity duration-300 w-full md:w-auto cursor-pointer">
-                    Submit Inquiry
+                <div className="mt-8 text-center w-full flex flex-col items-center gap-4">
+                  <button
+                    type="submit"
+                    disabled={inquiryState === "sending"}
+                    className="bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos text-xs tracking-[0.3em] px-12 py-4 uppercase hover:opacity-80 transition-opacity duration-300 w-full md:w-auto cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                  >
+                    {inquiryState === "sending" ? "Sending…" : "Submit Inquiry"}
                   </button>
+
+                  <p
+                    role="status"
+                    aria-live="polite"
+                    className={`font-inter text-sm min-h-[20px] ${
+                      inquiryState === "error" ? "text-[var(--color-orange)]" : "text-[var(--text-muted)]"
+                    }`}
+                  >
+                    {inquiryState === "sent" && "Thanks — we've got it. We'll reply within two working days."}
+                    {inquiryState === "error" && inquiryError}
+                  </p>
                 </div>
 
               </form>
@@ -795,7 +736,7 @@ export default function PlatterPage() {
           </div>
         </section>
 
-        <div style={{ height: "10vh" }} aria-hidden="true" />
+        <div style={{ height: "6vh" }} aria-hidden="true" />
 
       </div>
     </div>

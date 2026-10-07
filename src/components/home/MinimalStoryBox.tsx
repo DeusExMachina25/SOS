@@ -16,18 +16,18 @@ export default function MinimalStoryBox({
   className = ""
 }: MinimalStoryBoxProps) {
   return (
-    <div className={`max-w-2xl px-6 md:px-12 flex flex-col justify-center ${className}`}>
+    <div className={`max-w-2xl px-6 xl:px-12 flex flex-col justify-center ${className}`}>
       {title && (
-        <h3 className="font-display text-4xl md:text-6xl text-[var(--text-primary)] mb-8 tracking-tighter leading-tight drop-shadow-2xl">
+        <h3 className="font-display text-3xl md:text-4xl xl:text-6xl text-[var(--text-primary)] mb-4 xl:mb-8 tracking-tighter leading-tight drop-shadow-2xl">
           {title}
         </h3>
       )}
       
-      <div className="space-y-6">
+      <div className="space-y-4 xl:space-y-6">
         {paragraphs.map((p, i) => (
           <p 
             key={i} 
-            className="font-sans text-lg md:text-2xl text-[var(--text-muted)] font-light leading-relaxed"
+            className="font-sans text-base md:text-lg xl:text-2xl text-[var(--text-muted)] font-light leading-relaxed"
           >
             {p}
           </p>

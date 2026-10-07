@@ -3,66 +3,91 @@
 /* ═══════════════════════════════════════════════════════
    PREMIUM CINEMATIC DESIGN TOKENS
 ════════════════════════════════════════════════════════*/
+/* ───────────────────────────────────────────────────────
+   BRAND PALETTE — three colours
+
+     Apricot Glow    #FFDAB9
+     Obsidian Veil   #130F1C
+     Ultra Violet    #5F4B8B  (PANTONE 18-3838 TCX)
+
+   Ultra Violet on Obsidian measures 2.6:1, under the 4.5:1 text
+   floor, so small accent text on dark uses a lifted tint of the
+   same hue rather than the base colour. Anything marked "derived"
+   is a tint/shade of one of the three, never a new hue.
+──────────────────────────────────────────────────────── */
 :root,
 [data-theme="dark"] {
-  /* Softer, Mid-tone Midnight Obsidian Purple (Low contrast glare) */
-  --bg-base:      #0F0D1B; /* Softer obsidian midnight */
-  --bg-surface:   rgba(255, 255, 255, 0.02); /* Clean, subtle glass */
-  --bg-surface-2: rgba(255, 255, 255, 0.04);
-  --bg-overlay:   rgba(15, 13, 27, 0.92);
+  /* Obsidian Veil ground */
+  --bg-base:      #130F1C;
+  --bg-surface:   rgba(255, 218, 185, 0.03);
+  --bg-surface-2: rgba(255, 218, 185, 0.06);
+  --bg-overlay:   rgba(19, 15, 28, 0.92);
 
-  /* Muted Sophisticated Brands: Softer Pastel Lavender */
-  --color-primary:       #B29BFF; /* Extremely gentle pastel lavender */
-  --color-primary-deep:  #5B3BBF; /* Deep rich purple */
-  --color-primary-pale:  rgba(178, 155, 255, 0.04);
-  --color-secondary:     #EFE7D8; /* White Chocolate */
-  --color-orange:        #FF7A54; /* Softer, muted orange */
-  --color-green:         #C6DB65; /* Muted June Bud */
+  /* Apricot carries accents on dark; Ultra Violet works as a fill beneath it */
+  --color-primary:       #FFDAB9; /* Apricot Glow */
+  --color-primary-deep:  #5F4B8B; /* Ultra Violet */
+  --color-primary-pale:  rgba(255, 218, 185, 0.05);
+  --color-secondary:     #FFDAB9; /* Apricot Glow */
+  --color-orange:        #8F81AE; /* derived — Ultra Violet lifted for legibility */
+  --color-green:         #E8A88C; /* derived — Apricot deepened, third series step */
 
-  /* Softer Typography (Reduces halation/glare on dark screens) */
-  --text-primary:  #E3DFEC; /* Softer warm gray-white */
-  --text-muted:    #9A97A2; /* Muted Lavender-Gray */
-  --text-faint:    rgba(227, 223, 236, 0.16);
+  --text-primary:  #FFDAB9;
+  --text-muted:    rgba(255, 218, 185, 0.62);
+  --text-faint:    rgba(255, 218, 185, 0.26);
 
-  /* Delicate Low-Contrast Glass Borders */
-  --border:        rgba(255, 255, 255, 0.05); /* Extremely soft border */
-  --border-strong: rgba(178, 155, 255, 0.12); /* Subtle purple hint */
+  --border:        rgba(255, 218, 185, 0.08);
+  --border-strong: rgba(255, 218, 185, 0.20);
 
-  --dot-color:     rgba(178, 155, 255, 0.02);
-  --cursor-color:  #B29BFF;
+  --dot-color:     rgba(255, 218, 185, 0.03);
+  --cursor-color:  #FFDAB9;
 
   --bg-aurora-1:   var(--bg-base);
-  --bg-aurora-2:   #1A172E; /* Very deep, low-luminosity purple glow */
-  --bg-aurora-3:   #0F0D1B;
+  --bg-aurora-2:   #28203B; /* derived — Obsidian with an Ultra Violet cast */
+  --bg-aurora-3:   #130F1C;
+
+  /* Field-pie series — four fills that must stay tellable apart on Obsidian.
+     All derived steps between Apricot and Ultra Violet; no new hues.
+     Every step clears 4.5:1 on the Obsidian ground. */
+  --field-1: #FFDAB9; /* Apricot Glow            14.4:1 */
+  --field-2: #8F81AE; /* derived — Ultra Violet lifted   5.3:1 */
+  --field-3: #E8A88C; /* derived — Apricot deepened      9.4:1 */
+  --field-4: #BFB7D1; /* derived — Ultra Violet pale     9.8:1 */
 }
 
 [data-theme="light"] {
-  /* Warm White Chocolate Brutalist Base */
-  --bg-base:      #EFE7D8;
-  --bg-surface:   rgba(255, 255, 255, 0.65);
-  --bg-surface-2: rgba(255, 255, 255, 0.85);
-  --bg-overlay:   rgba(239, 231, 216, 0.85);
+  /* Apricot Glow ground */
+  --bg-base:      #FFDAB9;
+  --bg-surface:   rgba(19, 15, 28, 0.04);
+  --bg-surface-2: rgba(19, 15, 28, 0.07);
+  --bg-overlay:   rgba(255, 218, 185, 0.90);
 
-  --color-primary:       #30009C; /* Rich deep indigo-purple */
-  --color-primary-deep:  #1A0054; /* Deepest dark blue */
-  --color-primary-pale:  rgba(48, 0, 156, 0.05);
-  --color-secondary:     #08051A; /* Near Black */
-  --color-orange:        #FF5B2E; /* Portland Orange */
-  --color-green:         #8B9E30; /* June Bud */
+  /* Ultra Violet reads 5.6:1 on Apricot, so it leads on light */
+  --color-primary:       #5F4B8B; /* Ultra Violet */
+  --color-primary-deep:  #42375F; /* derived — Ultra Violet deepened */
+  --color-primary-pale:  rgba(95, 75, 139, 0.06);
+  --color-secondary:     #130F1C; /* Obsidian Veil */
+  --color-orange:        #5F4B8B; /* Ultra Violet */
+  --color-green:         #7A5C45; /* derived — Apricot deepened, third series step */
 
-  --text-primary:  #08051A;
-  --text-muted:    #5B5854;
-  --text-faint:    rgba(8, 5, 26, 0.35);
+  --text-primary:  #130F1C;
+  --text-muted:    rgba(19, 15, 28, 0.62);
+  --text-faint:    rgba(19, 15, 28, 0.34);
 
-  --border:        rgba(48, 0, 156, 0.06);
-  --border-strong: rgba(48, 0, 156, 0.15);
+  --border:        rgba(19, 15, 28, 0.10);
+  --border-strong: rgba(19, 15, 28, 0.24);
 
-  --dot-color:     rgba(48, 0, 156, 0.03);
-  --cursor-color:  #30009C;
+  --dot-color:     rgba(19, 15, 28, 0.04);
+  --cursor-color:  #5F4B8B;
 
   --bg-aurora-1:   var(--bg-base);
-  --bg-aurora-2:   #E2D9C8; /* Muted warm glow */
-  --bg-aurora-3:   #EFE7D8;
+  --bg-aurora-2:   #F5C9A3; /* derived — Apricot deepened */
+  --bg-aurora-3:   #FFDAB9;
+
+  /* Field-pie series, restepped to read on the Apricot ground */
+  --field-1: #5F4B8B; /* Ultra Violet                    5.6:1 */
+  --field-2: #130F1C; /* Obsidian Veil                  14.4:1 */
+  --field-3: #7A5C45; /* derived — Apricot deepened      4.6:1 */
+  --field-4: #42375F; /* derived — Ultra Violet deepened 8.2:1 */
 }
 
 @theme inline {
@@ -79,10 +104,16 @@
 /* ═══════════════════════════════════════════════════════
    BASE & NOISE OVERLAY
 ════════════════════════════════════════════════════════*/
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Must stay inside @layer base. Tailwind v4 puts every utility in
+   @layer utilities, and an unlayered rule outranks any layered one
+   regardless of specificity — so an unlayered wildcard reset silently
+   nullifies every p-*, px-*, m-*, mt-* utility in the entire app. */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html {
@@ -129,7 +160,7 @@ body::before {
 .ambient-glow-2 {
   width: 500px;
   height: 500px;
-  background: rgba(255, 91, 46, 0.05);
+  background: rgba(95, 75, 139, 0.10);
   bottom: -20%;
   right: -10%;
 }
@@ -303,7 +334,7 @@ body::before {
 }
 .nav-link {
   font-family: 'Inter', sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -311,12 +342,13 @@ body::before {
   text-decoration: none;
   transition: color 0.3s;
   position: relative;
-  padding: 4px 0;
+  /* 12px of vertical padding gives a ~40px tap target; the underline sits at its visual baseline */
+  padding: 12px 0;
 }
 .nav-link::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 0;
+  bottom: 8px; left: 0;
   width: 0%;
   height: 1px;
   background: var(--text-primary);
@@ -366,6 +398,14 @@ body::before {
 .btn-sos:hover::before {
   left: 100%;
 }
+/* Primary call to action: bigger target and type than the standard pill. */
+.btn-sos-lg {
+  min-height: 56px;
+  padding: 1.1rem 2.75rem;
+  font-size: 13px;
+  letter-spacing: 3px;
+  font-weight: 600;
+}
 .btn-sos-filled {
   background: var(--text-primary);
   color: var(--bg-base);
@@ -394,7 +434,7 @@ body::before {
    ANIMATED EMBOSSED TEXT
 ════════════════════════════════════════════════════════*/
 .text-embossed {
-  background: linear-gradient(110deg, #7C4DFF, #FF5B2E, #B8CF4F, #EFE7D8, #7C4DFF);
+  background: linear-gradient(110deg, #5F4B8B, #8F81AE, #E8A88C, #FFDAB9, #5F4B8B);
   background-size: 200% auto;
   color: transparent;
   -webkit-background-clip: text;
@@ -523,3 +563,341 @@ body::before {
 }
 
 
+
+/* ═══════════════════════════════════════════════════════
+   POSITION TRACKER BACKGROUND
+   Scroll-reactive measurement grid revealed after the
+   opening SOS logo flies through the camera.
+════════════════════════════════════════════════════════*/
+.pt-root {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  --pt-x: 50vw;
+  --pt-y: 50vh;
+}
+
+/* Cursor spotlight */
+.pt-spotlight {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    420px circle at var(--pt-x) var(--pt-y),
+    rgba(255, 218, 185, 0.07),
+    transparent 70%
+  );
+}
+
+/* Measurement columns */
+.pt-grid {
+  position: absolute;
+  inset: 0 2rem;
+  display: flex;
+  gap: 8px;
+}
+.pt-col {
+  position: relative;
+  flex: 1 1 auto;
+  background-color: var(--color-primary-pale);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.pt-fill {
+  position: absolute;
+  inset: 0;
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  background: linear-gradient(
+    to top,
+    rgba(255, 218, 185, 0.10),
+    rgba(255, 218, 185, 0.01) 65%,
+    transparent
+  );
+  will-change: transform;
+}
+
+/* Left rail ruler */
+.pt-rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0.75rem;
+  width: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.pt-tick {
+  width: 4px;
+  height: 1px;
+  background-color: var(--text-faint);
+}
+.pt-tick-major {
+  width: 10px;
+}
+.pt-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 1px;
+  background-color: var(--color-primary);
+  opacity: 0.5;
+  will-change: transform;
+}
+
+/* Scan line */
+.pt-scan {
+  position: absolute;
+  top: 0;
+  left: 2rem;
+  right: 2rem;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 218, 185, 0.28),
+    transparent
+  );
+  will-change: transform;
+}
+
+/* HUD readout */
+.pt-hud {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.pt-hud-label {
+  margin-bottom: 0.25rem;
+}
+.pt-hud-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.pt-hud-value {
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 767px) {
+  .pt-col-wide-only { display: none; }
+  .pt-grid { inset: 0 1rem; }
+  .pt-scan { left: 1rem; right: 1rem; }
+  .pt-hud { right: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pt-scan,
+  .pt-marker { display: none; }
+  .pt-spotlight { background: none; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SOS WORDMARK  ("SOS Mark Final" from the logo redesign)
+════════════════════════════════════════════════════════*/
+:root,
+[data-theme="dark"] {
+  /* Dark lockup: Apricot letterforms, Ultra Violet dots */
+  --mark-ink:    #FFDAB9;
+  --mark-accent: #5F4B8B;
+}
+
+[data-theme="light"] {
+  /* Light lockup: Ultra Violet letterforms, Apricot dots */
+  --mark-ink:    #5F4B8B;
+  --mark-accent: #FFDAB9;
+}
+
+.sos-mark {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Silkscreen', monospace;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--mark-ink);
+}
+.sos-mark-letter {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sos-mark-glyph {
+  font: inherit;
+  line-height: 1;
+}
+.sos-mark-grid {
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  place-items: center;
+}
+.sos-mark-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--mark-ink);
+}
+.sos-mark-dot {
+  background-color: var(--mark-accent);
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   FIELD PIE (Platter)
+   2.5D field selector. Slice models hold still until the
+   slice takes focus, then their detail animations run.
+════════════════════════════════════════════════════════*/
+.fp-slice {
+  cursor: pointer;
+  transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.45s ease;
+}
+.fp-lift {
+  transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.fp-shadow {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.55s ease;
+}
+.fp-awake .fp-shadow {
+  transform: scale(0.82);
+  opacity: 0.6;
+}
+
+.fp-bob {
+  animation: fp-bob 5s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.fp-bob.fp-drift {
+  animation: fp-drift 6s ease-in-out infinite;
+}
+@keyframes fp-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2.5px); }
+}
+@keyframes fp-drift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-8px) rotate(-4deg); }
+}
+
+.fp-win { animation: fp-win 5s ease-in-out infinite; }
+@keyframes fp-win {
+  0%, 42%, 100% { opacity: 0.22; }
+  58%, 86%      { opacity: 0.92; }
+}
+
+.fp-beacon {
+  animation: fp-beacon 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes fp-beacon {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 1; }
+}
+
+.fp-halo {
+  animation: fp-halo 2.4s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+}
+@keyframes fp-halo {
+  0%   { opacity: 0; transform: scale(0.5); }
+  18%  { opacity: 0.5; }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+
+.fp-glint {
+  animation: fp-glint 3.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes fp-glint {
+  0%, 72%, 100% { opacity: 0.55; }
+  84%           { opacity: 1; }
+}
+
+.fp-band {
+  animation: fp-band 7s linear infinite;
+  transform-box: fill-box;
+  opacity: 0;
+}
+@keyframes fp-band {
+  0%   { transform: translateY(0); opacity: 0; }
+  12%  { opacity: 0.7; }
+  88%  { opacity: 0.7; }
+  100% { transform: translateY(-11px); opacity: 0; }
+}
+
+.fp-thread {
+  stroke-dasharray: 2 5;
+  animation: fp-thread 2.4s linear infinite;
+}
+@keyframes fp-thread { to { stroke-dashoffset: -14; } }
+
+.fp-trail {
+  stroke-dasharray: 3 7;
+  animation: fp-trail 1.5s linear infinite;
+}
+@keyframes fp-trail { to { stroke-dashoffset: -20; } }
+
+/* Everything rests paused; only the focused slice runs. */
+.fp-bob, .fp-win, .fp-beacon, .fp-halo, .fp-glint, .fp-band, .fp-thread, .fp-trail {
+  animation-play-state: paused;
+}
+.fp-awake .fp-bob,
+.fp-awake .fp-win,
+.fp-awake .fp-beacon,
+.fp-awake .fp-halo,
+.fp-awake .fp-glint,
+.fp-awake .fp-band,
+.fp-awake .fp-thread,
+.fp-awake .fp-trail {
+  animation-play-state: running;
+}
+
+.fp-card {
+  opacity: 0;
+  transform: translateY(52px);
+  animation: fp-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes fp-rise {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fp-bob, .fp-win, .fp-beacon, .fp-halo, .fp-glint, .fp-band, .fp-thread, .fp-trail,
+  .fp-awake .fp-bob, .fp-awake .fp-win, .fp-awake .fp-beacon, .fp-awake .fp-halo,
+  .fp-awake .fp-glint, .fp-awake .fp-band, .fp-awake .fp-thread, .fp-awake .fp-trail {
+    animation: none;
+  }
+  .fp-card { animation: none; opacity: 1; transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   INTRO PRELOADER — never shown again within a session
+════════════════════════════════════════════════════════*/
+html.sos-seen .sos-preloader { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .sos-preloader { display: none !important; }
+}

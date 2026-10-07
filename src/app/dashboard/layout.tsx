@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  LayoutDashboard, 
-  FolderLock, 
-  MessageSquare, 
-  Video, 
+import {
+  LayoutDashboard,
+  CalendarDays,
+  CalendarClock,
+  FolderLock,
+  MessageSquare,
+  Video,
   LogOut,
   CircleUserRound,
   Settings,
@@ -22,8 +24,10 @@ import {
   Banknote,
   Database,
   ShieldCheck,
-  Wifi
+  Wifi,
+  Check
 } from "lucide-react";
+import { getMyExpertProfile, setMyUpiId } from "@/lib/data/queries";
 
 export default function DashboardLayout({
   children,
@@ -34,10 +38,15 @@ export default function DashboardLayout({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [currency, setCurrency] = useState("INR");
   const [theme, setTheme] = useState("dark");
-  
+  const [upiId, setUpiId] = useState("");
+  const [upiSaving, setUpiSaving] = useState(false);
+  const [upiSaved, setUpiSaved] = useState(false);
+  const [upiError, setUpiError] = useState("");
+
   // Load saved theme on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || "dark";
+    const savedTheme = localStorage.getItem("sos-theme") || localStorage.getItem("theme") || "dark";
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration from localStorage
     setTheme(savedTheme);
     document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);
@@ -46,24 +55,54 @@ export default function DashboardLayout({
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
-    localStorage.setItem("theme", nextTheme);
+    localStorage.setItem("sos-theme", nextTheme);
   };
 
   // Determine base path for the role
   const role = pathname.includes("/expert") ? "expert" : pathname.includes("/admin") ? "admin" : "client";
   const basePath = `/dashboard/${role}`;
 
+  // Load the expert's payout UPI ID when they open Preferences.
+  useEffect(() => {
+    if (!isProfileOpen || role !== "expert") return;
+    getMyExpertProfile()
+      .then((profile) => setUpiId(profile?.upiId ?? ""))
+      .catch((err) => console.error(err));
+  }, [isProfileOpen, role]);
+
+  const handleSaveUpi = async () => {
+    setUpiError("");
+    setUpiSaving(true);
+    try {
+      await setMyUpiId(upiId.trim());
+      setUpiSaved(true);
+      setTimeout(() => setUpiSaved(false), 2000);
+    } catch (err) {
+      setUpiError(err instanceof Error ? err.message : "Failed to save UPI ID");
+    } finally {
+      setUpiSaving(false);
+    }
+  };
+
   // Breadcrumbs title calculations
-  const pageName = pathname.endsWith("/vault") 
-    ? "Vault" 
-    : pathname.endsWith("/chat") 
-    ? "Messages" 
-    : pathname.includes("/video-call") 
-    ? "Video Call" 
+  const pageName = pathname.endsWith("/vault")
+    ? "Vault"
+    : pathname.endsWith("/chat")
+    ? "Messages"
+    : pathname.endsWith("/sessions")
+    ? "Sessions"
+    : pathname.endsWith("/availability")
+    ? "Availability"
+    : pathname.includes("/video-call")
+    ? "Video Call"
     : "Overview";
 
   const navItems = [
     { name: "Overview", icon: LayoutDashboard, path: `${basePath}`, colorClass: "text-[var(--color-primary)] group-hover/nav:text-[var(--color-primary)]" },
+    { name: "Sessions", icon: CalendarDays, path: `${basePath}/sessions`, colorClass: "text-[var(--color-orange)] group-hover/nav:text-[var(--color-orange)]" },
+    ...(role === "expert"
+      ? [{ name: "Availability", icon: CalendarClock, path: `${basePath}/availability`, colorClass: "text-[var(--color-primary)] group-hover/nav:text-[var(--color-primary)]" }]
+      : []),
     { name: "Vault", icon: FolderLock, path: `${basePath}/vault`, colorClass: "text-[var(--color-green)] group-hover/nav:text-[var(--color-green)]" },
     { name: "Messages", icon: MessageSquare, path: `${basePath}/chat`, colorClass: "text-[var(--color-orange)] group-hover/nav:text-[var(--color-orange)]" },
     { name: "Video Call", icon: Video, path: `/dashboard/video-call`, colorClass: "text-[var(--color-primary)] group-hover/nav:text-[var(--color-primary)]" },
@@ -266,6 +305,30 @@ export default function DashboardLayout({
                     </select>
                   </div>
 
+                  {role === "expert" && (
+                    <div>
+                      <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Smartphone size={14} className="text-[var(--color-green)]"/> PAYOUT UPI ID</label>
+                      <div className="flex gap-3">
+                        <input
+                          type="text"
+                          value={upiId}
+                          onChange={(e) => { setUpiId(e.target.value); setUpiError(""); }}
+                          placeholder="yourname@upi"
+                          className="flex-1 bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner font-bold"
+                        />
+                        <button
+                          onClick={handleSaveUpi}
+                          disabled={upiSaving}
+                          className="px-6 rounded-2xl bg-[var(--bg-surface-2)] border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-bold hover:border-[var(--color-green)] transition-all disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {upiSaved ? <Check size={14} className="text-[var(--color-green)]" /> : upiSaving ? "..." : "Save"}
+                        </button>
+                      </div>
+                      {upiError && <p className="text-[10px] text-[var(--color-orange)] mt-2">{upiError}</p>}
+                      <p className="text-[10px] text-[var(--text-faint)] mt-2 italic">*Clients see this ID when paying you directly via UPI.</p>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Globe2 size={14} className="text-[var(--color-primary)]"/> GLOBAL TIMEZONE</label>
                     <select className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer font-bold">
@@ -280,8 +343,8 @@ export default function DashboardLayout({
                   <div>
                     <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Moon size={14} className="text-[var(--color-primary)]"/> INTERFACE THEME</label>
                     <div className="flex bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl p-1 shadow-inner">
-                      <button onClick={() => { setTheme("dark"); document.documentElement.setAttribute("data-theme", "dark"); localStorage.setItem("theme", "dark"); }} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${theme === "dark" ? "text-white bg-[var(--bg-surface-2)] shadow-md border border-[var(--border)]" : "text-[var(--text-muted)]"}`}>Dark</button>
-                      <button onClick={() => { setTheme("light"); document.documentElement.setAttribute("data-theme", "light"); localStorage.setItem("theme", "light"); }} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${theme === "light" ? "text-primary bg-[var(--bg-surface-2)] shadow-md border border-[var(--border)]" : "text-[var(--text-muted)]"}`}>Light</button>
+                      <button onClick={() => { setTheme("dark"); document.documentElement.setAttribute("data-theme", "dark"); localStorage.setItem("sos-theme", "dark"); }} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${theme === "dark" ? "text-white bg-[var(--bg-surface-2)] shadow-md border border-[var(--border)]" : "text-[var(--text-muted)]"}`}>Dark</button>
+                      <button onClick={() => { setTheme("light"); document.documentElement.setAttribute("data-theme", "light"); localStorage.setItem("sos-theme", "light"); }} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${theme === "light" ? "text-primary bg-[var(--bg-surface-2)] shadow-md border border-[var(--border)]" : "text-[var(--text-muted)]"}`}>Light</button>
                     </div>
                   </div>
 

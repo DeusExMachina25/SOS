@@ -12,34 +12,26 @@ import { useSearchParams } from "next/navigation";
 function VideoCallContent() {
   const searchParams = useSearchParams();
 
-  // Extract from URL or fallback to defaults
-  const sessionId = searchParams.get("sessionId") || "SOS-Default-Room-101";
-  const sessionName = searchParams.get("sessionName") || "Architecture Review Session";
-  const displayName = searchParams.get("displayName") || "Client User";
-
-  // Generate a predictable but unique room name
-  const roomName = `SOS-Session-${sessionId.replace(/[^a-zA-Z0-9]/g, "")}`;
+  const sessionId = searchParams.get("sessionId");
+  const sessionName = searchParams.get("sessionName") || "Consultation";
 
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!sessionId) return;
     let active = true;
 
     async function fetchToken() {
       try {
         const res = await fetch(
-          `/api/livekit-token?room=${encodeURIComponent(
-            roomName
-          )}&username=${encodeURIComponent(displayName)}`
+          `/api/livekit-token?sessionId=${encodeURIComponent(sessionId!)}`
         );
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(`Failed to fetch connection token: ${res.statusText}`);
+          throw new Error(data.error ?? "Could not join this session");
         }
-        const data = await res.json();
-        if (active) {
-          setToken(data.token);
-        }
+        if (active) setToken(data.token);
       } catch (err) {
         console.error(err);
         if (active) {
@@ -49,13 +41,22 @@ function VideoCallContent() {
     }
 
     fetchToken();
-
     return () => {
       active = false;
     };
-  }, [roomName, displayName]);
+  }, [sessionId]);
 
   const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
+
+  if (!sessionId) {
+    return (
+      <div className="h-[80vh] flex items-center justify-center text-center p-8">
+        <p className="text-xs text-[var(--text-muted)] font-mono-sos uppercase tracking-widest">
+          Open a session from your dashboard to join its call.
+        </p>
+      </div>
+    );
+  }
 
   if (!livekitUrl) {
     return (
@@ -74,7 +75,7 @@ function VideoCallContent() {
         <div>
           <h1 className="font-bold text-lg">{sessionName}</h1>
           <p className="text-xs text-[var(--text-faint)]">
-            Secured by LiveKit (End-to-End Encrypted)
+            Private room · only you and your counterpart can join
           </p>
         </div>
         <div className="flex items-center gap-2">
