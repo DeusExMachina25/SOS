@@ -425,6 +425,17 @@ body::before {
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
 
+/* Referenced by the dashboard panes long before it was defined, so every
+   `scrollbar-thin` was a silent no-op. Tokenised rather than hardcoded white. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 0; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
 ::selection {
   background: var(--color-primary-pale);
   color: var(--color-primary);
@@ -459,87 +470,6 @@ body::before {
   -webkit-text-stroke: 1px rgba(255, 255, 255, 0.25);
   text-shadow: 0 0 15px rgba(255, 255, 255, 0.15), 0 0 30px var(--color-primary-pale);
   mix-blend-mode: screen;
-}
-
-/* ═══════════════════════════════════════════════════════
-   REACT-GRID-LAYOUT & RESIZABLE STYLES
-════════════════════════════════════════════════════════*/
-.react-grid-layout {
-  position: relative;
-  transition: height 200ms ease;
-}
-.react-grid-item {
-  transition: all 200ms ease;
-  transition-property: left, top;
-}
-.react-grid-item.cssTransforms {
-  transition-property: transform;
-}
-.react-grid-item.resizing {
-  z-index: 1;
-  will-change: width, height;
-}
-.react-grid-item.react-draggable-dragging {
-  transition: none;
-  z-index: 3;
-  will-change: transform;
-  cursor: grabbing !important;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.8);
-  opacity: 0.95;
-}
-
-.react-grid-item.react-draggable-dragging > .glass-panel {
-  border-color: var(--color-primary);
-}
-
-.react-grid-item.dropping {
-  visibility: hidden;
-}
-
-.react-grid-item.react-grid-placeholder {
-  background: var(--color-primary-pale);
-  border: 2px dashed var(--color-primary);
-  opacity: 0.5;
-  transition-duration: 100ms;
-  z-index: 2;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  -o-user-select: none;
-  user-select: none;
-  border-radius: 24px;
-}
-
-.react-resizable {
-  position: relative;
-}
-.react-resizable-handle {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  bottom: 0;
-  right: 0;
-  background-position: bottom right;
-  padding: 0 3px 3px 0;
-  background-repeat: no-repeat;
-  background-origin: content-box;
-  box-sizing: border-box;
-  cursor: se-resize;
-  z-index: 10;
-}
-.react-resizable-handle::after {
-  content: "";
-  position: absolute;
-  right: 15px;
-  bottom: 15px;
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid var(--text-faint);
-  border-bottom: 2px solid var(--text-faint);
-  transition: border-color 0.2s;
-}
-.react-resizable-handle:hover::after {
-  border-color: var(--color-primary);
 }
 
 /* Platter Pricing Selector Panel Animations */

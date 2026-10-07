@@ -12,22 +12,19 @@ import {
   MessageSquare,
   Video,
   LogOut,
-  CircleUserRound,
   Settings,
   Moon,
-  Sun,
   X,
   UserCircle2,
   Image as ImageIcon,
   Globe2,
   Smartphone,
   Banknote,
-  Database,
-  ShieldCheck,
-  Wifi,
   Check
 } from "lucide-react";
 import { getMyExpertProfile, setMyUpiId } from "@/lib/data/queries";
+import Sidebar, { type NavGroup } from "@/components/dashboard/Sidebar";
+import TopBar from "@/components/dashboard/TopBar";
 
 export default function DashboardLayout({
   children,
@@ -97,149 +94,107 @@ export default function DashboardLayout({
     ? "Video Call"
     : "Overview";
 
-  const navItems = [
-    { name: "Overview", icon: LayoutDashboard, path: `${basePath}`, colorClass: "text-[var(--color-primary)] group-hover/nav:text-[var(--color-primary)]" },
-    { name: "Sessions", icon: CalendarDays, path: `${basePath}/sessions`, colorClass: "text-[var(--color-orange)] group-hover/nav:text-[var(--color-orange)]" },
-    ...(role === "expert"
-      ? [{ name: "Availability", icon: CalendarClock, path: `${basePath}/availability`, colorClass: "text-[var(--color-primary)] group-hover/nav:text-[var(--color-primary)]" }]
-      : []),
-    { name: "Vault", icon: FolderLock, path: `${basePath}/vault`, colorClass: "text-[var(--color-green)] group-hover/nav:text-[var(--color-green)]" },
-    { name: "Messages", icon: MessageSquare, path: `${basePath}/chat`, colorClass: "text-[var(--color-orange)] group-hover/nav:text-[var(--color-orange)]" },
-    { name: "Video Call", icon: Video, path: `/dashboard/video-call`, colorClass: "text-[var(--color-primary)] group-hover/nav:text-[var(--color-primary)]" },
+  /* Grouped like a console rail: the work you do daily, the live room,
+     then the account. Mirrors the sidebar grammar of the reference. */
+  const navGroups: NavGroup[] = [
+    {
+      label: "Main",
+      items: [
+        { name: "Overview", icon: LayoutDashboard, path: `${basePath}` },
+        { name: "Sessions", icon: CalendarDays, path: `${basePath}/sessions` },
+        ...(role === "expert"
+          ? [{ name: "Availability", icon: CalendarClock, path: `${basePath}/availability` }]
+          : []),
+      ],
+    },
+    {
+      label: "Workspace",
+      items: [
+        { name: "Vault", icon: FolderLock, path: `${basePath}/vault` },
+        { name: "Messages", icon: MessageSquare, path: `${basePath}/chat` },
+        { name: "Video Call", icon: Video, path: `/dashboard/video-call` },
+      ],
+    },
+    {
+      label: "Account",
+      items: [
+        { name: "Settings", icon: Settings, path: `${basePath}` },
+      ],
+    },
   ];
 
+  /* h-[100dvh], not min-h-screen: <main> below needs a definite height for its
+     own overflow-y-auto to scroll and for h-full children to resolve. */
   return (
-    <div className="min-h-screen flex flex-col relative bg-transparent overflow-x-hidden">
-      
-      {/* 1. THE GOLD STANDARD TOP HEADER */}
-      <header className="w-full h-20 z-[90] glass-panel border-b border-[var(--border-strong)] flex items-center justify-between px-8 shrink-0 relative backdrop-blur-xl">
-        {/* BREADCRUMBS */}
-        <div className="flex items-center gap-2 text-xs font-mono-sos text-[var(--text-muted)] tracking-wider">
-          <span className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer">SOS</span>
-          <span className="text-[var(--color-primary)]">/</span>
-          <span className="capitalize opacity-60">{role}</span>
-          <span className="text-[var(--color-primary)]">/</span>
-          <span className="text-[var(--text-primary)] font-bold">{pageName}</span>
-        </div>
+    <div className="h-[100dvh] overflow-hidden flex relative bg-transparent">
 
-        {/* LIVE SYSTEM STATUS COCKPIT */}
-        <div className="hidden lg:flex items-center gap-6 bg-[var(--bg-base)] px-5 py-2.5 rounded-full border border-[var(--border)] shadow-inner">
-          <div className="flex items-center gap-2 text-[10px] font-mono-sos font-bold text-[var(--text-muted)]">
-            <Database size={12} className="text-[var(--color-green)]" />
-            <span>DB SYNC</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-green)] animate-pulse"></span>
+      <Sidebar
+        groups={navGroups}
+        role={role}
+        footer={
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 shrink-0 border border-[var(--border-strong)] overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://api.dicebear.com/7.x/shapes/svg?seed=SOS_${role}&backgroundColor=transparent`}
+                alt=""
+                className="h-full w-full p-1 opacity-80"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-inter text-[12px] text-[var(--text-primary)] capitalize truncate">
+                {role} account
+              </p>
+              <p className="font-mono-sos text-[8px] tracking-[0.2em] text-[var(--text-faint)]">
+                Online &amp; secure
+              </p>
+            </div>
+            <Link
+              href="/login"
+              aria-label="Sign out"
+              className="flex h-7 w-7 items-center justify-center border border-[var(--border)] text-[var(--text-faint)] transition-colors hover:border-[var(--color-orange)] hover:text-[var(--color-orange)]"
+            >
+              <LogOut size={12} strokeWidth={1.75} />
+            </Link>
           </div>
-          <div className="h-3 w-px bg-[var(--border-strong)]"></div>
-          <div className="flex items-center gap-2 text-[10px] font-mono-sos font-bold text-[var(--text-muted)]">
-            <ShieldCheck size={12} className="text-[var(--color-primary)]" />
-            <span>AES-256</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]"></span>
-          </div>
-          <div className="h-3 w-px bg-[var(--border-strong)]"></div>
-          <div className="flex items-center gap-2 text-[10px] font-mono-sos font-bold text-[var(--text-muted)]">
-            <Wifi size={12} className="text-[var(--color-green)]" />
-            <span>LIVEKIT AUDIO</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-green)] animate-pulse"></span>
-          </div>
-        </div>
+        }
+      />
 
-        {/* PROFILE BADGE & STATUS */}
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden sm:block">
-            <p className="text-xs font-bold text-[var(--text-primary)] capitalize">{role} Account</p>
-            <p className="text-[9px] font-mono-sos text-[var(--text-faint)] tracking-widest uppercase">Safe Connect</p>
-          </div>
-          <div 
-            onClick={() => setIsProfileOpen(true)}
-            className="w-9 h-9 rounded-full bg-[var(--bg-surface-2)] border border-[var(--border-strong)] flex items-center justify-center relative overflow-hidden cursor-pointer hover:border-[var(--color-primary)] transition-all"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=SOS_${role}&backgroundColor=transparent`} alt="Profile" className="w-full h-full p-1 opacity-80" />
-            <div className="absolute bottom-0 right-0 w-2 h-2 bg-[var(--color-green)] rounded-full border border-[var(--bg-base)]"></div>
-          </div>
-        </div>
-      </header>
+      <div className="flex flex-1 flex-col min-w-0">
+        <TopBar
+          pageName={pageName}
+          role={role}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenProfile={() => setIsProfileOpen(true)}
+        />
 
-      {/* 2. THE HORIZONTAL MAGNETIC ISLAND */}
-      <aside className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] glass-panel border border-[var(--border-strong)] shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[24px] flex flex-row items-center justify-center px-6 w-max max-w-[95vw] group transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bottom-8 hover:px-8 hover:shadow-[0_30px_60px_rgba(0,0,0,0.6)] backdrop-blur-3xl h-[68px]">
+        <main id="main" className="flex-1 min-h-0 overflow-y-auto p-5 lg:p-7 pb-28 lg:pb-7">
+          {children}
+        </main>
+      </div>
 
-        {/* NAVIGATION LINKS */}
-        <nav className="flex flex-row items-center justify-center gap-1 md:gap-3 w-full h-full">
-          {navItems.map((item) => (
-            <Link 
-              key={item.name} 
+      {/* Mobile rail — the sidebar collapses below lg, so the same routes
+          ride the bottom edge instead. */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] flex items-stretch border-t border-[var(--border-strong)] bg-[var(--bg-overlay)] backdrop-blur-xl">
+        {navGroups.flatMap(g => g.items).slice(0, 5).map(item => {
+          const active = pathname === item.path;
+          return (
+            <Link
+              key={item.name}
               href={item.path}
-              className={`group/nav flex flex-col items-center justify-center gap-1 w-[72px] sm:w-[84px] py-1.5 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.08] font-inter text-xs tracking-wide font-semibold whitespace-nowrap h-full relative ${
-                pathname === item.path 
-                  ? "text-[var(--text-primary)]" 
-                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              aria-current={active ? "page" : undefined}
+              className={`relative flex flex-1 flex-col items-center justify-center gap-1 py-3 transition-colors ${
+                active ? "text-[var(--color-primary)]" : "text-[var(--text-muted)]"
               }`}
             >
-              {/* Active Indicator */}
-              {pathname === item.path && (
-                <motion.div layoutId="active-nav-indicator" className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_8px_var(--color-primary)]" />
-              )}
-              <item.icon size={20} className={`shrink-0 transition-colors duration-300 z-10 ${pathname === item.path ? item.colorClass.split(" ")[0] : `text-[var(--text-muted)] ${item.colorClass}`}`} />
-              <div className="absolute top-[60%] opacity-0 group-hover/nav:opacity-100 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] translate-y-2 group-hover/nav:translate-y-0 flex flex-col items-center">
-                <span className="text-[8px] uppercase tracking-[0.18em] font-bold mt-1">{item.name}</span>
-              </div>
+              {active && <span className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />}
+              <item.icon size={17} strokeWidth={1.75} />
+              <span className="font-mono-sos text-[7px] tracking-[0.15em]">{item.name}</span>
             </Link>
-          ))}
-          
-          <div className="w-px h-6 bg-[var(--border-strong)] mx-1"></div>
-
-          {/* ACCOUNT DROPDOWN */}
-          <div className="relative group/account h-full flex flex-col justify-center items-center w-[72px] sm:w-[84px]">
-            <div className="cursor-pointer flex flex-col items-center justify-center gap-1 w-full py-1.5 rounded-2xl border border-transparent transition-all duration-300 hover:-translate-y-1 hover:scale-[1.08] h-full relative">
-              <CircleUserRound size={22} strokeWidth={1.5} className="text-[var(--text-muted)] group-hover/account:text-[var(--color-primary)] transition-colors duration-300 z-10" />
-              <div className="absolute top-[60%] opacity-0 group-hover/account:opacity-100 transition-all duration-500 translate-y-2 group-hover/account:translate-y-0 flex flex-col items-center">
-                <span className="text-[8px] uppercase tracking-[0.18em] font-bold mt-1 text-[var(--color-primary)]">{role}</span>
-              </div>
-            </div>
-
-            {/* Dropdown Menu (Popout Up) */}
-            <div className="absolute bottom-[115%] right-1/2 translate-x-1/2 w-72 p-4 rounded-[24px] glass-panel opacity-0 pointer-events-none group-hover/account:opacity-100 group-hover/account:pointer-events-auto transition-all duration-300 translate-y-4 group-hover/account:translate-y-0 flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-[var(--border-strong)] z-[110] backdrop-blur-3xl">
-              <div className="px-4 py-3 border-b border-[var(--border)] mb-2 text-center">
-                <p className="text-sm font-bold text-[var(--text-primary)] capitalize font-display tracking-wide">{role} Profile</p>
-                <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-green)] shadow-[0_0_8px_rgba(184,207,79,0.8)] animate-pulse"></div>
-                  <p className="text-[8px] text-[var(--text-muted)] tracking-widest uppercase font-mono-sos">Online & Secure</p>
-                </div>
-              </div>
-              
-              <button onClick={() => setIsProfileOpen(true)} className="w-full px-4 py-3 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)] rounded-xl transition-all flex items-center justify-between font-inter font-bold tracking-wider group">
-                <Settings size={16} className="text-[var(--text-faint)] group-hover:text-[var(--color-primary)] transition-colors" />
-                Preferences
-              </button>
-              <button onClick={toggleTheme} className="w-full px-4 py-3 mt-0.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)] rounded-xl transition-all flex items-center justify-between font-inter font-bold tracking-wider group">
-                {theme === "dark" ? (
-                  <>
-                    <Sun size={16} className="text-[var(--text-faint)] group-hover:text-[var(--color-primary)] transition-colors" />
-                    Switch to Light
-                  </>
-                ) : (
-                  <>
-                    <Moon size={16} className="text-[var(--text-faint)] group-hover:text-[var(--color-primary)] transition-colors" />
-                    Switch to Dark
-                  </>
-                )}
-              </button>
-              
-              <div className="w-full h-px bg-[var(--border)] my-2"></div>
-              
-              <Link href="/login" className="px-4 py-3 text-xs text-[var(--color-orange)] hover:bg-[rgba(255,91,46,0.1)] rounded-xl transition-all flex items-center justify-between font-inter font-bold border border-transparent hover:border-[rgba(255,91,46,0.2)] tracking-wider group">
-                <LogOut size={16} className="transition-transform group-hover:-translate-x-0.5" />
-                Secure Sign Out
-              </Link>
-            </div>
-          </div>
-        </nav>
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 w-full pl-[50px] pr-[50px] pt-6 pb-32 xl:pb-24 relative transition-all duration-500 min-w-0 z-10 xl:h-[calc(100vh-80px)] xl:overflow-hidden flex flex-col">
-        {children}
-      </main>
+          );
+        })}
+      </nav>
 
       {/* PROFILE PREFERENCES MODAL */}
       <AnimatePresence>
