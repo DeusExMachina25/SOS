@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Video, X, Star, MapPin, Clock, Bell, CreditCard, ArrowRight, MoreHorizontal } from "lucide-react";
+import { Video, X, Clock, CreditCard, CalendarClock, FolderLock, MessageSquare, FileText } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -21,6 +21,10 @@ import { formatInr, formatFileSize, formatMessageTime } from "@/lib/data/format"
 import type { Session, Expert, Payment, ChatThreadSummary, VaultFile, AvailabilityRule } from "@/lib/data/types";
 import PaymentModal from "@/components/dashboard/PaymentModal";
 import LiquidWaveGauge from "@/components/dashboard/LiquidWaveGauge";
+import StatTile from "@/components/dashboard/StatTile";
+import Panel from "@/components/dashboard/Panel";
+import MonthlyBarChart from "@/components/dashboard/MonthlyBarChart";
+import { monthDelta, lastMonths } from "@/components/dashboard/metrics";
 
 export default function ClientDashboard() {
   const [isBooking, setIsBooking] = useState(false);
@@ -203,244 +207,156 @@ export default function ClientDashboard() {
     }
   };
 
+  const upcoming = sessions.filter(s => s.status === "scheduled");
+  const sessionSeries = sessions
+    .filter(s => s.status !== "cancelled")
+    .map(s => ({ at: s.startsAt, value: 1 }));
+  const sessionsDelta = monthDelta(sessionSeries);
+
+  // One chronological feed from chat and vault, newest first.
+  const activity = [
+    ...recentThreads.map(t => ({
+      id: `m-${t.id}`,
+      at: t.lastMessageAt ?? "",
+      kind: "message" as const,
+      title: t.counterpartName,
+      detail: t.lastMessage ?? "",
+      href: "/dashboard/client/chat",
+    })),
+    ...recentFiles.map(f => ({
+      id: `f-${f.id}`,
+      at: f.createdAt,
+      kind: "file" as const,
+      title: `${f.uploaderName} added ${f.name}`,
+      detail: formatFileSize(f.sizeBytes),
+      href: "/dashboard/client/vault",
+    })),
+  ].sort((x, y) => y.at.localeCompare(x.at)).slice(0, 6);
+
   return (
-    <div className="w-full h-full relative flex flex-col pb-12 xl:pb-0 min-h-0">
-      {/* 1. HEADER SECTION & NOTIFICATIONS */}
-      <header className="mb-6 xl:mb-8 mt-2 flex flex-row justify-between items-end gap-6 shrink-0">
-        <div>
-          <h1 className="font-inter text-3xl md:text-4xl font-light tracking-[0.18em] text-[var(--text-primary)] uppercase">Overview</h1>
-          <p className="font-mono-sos text-xs text-[var(--text-faint)] mt-2 tracking-widest uppercase">{greeting}, Client • {localTimeStr}</p>
-          {loadError && <p className="font-mono-sos text-xs text-[var(--color-orange)] mt-2">{loadError}</p>}
-        </div>
-        <div className="flex gap-4 items-center">
-          {/* Notification Bell */}
-          <Link href="/dashboard/client/chat" title="Messages" className="relative p-4 rounded-full bg-[var(--bg-surface)] border border-[var(--border-strong)] hover:border-[var(--color-primary)] transition-colors group shadow-lg">
-            <Bell size={24} className="text-[var(--text-muted)] group-hover:text-[var(--color-primary)] transition-colors" />
-            {unpaidSessions.length > 0 && (
-              <span className="absolute top-3 right-3 w-3 h-3 bg-[var(--color-orange)] rounded-full border-2 border-[var(--bg-surface)]"></span>
-            )}
-          </Link>
-        </div>
-      </header>
+    <div className="w-full flex flex-col gap-5">
+      <div>
+        <p className="font-mono-sos text-[10px] tracking-[0.25em] text-[var(--text-faint)]">
+          {greeting}{localTimeStr ? ` • ${localTimeStr}` : ""}
+        </p>
+        {loadError && <p className="font-mono-sos text-xs text-[var(--color-orange)] mt-2">{loadError}</p>}
+      </div>
 
-      {/* 2. THREE COLUMN LAYOUT */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 flex-1 w-full min-h-0 pb-12 xl:pb-0">
-        
-        {/* COLUMN 1: FINANCIALS & OPERATIONS */}
-        <div className="flex flex-col gap-8 xl:h-full xl:min-h-0">
-          
-          {/* FINANCIAL STATUS WIDGET */}
-          <div className="glass-panel p-6 md:p-8 rounded-[32px] border border-[var(--border-strong)] relative overflow-hidden group shadow-lg flex flex-col flex-1 xl:h-full xl:min-h-0">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[var(--color-green)] to-[var(--color-green)]/70"></div>
-            <div className="flex justify-between items-start mb-6 px-4">
-              <h3 className="text-xs font-mono-sos text-[var(--text-faint)] tracking-widest uppercase">Payments</h3>
-              <Link
-                href="/dashboard/client/sessions"
-                className="text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--color-green)] transition-colors uppercase tracking-widest flex items-center gap-1 font-mono-sos"
-              >
-                All Sessions <ArrowRight size={12} />
-              </Link>
-            </div>
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        <StatTile label="SESSIONS" value={String(sessionSeries.length)} icon={Video} delta={sessionsDelta} note="Booked to date" />
+        <StatTile label="UPCOMING" value={String(upcoming.length)} icon={CalendarClock} note={nextSession ? `Next: ${nextSession.date}` : "Nothing scheduled"} />
+        <StatTile label="VAULT FILES" value={String(files.length)} icon={FolderLock} note="Shared with your experts" />
+        <StatTile label="DUE NOW" value={formatInr(dueTotal)} icon={CreditCard} note={unpaidSessions.length ? `${unpaidSessions.length} awaiting payment` : "Nothing due"} />
+      </div>
 
-            <div className="flex flex-col gap-6 flex-1 justify-between min-h-0 px-4">
-              <div className="w-full">
-                <LiquidWaveGauge percentage={settledPct} balance={paidTotal} />
-                <div className="flex justify-between text-[9px] font-mono-sos text-[var(--text-faint)] tracking-widest uppercase mt-5">
-                  <span>Due now</span>
-                  <span className="text-[var(--text-primary)]">{formatInr(dueTotal)}</span>
-                </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <Panel title="Sessions over time" subtitle="LAST 6 MONTHS" className="xl:col-span-2">
+          <MonthlyBarChart data={lastMonths(sessionSeries, 6)} caption="Sessions booked per month over the last six months" />
+        </Panel>
+
+        <Panel
+          title="Next session"
+          subtitle="UP NEXT"
+          href="/dashboard/client/sessions"
+          action={
+            <button
+              onClick={() => setIsBooking(true)}
+              className="border border-[var(--border-strong)] px-3 py-1.5 font-mono-sos text-[9px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
+            >
+              BOOK
+            </button>
+          }
+        >
+          {nextSession ? (
+            <div className="flex flex-col h-full gap-4">
+              <div>
+                <p className="font-mono-sos text-[9px] tracking-[0.25em] text-[var(--text-faint)] truncate">
+                  {currentExpert?.fullName ?? nextSession.expertName}
+                </p>
+                <h3 className="font-editorial text-2xl text-[var(--text-primary)] leading-tight mt-2">{nextSession.title}</h3>
+                <p className="font-mono-sos text-[11px] text-[var(--color-primary)] flex items-center gap-2 mt-3">
+                  <Clock size={13} className="shrink-0" /> {nextSession.date} • {nextSession.time}
+                </p>
               </div>
-
-              <div className="mt-4 border-t border-[var(--border)] pt-4 w-full">
-                <div className="text-[9px] font-mono-sos text-[var(--text-faint)] tracking-widest uppercase mb-3">Awaiting Payment</div>
-                <div className="max-h-[160px] overflow-y-auto space-y-2 scrollbar-thin pr-1">
-                  {unpaidSessions.length === 0 && (
-                    <p className="text-[11px] text-[var(--text-faint)] font-mono-sos uppercase tracking-wider py-3">Nothing due</p>
-                  )}
-                  {unpaidSessions.map((sess) => (
-                    <div key={sess.id} className="p-3 bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-xl flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-bold text-[var(--text-primary)] truncate">{sess.title}</p>
-                        <p className="text-[9px] font-mono-sos text-[var(--text-faint)] tracking-wider mt-0.5">{sess.expertName} • {sess.date}</p>
-                      </div>
-                      <button
-                        onClick={() => setPaymentSession(sess)}
-                        className="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/40 text-[10px] font-bold text-[var(--text-primary)] hover:bg-[var(--color-primary)]/20 transition-all"
-                      >
-                        Pay {formatInr(sess.amountInr)}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="w-full flex items-center gap-2 text-[9px] font-mono-sos text-[var(--text-faint)] tracking-widest uppercase mt-auto">
-                <CreditCard size={12} /> Payments are held until your session is delivered
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* COLUMN 2: VAULT LOGS & MESSAGES HUB */}
-        <div className="flex flex-col gap-8 xl:h-full xl:min-h-0">
-          <div className="glass-panel p-6 md:p-8 rounded-[32px] border border-[var(--border-strong)] flex flex-col flex-1 shadow-lg relative overflow-hidden min-h-[400px] xl:min-h-0 xl:h-full">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[var(--color-primary)] to-[var(--color-orange)]"></div>
-            
-            {/* Upper Pane: Recent Messages */}
-            <div className="xl:flex-[6] flex-1 flex flex-col min-h-0">
-              <div className="flex justify-between items-center mb-3 px-4">
-                <h3 className="text-xs font-mono-sos text-[var(--text-faint)] tracking-widest uppercase">Recent Messages</h3>
-                <Link 
-                  href="/dashboard/client/chat" 
-                  className="text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--color-primary)] transition-colors uppercase tracking-widest flex items-center gap-1 font-mono-sos"
-                >
-                  Open Chat <ArrowRight size={10}/>
-                </Link>
-              </div>
-
-              {/* Recent conversations */}
-              <div className="flex-1 overflow-y-auto px-4 space-y-4 min-h-[100px] xl:min-h-0 scrollbar-thin">
-                {recentThreads.length === 0 && (
-                  <p className="text-[11px] text-[var(--text-faint)] font-mono-sos uppercase tracking-wider py-3">No messages yet</p>
-                )}
-                {recentThreads.map((t) => (
-                  <Link key={t.id} href="/dashboard/client/chat" className="flex flex-col items-start gap-1">
-                    <div className="bg-[var(--bg-surface-2)] border border-[var(--border-strong)] p-4 rounded-2xl rounded-tl-sm leading-relaxed max-w-[90%] shadow-inner">
-                      <p className="font-inter font-light text-[13px] text-[var(--text-muted)] line-clamp-2">{t.lastMessage}</p>
-                    </div>
-                    <span className="text-[8px] font-mono-sos text-[var(--text-faint)] tracking-widest pl-2 uppercase">{t.counterpartName} • {formatMessageTime(t.lastMessageAt)}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="mx-4 my-5 border-t border-[var(--border-strong)] opacity-50 relative shrink-0">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 bg-[var(--bg-surface-2)] text-[8px] font-mono-sos text-[var(--text-faint)] tracking-widest uppercase rounded-full border border-[var(--border)] py-0.5">Secure Collaboration</div>
-            </div>
-
-            {/* Lower Pane: Safe Activity Logs (Friendly Language) */}
-            <div className="xl:flex-[4] shrink-0 flex flex-col min-h-0">
-              <div className="flex justify-between items-center mb-3 px-4 shrink-0">
-                <h3 className="text-xs font-mono-sos text-[var(--text-faint)] tracking-widest uppercase">Safe Activity Logs</h3>
-                <Link 
-                  href="/dashboard/client/vault" 
-                  className="text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--color-orange)] transition-colors uppercase tracking-widest flex items-center gap-1 font-mono-sos"
-                >
-                  Open Vault <ArrowRight size={10}/>
-                </Link>
-              </div>
-
-              {/* Recent vault files */}
-              <div className="flex-1 overflow-y-auto px-4 space-y-3 min-h-[100px] xl:min-h-0 scrollbar-thin">
-                {recentFiles.length === 0 && (
-                  <p className="text-[11px] text-[var(--text-faint)] font-mono-sos uppercase tracking-wider py-3">No files shared yet</p>
-                )}
-                {recentFiles.map((f) => (
-                  <div key={f.id} className="flex gap-2.5 items-start text-[11px] font-inter leading-relaxed text-[var(--text-muted)]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] mt-1.5 shrink-0"></div>
-                    <p>{f.uploaderName} added <span className="text-[var(--text-primary)] font-semibold">{f.name}</span> ({formatFileSize(f.sizeBytes)}).</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* COLUMN 3: UNIFIED EXPERT HUB */}
-        <div className="flex flex-col gap-8 xl:h-full xl:min-h-0">
-          
-          {/* EXPERT COMMAND CENTER CARD */}
-          <div className="glass-panel p-6 md:p-8 rounded-[32px] border border-[var(--border-strong)] flex flex-col relative overflow-hidden shadow-lg flex-1 min-h-[350px] xl:min-h-0 xl:h-full">
-            <h3 className="text-xs font-mono-sos mb-6 px-4 text-[var(--text-faint)] tracking-widest uppercase w-full text-left">Your Expert Hub</h3>
-            
-            {/* Profile Info */}
-            <div className="flex items-center gap-5 mb-6 px-4 shrink-0">
-              <div className="w-16 h-16 rounded-full p-0.5 border border-[var(--border-strong)] relative shrink-0">
-                <div className="w-full h-full rounded-full bg-[var(--bg-surface-2)] flex items-center justify-center overflow-hidden">
-                  <Star size={20} className="text-[var(--color-primary)] opacity-50" />
-                </div>
-                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[var(--color-green)] border-[2.5px] border-[var(--bg-base)] rounded-full"></div>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <h2 className="font-inter text-xl font-bold text-[var(--text-primary)] mb-0.5 truncate">{currentExpert?.fullName ?? "No expert selected"}</h2>
-                <p className="text-xs font-inter text-[var(--color-primary)] font-semibold mb-1 truncate">{currentExpert?.professionalTitle ?? " "}</p>
-                <div className="flex items-center gap-1 text-[9px] text-[var(--text-muted)] font-mono-sos">
-                  <MapPin size={9} className="text-[var(--text-faint)] shrink-0" /> <span className="truncate">{currentExpert?.location ?? "India"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Session Section */}
-            {nextSession ? (
-              <div className="mx-4 mb-6 p-5 rounded-2xl border border-[var(--border-strong)] bg-white/[0.02] relative group/sess-card min-h-0 flex flex-col justify-between">
-                <div className="absolute top-0 right-0 w-20 h-6 rounded-tr-2xl rounded-bl-2xl bg-[var(--color-primary)]/10 flex items-center justify-center border-l border-b border-[var(--border-strong)] text-[8px] font-mono-sos text-[var(--color-primary)] uppercase tracking-wider">Scheduled</div>
-                <div>
-                  <p className="text-[9px] font-mono-sos text-[var(--text-faint)] tracking-widest uppercase mb-1">Upcoming Session</p>
-                  <h4 className="font-inter text-base font-bold text-[var(--text-primary)] mb-1 truncate">{nextSession.title}</h4>
-                  <p className="text-xs text-[var(--color-primary)] font-mono-sos flex items-center gap-1.5 mb-4">
-                    <Clock size={12} className="shrink-0" /> {nextSession.date} • {nextSession.time}
-                  </p>
-                </div>
-
+              <div className="mt-auto">
                 {nextSession.paymentStatus === "unpaid" ? (
                   <button
                     onClick={() => setPaymentSession(nextSession)}
-                    className="w-full flex items-center justify-center gap-2 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/40 text-[var(--text-primary)] py-3.5 rounded-xl text-xs font-bold transition-all hover:bg-[var(--color-primary)]/20"
+                    className="flex w-full items-center justify-center gap-2 border border-[var(--color-primary)] bg-[var(--bg-surface-2)] py-3.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-base)]"
                   >
-                    <CreditCard size={14} /> Pay {formatInr(nextSession.amountInr)} to unlock the call
+                    <CreditCard size={14} /> PAY {formatInr(nextSession.amountInr)} TO UNLOCK THE CALL
                   </button>
                 ) : (
-                <Link
-                  href={`/dashboard/video-call?sessionId=${nextSession.id}&sessionName=${encodeURIComponent(nextSession.title)}`}
-                  className="w-full flex items-center justify-center gap-2 bg-[var(--bg-surface-2)] hover:bg-[var(--bg-surface)] border border-[var(--border-strong)] text-[var(--text-primary)] py-3.5 rounded-xl text-xs font-bold transition-all hover:border-[var(--color-primary)] group/join"
-                >
-                  <Video size={14} className="text-[var(--text-muted)] group-hover/join:text-[var(--color-primary)] transition-colors" /> Join Video Call
-                </Link>
+                  <Link
+                    href={`/dashboard/video-call?sessionId=${nextSession.id}&sessionName=${encodeURIComponent(nextSession.title)}`}
+                    className="group/join flex w-full items-center justify-center gap-2 border border-[var(--border-strong)] bg-[var(--bg-surface-2)] py-3.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
+                  >
+                    <Video size={14} className="text-[var(--text-muted)] group-hover/join:text-[var(--color-primary)] transition-colors" /> JOIN VIDEO CALL
+                  </Link>
                 )}
               </div>
-            ) : (
-              <div className="mx-4 mb-6 p-5 rounded-2xl border border-dashed border-[var(--border)] text-center flex flex-col items-center justify-center bg-white/[0.01] flex-1">
-                <p className="text-[10px] text-[var(--text-faint)] font-mono-sos uppercase tracking-wider mb-3">No Scheduled Meetings</p>
-                <button 
-                  onClick={() => setIsBooking(true)} 
-                  className="px-4 py-2.5 border border-[var(--border-strong)] bg-[var(--bg-surface-2)] hover:bg-[var(--bg-surface)] text-[var(--text-primary)] font-bold tracking-widest text-[9px] rounded-xl transition-all hover:border-[var(--color-primary)] uppercase"
-                >
-                  Schedule Session
-                </button>
-              </div>
-            )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center py-6 gap-4">
+              <p className="font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-faint)]">NO SCHEDULED MEETINGS</p>
+              <button
+                onClick={() => setIsBooking(true)}
+                className="border border-[var(--border-strong)] bg-[var(--bg-surface-2)] px-4 py-2.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
+              >
+                SCHEDULE SESSION
+              </button>
+            </div>
+          )}
+        </Panel>
 
-            {/* General Actions */}
-            {nextSession && (
-              <div className="px-4 w-full shrink-0">
-                <button 
-                  onClick={() => setIsBooking(true)} 
-                  className="w-full border border-[var(--border-strong)] hover:border-[var(--color-primary)] bg-[var(--bg-surface-2)] hover:bg-[var(--bg-surface)] text-[var(--text-primary)] py-3 rounded-xl text-xs font-bold transition-all mb-4 uppercase tracking-wider font-mono-sos text-[10px]"
-                >
-                  Schedule Another Session
-                </button>
-              </div>
-            )}
-            
-            {/* Upcoming bookings */}
-            <div className="mt-auto px-4 shrink-0">
-              <div className="flex items-center justify-between text-xs mb-3">
-                <span className="font-mono-sos text-[var(--text-faint)] uppercase tracking-widest">Upcoming</span>
-                <span className="text-[var(--text-muted)] flex items-center gap-1"><MoreHorizontal size={12}/> {sessions.filter(s => s.status === "scheduled").length}</span>
-              </div>
-              {sessions.filter(s => s.status === "scheduled").slice(0, 2).map((s) => (
-                <div key={s.id} className="bg-[var(--bg-surface-2)] rounded-2xl p-4 border border-[var(--border)] flex items-center justify-between shadow-inner mb-2">
-                  <span className="font-inter text-xs text-[var(--text-muted)] font-semibold truncate pr-3">{s.title}</span>
-                  <span className={`text-[8px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full border font-mono-sos shrink-0 ${s.paymentStatus === "unpaid" ? "text-[var(--color-orange)] bg-[var(--color-orange)]/10 border-[var(--color-orange)]/20" : "text-[var(--color-green)] bg-[var(--color-green)]/10 border-[var(--color-green)]/20"}`}>
-                    {s.paymentStatus === "unpaid" ? "Unpaid" : "Paid"}
-                  </span>
+        <Panel title="Payments" subtitle="HELD UNTIL DELIVERED" href="/dashboard/client/sessions">
+          <LiquidWaveGauge percentage={settledPct} balance={paidTotal} />
+          <div className="mt-5 border-t border-[var(--border)] pt-4">
+            <div className="font-mono-sos text-[9px] tracking-[0.25em] text-[var(--text-faint)] mb-3">AWAITING PAYMENT</div>
+            <div className="max-h-[160px] overflow-y-auto scrollbar-thin space-y-2">
+              {unpaidSessions.length === 0 && (
+                <p className="font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-faint)] py-2">NOTHING DUE</p>
+              )}
+              {unpaidSessions.map((sess) => (
+                <div key={sess.id} className="flex items-center justify-between gap-3 border border-[var(--border)] bg-[var(--bg-surface-2)] p-3">
+                  <div className="min-w-0">
+                    <p className="font-inter text-[11px] font-semibold text-[var(--text-primary)] truncate">{sess.title}</p>
+                    <p className="font-mono-sos text-[9px] tracking-wider text-[var(--text-faint)] mt-0.5 truncate">{sess.expertName} • {sess.date}</p>
+                  </div>
+                  <button
+                    onClick={() => setPaymentSession(sess)}
+                    className="shrink-0 border border-[var(--color-primary)] px-3 py-1.5 font-mono-sos text-[10px] text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-base)]"
+                  >
+                    Pay {formatInr(sess.amountInr)}
+                  </button>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </Panel>
 
+        <Panel title="Recent activity" subtitle="MESSAGES AND VAULT" className="xl:col-span-2" flush>
+          {activity.length === 0 ? (
+            <p className="font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-faint)] p-5">NOTHING YET — MESSAGES AND SHARED FILES APPEAR HERE</p>
+          ) : (
+            <ul className="divide-y divide-[var(--border)]">
+              {activity.map((a) => (
+                <li key={a.id}>
+                  <Link href={a.href} className="flex items-start gap-4 px-5 py-3.5 transition-colors hover:bg-[var(--bg-surface-2)]">
+                    <span className="mt-0.5 shrink-0 text-[var(--text-faint)]">
+                      {a.kind === "message" ? <MessageSquare size={14} strokeWidth={1.75} /> : <FileText size={14} strokeWidth={1.75} />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-inter text-xs font-semibold text-[var(--text-primary)] truncate">{a.title}</span>
+                      <span className="block font-inter text-[12px] font-light text-[var(--text-muted)] line-clamp-1 mt-0.5">{a.detail}</span>
+                    </span>
+                    <span className="shrink-0 font-mono-sos text-[9px] tracking-wider text-[var(--text-faint)]">{formatMessageTime(a.at || null)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       </div>
 
       {/* Book New Modal Overlay */}
