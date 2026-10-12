@@ -74,7 +74,7 @@ export default function ChatWorkspace() {
   const activeThread = threads.find(t => t.id === activeThreadId);
 
   return (
-    <div className="w-full h-full min-h-[480px] relative flex flex-col md:flex-row gap-6">
+    <div className="w-full md:h-full md:min-h-[480px] relative flex flex-col md:flex-row gap-6">
 
       {/* THREAD SIDEBAR */}
       <div className="w-full md:w-[320px] lg:w-[380px] glass-panel border border-[var(--border-strong)] rounded-[32px] flex flex-col overflow-hidden min-h-[300px] md:h-full shrink-0">
