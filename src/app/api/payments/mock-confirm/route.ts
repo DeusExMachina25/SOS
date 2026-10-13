@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const { sessionId } = await request.json();
-  if (!sessionId) {
+  const { sessionId } = await request.json().catch(() => ({}));
+  if (typeof sessionId !== "string" || !sessionId) {
     return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
   }
 

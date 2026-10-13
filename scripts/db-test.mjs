@@ -100,6 +100,9 @@ if (r?.rows?.[0]?.amount_inr !== 5000 || r.rows[0].payment_status !== "unpaid" |
 await expectFail("client books in the past", C,
   `insert into public.sessions (client_id, expert_id, title, starts_at, ends_at)
    values ('${C}','${E}','x','2020-01-01','2020-01-02')`);
+await expectFail("client books with end before start", C,
+  `insert into public.sessions (client_id, expert_id, title, starts_at, ends_at)
+   values ('${C}','${E}','x', now() + interval '90 days' + interval '1 hour', now() + interval '90 days')`);
 await expectFail("client marks own session paid", C, `update public.sessions set payment_status='escrow_held' where id='${sid}'`);
 await expectFail("client lowers price", C, `update public.sessions set amount_inr=1 where id='${sid}'`);
 await expectFail("client reassigns expert", C, `update public.sessions set expert_id='${C}' where id='${sid}'`);

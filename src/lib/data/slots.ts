@@ -62,7 +62,10 @@ export function generateSlotsForDate(
       const isPast = isToday && slotStart <= now.getTime();
       const overlapsBusy = busy.some((b) => slotStart < b.end && slotEnd > b.start);
 
-      if (!isPast && !overlapsBusy) {
+      // Two overlapping rules (e.g. 9-12 and 11-14) would otherwise list 11:00 twice.
+      const duplicate = slots.some((s) => s.start === slotStart);
+
+      if (!isPast && !overlapsBusy && !duplicate) {
         slots.push({
           label: formatSlotLabel(cursor.getHours(), cursor.getMinutes()),
           start: slotStart,

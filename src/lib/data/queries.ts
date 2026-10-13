@@ -672,7 +672,9 @@ export async function uploadVaultFile(
   if (!userId) throw new Error("You must be signed in to upload.");
 
   // Path is session-scoped so Storage policies can mirror the table's RLS.
-  const storagePath = `${sessionId}/${Date.now()}-${file.name}`;
+  // Keep the object key to safe characters; the original name is stored on the row.
+  const safeName = file.name.replace(/[^\w.-]+/g, "_").slice(-120) || "file";
+  const storagePath = `${sessionId}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await sb.storage
     .from(VAULT_BUCKET)
@@ -692,7 +694,11 @@ export async function uploadVaultFile(
     .select(VAULT_COLUMNS)
     .single();
 
-  if (error) throw new Error(`Failed to record file: ${error.message}`);
+  if (error) {
+    // Don't leave an unreachable object behind when the row insert fails.
+    await sb.storage.from(VAULT_BUCKET).remove([storagePath]);
+    throw new Error(`Failed to record file: ${error.message}`);
+  }
   return mapVaultFile(data as unknown as VaultRow);
 }
 
@@ -758,25 +764,22 @@ export async function getMyChatThreads(): Promise<ChatThreadSummary[]> {
   const rows = (threads ?? []) as unknown as ThreadRow[];
   if (rows.length === 0) return [];
 
-  const { data: recentMessages } = await sb
-    .from("messages")
-    .select("thread_id, body, created_at")
-    .in(
-      "thread_id",
-      rows.map((r) => r.id)
-    )
-    .order("created_at", { ascending: false });
-
+  // One newest-message lookup per thread: bounded by the thread count, unlike
+  // loading every message of every conversation just to keep the first of each.
   const lastByThread = new Map<string, { body: string; created_at: string }>();
-  for (const m of recentMessages ?? []) {
-    const threadId = m.thread_id as string;
-    if (!lastByThread.has(threadId)) {
-      lastByThread.set(threadId, {
-        body: m.body as string,
-        created_at: m.created_at as string,
-      });
-    }
-  }
+  await Promise.all(
+    rows.slice(0, 50).map(async (r) => {
+      const { data: last, error: lastErr } = await sb
+        .from("messages")
+        .select("body, created_at")
+        .eq("thread_id", r.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastErr) throw new Error(`Failed to load conversations: ${lastErr.message}`);
+      if (last) lastByThread.set(r.id, { body: last.body as string, created_at: last.created_at as string });
+    })
+  );
 
   return rows.map((row) => {
     const isClient = row.client_id === userId;
@@ -815,7 +818,20 @@ export async function getOrCreateThread(
     .select("id")
     .single();
 
-  if (error) throw new Error(`Failed to open chat: ${error.message}`);
+  if (error) {
+    // Two tabs (or the booking flow and the chat page) can race on the unique
+    // (client, expert) pair; the loser should just use the winner's thread.
+    if (error.code === "23505") {
+      const { data: raced } = await sb
+        .from("chat_threads")
+        .select("id")
+        .eq("client_id", clientId)
+        .eq("expert_id", expertId)
+        .maybeSingle();
+      if (raced?.id) return raced.id as string;
+    }
+    throw new Error(`Failed to open chat: ${error.message}`);
+  }
   return data.id as string;
 }
 
