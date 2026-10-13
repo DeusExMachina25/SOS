@@ -16,7 +16,7 @@ import {
   getExpertAvailabilityRules,
   getExpertBusyRanges,
 } from "@/lib/data/queries";
-import { generateSlotsForDate, todayDateInput } from "@/lib/data/slots";
+import { generateSlotsForDate, todayDateInput, dayBoundsUtc, describeTimeZone, resolveTimeZone, type Slot } from "@/lib/data/slots";
 import { formatInr, formatFileSize, formatMessageTime } from "@/lib/data/format";
 import type { Session, Expert, Payment, ChatThreadSummary, VaultFile, AvailabilityRule } from "@/lib/data/types";
 import PaymentModal from "@/components/dashboard/PaymentModal";
@@ -29,7 +29,7 @@ import { monthDelta, lastMonths } from "@/components/dashboard/metrics";
 export default function ClientDashboard() {
   const [isBooking, setIsBooking] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState("");
-  const [slots, setSlots] = useState<string[]>([]);
+  const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsState, setSlotsState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [rulesByExpert, setRulesByExpert] = useState<Record<string, AvailabilityRule[]>>({});
 
@@ -122,6 +122,9 @@ export default function ClientDashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  // Availability is written in the expert's timezone, so that is the clock a date and its times are read on.
+  const expertZone = resolveTimeZone((dbExperts.find((e) => e.id === selectedExpertId) ?? currentExpert)?.timezone);
+
   // Real bookable times: the expert's weekly availability minus what is already booked.
   useEffect(() => {
     if (!isBooking || !selectedExpertId || !sessionDate) return;
@@ -136,12 +139,17 @@ export default function ClientDashboard() {
           if (cancelled) return;
           setRulesByExpert((prev) => ({ ...prev, [selectedExpertId]: rules! }));
         }
-        const [y, m, d] = sessionDate.split("-").map(Number);
-        const dayStart = new Date(y, m - 1, d);
-        const dayEnd = new Date(y, m - 1, d + 1);
-        const busy = await getExpertBusyRanges(selectedExpertId, dayStart.toISOString(), dayEnd.toISOString());
+        const bounds = dayBoundsUtc(sessionDate, expertZone);
+        if (!bounds) {
+          if (!cancelled) {
+            setSlots([]);
+            setSlotsState("ready");
+          }
+          return;
+        }
+        const busy = await getExpertBusyRanges(selectedExpertId, bounds.from, bounds.to);
         if (cancelled) return;
-        setSlots(generateSlotsForDate(sessionDate, rules, busy, 60));
+        setSlots(generateSlotsForDate(sessionDate, rules, busy, 60, expertZone));
         setSlotsState("ready");
       } catch (err) {
         console.error("Failed to load availability", err);
@@ -153,7 +161,7 @@ export default function ClientDashboard() {
     };
     // rulesByExpert is a cache; re-running when it fills would refetch busy ranges needlessly
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBooking, selectedExpertId, sessionDate]);
+  }, [isBooking, selectedExpertId, sessionDate, expertZone]);
 
   const handleConfirmBooking = async () => {
     const targetExpert = dbExperts.find(e => e.id === selectedExpertId) ?? currentExpert;
@@ -162,23 +170,12 @@ export default function ClientDashboard() {
       return;
     }
 
-    if (!selectedSlot) {
+    // The slot carries its own absolute start; nothing is re-derived from a label.
+    const chosen = slots.find((t) => t.startsAt === selectedSlot);
+    if (!chosen) {
       setBookingError("Choose one of the available times.");
       return;
     }
-    const timeMatch = selectedSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
-    if (!timeMatch) {
-      setBookingError("Choose one of the available times.");
-      return;
-    }
-    let hours = parseInt(timeMatch[1], 10);
-    const minutes = parseInt(timeMatch[2], 10);
-    const ampm = timeMatch[3].toUpperCase();
-    if (ampm === "PM" && hours < 12) hours += 12;
-    if (ampm === "AM" && hours === 12) hours = 0;
-
-    const [yy, mm, dd] = sessionDate.split("-").map(Number);
-    const scheduledDate = new Date(yy, mm - 1, dd, hours, minutes, 0, 0);
 
     setBookingError("");
     setBookingSubmitting(true);
@@ -186,7 +183,7 @@ export default function ClientDashboard() {
       const created = await bookSession({
         expertId: targetExpert.id,
         title: sessionType,
-        startsAt: scheduledDate.toISOString(),
+        startsAt: chosen.startsAt,
         durationMinutes: 60,
       });
 
@@ -419,7 +416,10 @@ export default function ClientDashboard() {
                   />
 
                   <div className="mt-6" aria-live="polite">
-                    <span className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest">AVAILABLE TIMES</span>
+                    <span className="block text-xs font-mono-sos text-[var(--text-faint)] mb-1 tracking-widest">AVAILABLE TIMES</span>
+                    <span className="block text-[11px] text-[var(--text-faint)] mb-3">
+                      The date and times are in {describeTimeZone(expertZone)}, your expert&apos;s timezone.
+                    </span>
                     {slotsState === "loading" && (
                       <p className="text-sm text-[var(--text-muted)]">Checking availability…</p>
                     )}
@@ -437,18 +437,21 @@ export default function ClientDashboard() {
                       <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Available times">
                         {slots.map((t) => (
                           <button
-                            key={t}
+                            key={t.startsAt}
                             type="button"
                             role="radio"
-                            aria-checked={selectedSlot === t}
-                            onClick={() => setSelectedSlot(t)}
+                            aria-checked={selectedSlot === t.startsAt}
+                            onClick={() => setSelectedSlot(t.startsAt)}
                             className={`py-3 rounded-xl border text-sm font-bold transition-all ${
-                              selectedSlot === t
+                              selectedSlot === t.startsAt
                                 ? "bg-[var(--text-primary)] text-[var(--bg-base)] border-[var(--text-primary)]"
                                 : "bg-[var(--bg-base)] text-[var(--text-primary)] border-[var(--border-strong)] hover:border-[var(--color-primary)]"
                             }`}
                           >
-                            {t}
+                            {t.label}
+                            {t.viewerLabel && (
+                              <span className="block text-[10px] font-normal opacity-70 mt-0.5">{t.viewerLabel} for you</span>
+                            )}
                           </button>
                         ))}
                       </div>

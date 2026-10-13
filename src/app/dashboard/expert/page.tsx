@@ -8,17 +8,18 @@ import {
   getMySessions,
   getMyPayments,
   getMyAvailabilityRules,
+  getMyExpertProfile,
   getCurrentUserId,
   getExpertBusyRanges,
 } from "@/lib/data/queries";
-import { generateSlotsForDate } from "@/lib/data/slots";
+import { generateSlotsForDate, dayBoundsUtc, dateInputInZone, addDaysToDateInput } from "@/lib/data/slots";
 import { formatInr } from "@/lib/data/format";
 import type { Session, Payment } from "@/lib/data/types";
 import HoursLineChart from "@/components/dashboard/HoursLineChart";
 import StatTile from "@/components/dashboard/StatTile";
 import Panel from "@/components/dashboard/Panel";
 import ClientRoster from "@/components/dashboard/ClientRoster";
-import { monthDelta, localDateInput } from "@/components/dashboard/metrics";
+import { monthDelta } from "@/components/dashboard/metrics";
 
 export default function ExpertDashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -48,18 +49,23 @@ export default function ExpertDashboard() {
     // Bookable hours over the next 14 days — kept separate so a failure here never blanks the overview.
     async function loadOpenSlots() {
       try {
-        const [rules, uid] = await Promise.all([getMyAvailabilityRules(), getCurrentUserId()]);
+        const [rules, uid, profile] = await Promise.all([
+          getMyAvailabilityRules(),
+          getCurrentUserId(),
+          getMyExpertProfile(),
+        ]);
         if (!uid) return;
-        const from = new Date();
-        from.setHours(0, 0, 0, 0);
-        const to = new Date(from);
-        to.setDate(to.getDate() + 14);
-        const busy = await getExpertBusyRanges(uid, from.toISOString(), to.toISOString());
+        // Count on the same clock clients book on: the expert's own timezone.
+        const zone = profile?.timezone;
+        const firstDay = dateInputInZone(Date.now(), zone);
+        const lastDay = addDaysToDateInput(firstDay, 14);
+        const from = dayBoundsUtc(firstDay, zone);
+        const to = dayBoundsUtc(lastDay, zone);
+        if (!from || !to) return;
+        const busy = await getExpertBusyRanges(uid, from.from, to.from);
         let count = 0;
         for (let i = 0; i < 14; i++) {
-          const day = new Date(from);
-          day.setDate(from.getDate() + i);
-          count += generateSlotsForDate(localDateInput(day), rules, busy, 60).length;
+          count += generateSlotsForDate(addDaysToDateInput(firstDay, i), rules, busy, 60, zone).length;
         }
         setOpenSlots(count);
       } catch (err) {

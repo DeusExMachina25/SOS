@@ -29,7 +29,7 @@ payment (mock + UPI), vault round trip, chat, brand-new accounts with no data, p
 - Payouts are manual: confirm someone owns marking transfers `transferred`.
 
 **Time and place**
-- Book from a browser set to a non-India timezone (known issue: slots use the viewer's timezone).
+- Book from a browser set to a non-India timezone: the date and times must read in the expert's timezone, with your own time shown under each slot, and the booked session must show the same instant on both dashboards. An expert with no timezone set is treated as Asia/Kolkata; check each expert profile has the right one.
 - Book across midnight, across a DST change, and for "today" late in the evening.
 - Two people booking the same slot at the same moment.
 

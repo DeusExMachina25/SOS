@@ -456,29 +456,35 @@ async function slotChecks() {
   const mon = nextWeekday(1), sun = nextWeekday(0);
   const rule = (weekday, startTime, endTime) => ({ id: "r", expertId: "e", weekday, startTime, endTime });
 
-  await check("Slots", "complete data", "9-17 rule gives 8 hourly slots", async () => {
-    const r = generateSlotsForDate(ds(mon), [rule(1, "09:00", "17:00")], [], 60); return expect(r.length === 8, `${r.length}: ${r.join(", ")}`);
+  const labels = (arr) => arr.map((x) => x.label);
+  const NOW0 = Date.UTC(2026, 0, 1);
+  const gen = (date, rules, busy = [], tz = "Asia/Kolkata") => generateSlotsForDate(date, rules, busy, 60, tz, NOW0);
+
+  await check("Slots", "complete data", "9-17 rule gives 8 hourly slots in the expert's time", async () => {
+    const r = gen(ds(mon), [rule(1, "09:00", "17:00")]); return expect(r.length === 8 && r[0].label === "9:00 AM", `${r.length}: ${labels(r).join(", ")}`);
   });
   await check("Slots", "complete data", "A booked hour is removed from the list", async () => {
-    const start = new Date(mon); start.setHours(12, 0, 0, 0);
-    const r = generateSlotsForDate(ds(mon), [rule(1, "09:00", "17:00")], [{ startsAt: start.toISOString(), endsAt: new Date(+start + HOUR).toISOString() }], 60);
-    return expect(r.length === 7 && !r.includes("12:00 PM"), r.join(", "));
+    const all = gen(ds(mon), [rule(1, "09:00", "17:00")]);
+    const r = gen(ds(mon), [rule(1, "09:00", "17:00")], [{ startsAt: all[3].startsAt, endsAt: all[3].endsAt }]);
+    return expect(r.length === 7 && !labels(r).includes(all[3].label), labels(r).join(", "));
   });
-  await check("Slots", "missing data", "No rule for the weekday -> no slots", async () => {
-    const r = generateSlotsForDate(ds(sun), [rule(1, "09:00", "17:00")], [], 60); return expect(r.length === 0, `${r.length}`);
-  });
-  await check("Slots", "missing data", "No rules at all -> no slots", async () => expect(generateSlotsForDate(ds(mon), [], [], 60).length === 0));
-  await check("Slots", "missing data", "Malformed date -> no slots, no throw", async () => expect(generateSlotsForDate("", [rule(1, "09:00", "17:00")], [], 60).length === 0));
-  await check("Slots", "missing data", "Inverted rule (end before start) -> no slots", async () => expect(generateSlotsForDate(ds(mon), [rule(1, "17:00", "09:00")], [], 60).length === 0));
+  await check("Slots", "missing data", "No rule for the weekday -> no slots", async () => expect(gen(ds(sun), [rule(1, "09:00", "17:00")]).length === 0));
+  await check("Slots", "missing data", "No rules at all -> no slots", async () => expect(gen(ds(mon), []).length === 0));
+  await check("Slots", "missing data", "Malformed date -> no slots, no throw", async () => expect(gen("", [rule(1, "09:00", "17:00")]).length === 0));
+  await check("Slots", "missing data", "Inverted rule (end before start) -> no slots", async () => expect(gen(ds(mon), [rule(1, "17:00", "09:00")]).length === 0));
   await check("Slots", "complete data", "Overlapping rules do not list the same time twice", async () => {
-    const r = generateSlotsForDate(ds(mon), [rule(1, "09:00", "12:00"), rule(1, "11:00", "14:00")], [], 60);
+    const r = labels(gen(ds(mon), [rule(1, "09:00", "12:00"), rule(1, "11:00", "14:00")]));
     return expect(new Set(r).size === r.length, `got ${r.join(", ")}`);
   });
-  await check("Slots", "complete data", "Slots honour the expert's timezone, not the viewer's", async () => {
-    const src = readFileSync(new URL("../../src/lib/data/slots.ts", import.meta.url), "utf8");
-    return /timezone|timeZone/.test(src)
-      ? ["pass", "slots.ts references a timezone"]
-      : ["warn", "slots.ts builds times in the viewer's local timezone; rules are stored in the expert's (Asia/Kolkata). A client outside India sees and books the wrong hours."];
+  await check("Slots", "complete data", "9:00 expert time is the same absolute instant whatever timezone the viewer is in", async () => {
+    const india = gen("2026-11-02", [rule(1, "09:00", "10:00")])[0]?.startsAt;
+    const newYork = gen("2026-11-02", [rule(1, "09:00", "10:00")], [], "America/New_York")[0]?.startsAt;
+    return expect(india === "2026-11-02T03:30:00.000Z" && newYork === "2026-11-02T14:00:00.000Z", `Kolkata ${india}, New York ${newYork}`);
+  });
+  await check("Slots", "missing data", "An expert with no timezone, or a garbled one, still gets slots", async () => {
+    const a = gen("2026-11-02", [rule(1, "09:00", "10:00")], [], null)[0]?.startsAt;
+    const b = gen("2026-11-02", [rule(1, "09:00", "10:00")], [], "Not/AZone")[0]?.startsAt;
+    return expect(a === "2026-11-02T03:30:00.000Z" && b === a, `null -> ${a}, garbled -> ${b}`);
   });
 }
 await slotChecks();
