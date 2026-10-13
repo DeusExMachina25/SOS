@@ -301,6 +301,30 @@ async function fullFlows() {
     return expect(ins.data.amount_inr === 5000 && Boolean(selfConfirm.error) && !confirm.error && s.payment_status === "released", `amount ${ins.data.amount_inr}, self-confirm ${selfConfirm.error ? "blocked" : "ALLOWED"}, expert ${confirm.error ? confirm.error.message : "ok"}, session ${s.payment_status}`);
   });
 
+  // Session lifecycle
+  await check("Lifecycle", "complete data", "Expert marks a paid, started session completed; client cannot", async () => {
+    const id = await mk("lifecycle-complete", { start: now - 2 * HOUR, end: now - HOUR, pay: "paid" });
+    const byClient = await client.sb.from("sessions").update({ status: "completed" }).eq("id", id).select("id");
+    const byExpert = await expert.sb.from("sessions").update({ status: "completed" }).eq("id", id).select("status");
+    return expect(Boolean(byClient.error) && !byExpert.error && byExpert.data?.[0]?.status === "completed", `client ${byClient.error ? "blocked" : "ALLOWED"}, expert ${byExpert.error?.message ?? byExpert.data?.[0]?.status}`);
+  });
+  await check("Lifecycle", "complete data", "Client cancels an unpaid booking; it then drops out of call access", async () => {
+    const id = await mk("lifecycle-cancel", { start: day(80), end: day(80) + HOUR });
+    const r = await client.sb.from("sessions").update({ status: "cancelled" }).eq("id", id).select("status");
+    return expect(!r.error && r.data?.[0]?.status === "cancelled", r.error?.message ?? r.data?.[0]?.status);
+  });
+  await check("Lifecycle", "complete data", "A client cancelling a PAID session must not strand the money", async () => {
+    const id = await mk("lifecycle-paid-cancel", { start: day(81), end: day(81) + HOUR, pay: "paid" });
+    const r = await client.sb.from("sessions").update({ status: "cancelled" }).eq("id", id).select("status, payment_status");
+    if (r.error) return ["pass", `blocked: ${r.error.message}`];
+    return ["warn", `database lets the client cancel a paid session (payment_status stays ${r.data?.[0]?.payment_status}); there is no refund path, so the money is held against a cancelled booking. The UI does not offer this; the API does.`];
+  });
+  await check("Lifecycle", "missing data", "A cancelled or completed session cannot be re-opened by the client", async () => {
+    const id = created.sessions.at(-3);
+    const r = await client.sb.from("sessions").update({ status: "scheduled" }).eq("id", id).select("status");
+    return expect(Boolean(r.error) || !r.data?.length || r.data[0].status !== "scheduled", r.error?.message ?? `status now ${r.data?.[0]?.status}`);
+  });
+
   // Vault
   const vaultSession = created.sessions[3];
   await check("Vault", "complete data", "Upload -> expert sees it -> signed download works -> delete cleans row and object", async () => {

@@ -364,6 +364,15 @@ export async function getPaymentForSession(sessionId: string): Promise<Payment |
   return data ? mapPayment(data as PaymentRow) : null;
 }
 
+/** Reads an error body without throwing when the server answered with HTML/empty (e.g. a 502). */
+async function readJson<T = Record<string, unknown>>(res: Response): Promise<T> {
+  try {
+    return (await res.json()) as T;
+  } catch {
+    return {} as T;
+  }
+}
+
 /**
  * Runs the full MOCKED Razorpay escrow flow for a session via a Route
  * Handler (privileged: it also schedules the 60/40 transfer rows, which
@@ -377,8 +386,8 @@ export async function payMockRazorpay(sessionId: string): Promise<Payment> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sessionId }),
   });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error ?? "Failed to process payment");
+  const body = await readJson<{ error?: string; payment?: unknown }>(res);
+  if (!res.ok) throw new Error(body.error ?? `Failed to process payment (${res.status})`);
   return mapPayment(body.payment as PaymentRow);
 }
 
@@ -414,9 +423,10 @@ export async function payWithRazorpay(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sessionId }),
   });
-  const order = await orderRes.json();
-  if (!orderRes.ok) throw new Error(order.error ?? "Could not start payment");
+  const order = await readJson<{ error?: string; keyId: string; orderId: string; amount: number; currency: string; email?: string | null }>(orderRes);
+  if (!orderRes.ok) throw new Error(order.error ?? `Could not start payment (${orderRes.status})`);
   await loadRazorpayScript();
+  if (!window.Razorpay) throw new Error("The payment window is blocked. Disable any ad blocker for this site and try again.");
 
   return new Promise<boolean>((resolve, reject) => {
     const rzp = new window.Razorpay!({
@@ -435,11 +445,24 @@ export async function payWithRazorpay(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId, ...r }),
         });
-        if (res.ok) resolve(true);
-        else reject(new Error((await res.json()).error ?? "Payment could not be verified"));
+        if (res.ok) {
+          resolve(true);
+          return;
+        }
+        const body = await readJson<{ error?: string }>(res);
+        // The charge already went through at Razorpay; the webhook will still
+        // mark the session paid, so don't tell the user it simply failed.
+        reject(
+          new Error(
+            `${body.error ?? "Payment could not be verified"}. If money left your account it will show as paid here shortly; please don't pay again.`
+          )
+        );
       },
     });
-    rzp.on("payment.failed", () => reject(new Error("Payment failed. Please try again.")));
+    // Razorpay shows its own failure message and lets the user retry inside
+    // the same window, so a failed attempt must not settle this promise: a
+    // successful retry still needs to reach the handler above.
+    rzp.on("payment.failed", () => {});
     rzp.open();
   });
 }

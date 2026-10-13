@@ -103,11 +103,14 @@ await expectFail("client books in the past", C,
 await expectFail("client books with end before start", C,
   `insert into public.sessions (client_id, expert_id, title, starts_at, ends_at)
    values ('${C}','${E}','x', now() + interval '90 days' + interval '1 hour', now() + interval '90 days')`);
+await expectFail("expert completes an unpaid session", E, `update public.sessions set status='completed' where id='${sid}'`);
+await expectFail("client invents a status", C, `update public.sessions set status='refunded' where id='${sid}'`);
 await expectFail("client marks own session paid", C, `update public.sessions set payment_status='escrow_held' where id='${sid}'`);
 await expectFail("client lowers price", C, `update public.sessions set amount_inr=1 where id='${sid}'`);
 await expectFail("client reassigns expert", C, `update public.sessions set expert_id='${C}' where id='${sid}'`);
 await expectFail("client completes session", C, `update public.sessions set status='completed' where id='${sid}'`);
 await expectOk("client cancels session", C, `update public.sessions set status='cancelled' where id='${sid}'`);
+await expectFail("client re-opens a cancelled session", C, `update public.sessions set status='scheduled' where id='${sid}'`);
 await db.exec(`update public.sessions set status='scheduled' where id='${sid}'`);
 
 await expectFail("client inserts payment as paid (razorpay)", C,
@@ -127,6 +130,8 @@ console.log("   session payment_status after expert confirm:", s2.rows[0].paymen
 if (s2.rows[0].payment_status !== "released") { console.log("FAIL: status not derived"); failures++; }
 await expectFail("client reverts paid payment", C, `update public.payments set status='processing' where session_id='${sid}'`);
 await expectOk("expert completes session", E, `update public.sessions set status='completed' where id='${sid}'`);
+await expectFail("client re-opens a completed session", C, `update public.sessions set status='scheduled' where id='${sid}'`);
+await expectFail("client cancels a completed session", C, `update public.sessions set status='cancelled' where id='${sid}'`);
 
 // service role path (what the Razorpay verify route does)
 await db.exec(`

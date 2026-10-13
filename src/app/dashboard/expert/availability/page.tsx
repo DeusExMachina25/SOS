@@ -30,7 +30,10 @@ export default function ExpertAvailabilityPage() {
   useEffect(() => {
     getMyAvailabilityRules()
       .then(setRules)
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error(err);
+        setError(err instanceof Error ? err.message : "Failed to load your availability");
+      });
   }, []);
 
   const handleAdd = async () => {
@@ -51,11 +54,12 @@ export default function ExpertAvailabilityPage() {
   };
 
   const handleDelete = async (id: string) => {
+    setError("");
     try {
       await deleteAvailabilityRule(id);
       setRules((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to remove availability");
+      setError(err instanceof Error ? err.message : "Failed to remove availability");
     }
   };
 
@@ -65,7 +69,7 @@ export default function ExpertAvailabilityPage() {
   }));
 
   return (
-    <div className="w-full relative min-h-screen flex flex-col pt-6 pb-24">
+    <div className="w-full relative flex flex-col">
       {/* HEADER SECTION */}
       <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-[var(--border)] pb-8">
         <div>
@@ -137,6 +141,7 @@ export default function ExpertAvailabilityPage() {
                     </div>
                     <button
                       onClick={() => handleDelete(rule.id)}
+                      aria-label={`Remove ${rule.startTime} to ${rule.endTime} on ${name}`}
                       className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--color-orange)] hover:bg-[var(--bg-surface)] transition-all"
                     >
                       <Trash2 size={14} />
