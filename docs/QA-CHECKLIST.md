@@ -8,7 +8,9 @@ node scripts/audit/run.mjs --full            # needs the dev server + seeded dev
 node scripts/audit/run.mjs --full --email    # same, and emails the report (see below)
 ```
 
-`--full` writes rows tagged `[audit]` and removes them afterwards; use a dev Supabase project only.
+`--full` writes rows tagged `[audit]` and removes them afterwards. It, `seed-dev-users.mjs` and `seed-demo-data.mjs`
+refuse to run unless `.env.local` contains `DEV_SEED_PROJECT_REF=<project ref>` matching the project in
+`NEXT_PUBLIC_SUPABASE_URL` (see `scripts/lib/dev-guard.mjs`). Only opt in for a throwaway project.
 Reports land in `reports/audit-<time>.html|json` (git-ignored).
 
 ## Emailing the report

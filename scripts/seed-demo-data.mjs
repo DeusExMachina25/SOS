@@ -6,10 +6,12 @@
  *
  * Run:  node scripts/seed-dev-users.mjs && node scripts/seed-demo-data.mjs
  *
- * Uses the service-role key from .env.local. Dev projects only.
+ * Uses the service-role key from .env.local. Refuses to run unless that project
+ * is marked as a dev project (DEV_SEED_PROJECT_REF, see scripts/lib/dev-guard.mjs).
  */
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
+import { assertDevProject } from "./lib/dev-guard.mjs";
 
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")
@@ -20,6 +22,8 @@ const env = Object.fromEntries(
       return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
     })
 );
+
+assertDevProject(env, "seed-demo-data");
 
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },

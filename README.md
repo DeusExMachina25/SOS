@@ -21,6 +21,8 @@ npm run dev
 
 Dev-only login shortcuts (`test@sos.com`, phone `0000000000` / OTP `123456`) are compiled out of production (`NODE_ENV !== "development"`). Seed the dev accounts with `node scripts/seed-dev-users.mjs`.
 
+`seed-dev-users.mjs`, `seed-demo-data.mjs` and `node scripts/audit/run.mjs --full` create accounts with the password `password` (one is an admin), so they refuse to run unless `.env.local` has `DEV_SEED_PROJECT_REF=<project ref>` matching `NEXT_PUBLIC_SUPABASE_URL`. Only set it for a throwaway project no real user can reach; never for production. `node scripts/audit/run.mjs` (read-only) needs no opt-in.
+
 ## Deploying (Vercel + Supabase)
 
 ### 1. Supabase

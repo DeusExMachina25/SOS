@@ -10,12 +10,14 @@
  * --full needs the dev server on AUDIT_BASE_URL (default http://localhost:3000),
  * the dev accounts from scripts/seed-dev-users.mjs, and the service-role key.
  * Everything it writes is tagged "[audit]" and removed in a finally block.
- * Point it at a dev Supabase project only.
+ * Refuses --full unless the project is marked as dev (DEV_SEED_PROJECT_REF, see
+ * scripts/lib/dev-guard.mjs). The read-only mode needs no opt-in.
  */
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { fileURLToPath } from "url";
 import { sendReportEmail } from "./mailer.mjs";
+import { assertDevProject } from "../lib/dev-guard.mjs";
 
 const env = Object.fromEntries(
   readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
@@ -28,6 +30,8 @@ const env = Object.fromEntries(
 );
 const FULL = process.argv.includes("--full");
 const EMAIL = process.argv.includes("--email");
+// --full creates test users and writes rows, so it only runs against a project marked as dev.
+if (FULL) assertDevProject(env, "audit --full");
 const BASE = process.env.AUDIT_BASE_URL ?? "http://localhost:3000";
 const SUPA_URL = env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
