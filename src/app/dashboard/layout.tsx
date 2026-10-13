@@ -22,7 +22,8 @@ import {
   Banknote,
   Check
 } from "lucide-react";
-import { getMyExpertProfile, setMyUpiId } from "@/lib/data/queries";
+import { getMyExpertProfile, setMyUpiId, setMyTimezone } from "@/lib/data/queries";
+import { COMMON_TIME_ZONES, describeTimeZone, resolveTimeZone, viewerTimeZone } from "@/lib/data/slots";
 import Sidebar, { type NavGroup } from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 
@@ -39,6 +40,11 @@ export default function DashboardLayout({
   const [upiSaving, setUpiSaving] = useState(false);
   const [upiSaved, setUpiSaved] = useState(false);
   const [upiError, setUpiError] = useState("");
+  // The expert's stored timezone ("" until loaded), what their availability and bookings are read in.
+  const [expertZone, setExpertZone] = useState("");
+  const [zoneSaving, setZoneSaving] = useState(false);
+  const [zoneSaved, setZoneSaved] = useState(false);
+  const [zoneError, setZoneError] = useState("");
 
   // Load saved theme on mount
   useEffect(() => {
@@ -63,7 +69,10 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!isProfileOpen || role !== "expert") return;
     getMyExpertProfile()
-      .then((profile) => setUpiId(profile?.upiId ?? ""))
+      .then((profile) => {
+        setUpiId(profile?.upiId ?? "");
+        setExpertZone(resolveTimeZone(profile?.timezone));
+      })
       .catch((err) => console.error(err));
   }, [isProfileOpen, role]);
 
@@ -78,6 +87,24 @@ export default function DashboardLayout({
       setUpiError(err instanceof Error ? err.message : "Failed to save UPI ID");
     } finally {
       setUpiSaving(false);
+    }
+  };
+
+  const handleZoneChange = async (next: string) => {
+    const previous = expertZone;
+    setExpertZone(next);
+    setZoneError("");
+    setZoneSaved(false);
+    setZoneSaving(true);
+    try {
+      await setMyTimezone(next);
+      setZoneSaved(true);
+      setTimeout(() => setZoneSaved(false), 2000);
+    } catch (err) {
+      setExpertZone(previous);
+      setZoneError(err instanceof Error ? err.message : "Failed to save timezone");
+    } finally {
+      setZoneSaving(false);
     }
   };
 
@@ -285,14 +312,35 @@ export default function DashboardLayout({
                   )}
 
                   <div>
-                    <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Globe2 size={14} className="text-[var(--color-primary)]"/> GLOBAL TIMEZONE</label>
-                    <select className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer font-bold">
-                      <option>Indian Standard Time (IST)</option>
-                      <option>Eastern Standard Time (EST)</option>
-                      <option>Pacific Standard Time (PST)</option>
-                      <option>Greenwich Mean Time (GMT)</option>
-                    </select>
-                    <p className="text-[10px] text-[var(--text-faint)] mt-2 italic">*Experts can adjust their availability from their profile settings.</p>
+                    <label htmlFor="pref-timezone" className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2">
+                      <Globe2 size={14} className="text-[var(--color-primary)]"/> {role === "expert" ? "YOUR TIMEZONE" : "TIMEZONE"}
+                      {zoneSaved && <Check size={14} className="text-[var(--color-green)]" aria-label="Saved" />}
+                    </label>
+                    {role === "expert" ? (
+                      <>
+                        <select
+                          id="pref-timezone"
+                          value={expertZone}
+                          disabled={!expertZone || zoneSaving}
+                          onChange={(e) => handleZoneChange(e.target.value)}
+                          className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer font-bold disabled:opacity-60"
+                        >
+                          {!expertZone && <option value="">Loading…</option>}
+                          {[...new Set([...(expertZone ? [expertZone] : []), ...COMMON_TIME_ZONES])]
+                            .sort((x, y) => (x === expertZone ? -1 : y === expertZone ? 1 : 0))
+                            .map((zone) => (
+                              <option key={zone} value={zone}>{describeTimeZone(zone)}</option>
+                            ))}
+                        </select>
+                        {zoneError && <p className="text-[10px] text-[var(--color-orange)] mt-2">{zoneError}</p>}
+                        <p className="text-[10px] text-[var(--text-faint)] mt-2 italic">*Your weekly availability and the dates clients pick are read in this timezone. Clients see your times converted to theirs.</p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-[var(--text-primary)] font-bold px-1">
+                        {describeTimeZone(viewerTimeZone())}
+                        <span className="block text-[10px] text-[var(--text-faint)] mt-2 italic font-normal">*Taken from this device. Booking times are shown in your expert&apos;s timezone with your own time beside each one.</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>

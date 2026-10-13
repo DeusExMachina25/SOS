@@ -35,14 +35,62 @@ function formatter(timeZone: string | undefined, opts: Intl.DateTimeFormatOption
   return f;
 }
 
-/** A valid IANA zone, or the default when missing/garbled (a bad stored value must not break booking). */
-export function resolveTimeZone(timeZone: string | null | undefined): string {
-  if (!timeZone) return DEFAULT_EXPERT_TIMEZONE;
+/**
+ * True for a real IANA region zone such as "Asia/Kolkata", or "UTC".
+ * Abbreviations ("IST", "EST") and raw offsets ("+05:30") are rejected even
+ * though Intl accepts them: "EST" is a fixed UTC-5 with no daylight saving and
+ * "IST" is India, Ireland or Israel, so either would be wrong for someone.
+ */
+export function isValidTimeZone(timeZone: string | null | undefined): timeZone is string {
+  if (!timeZone) return false;
+  if (!/^(UTC|[A-Za-z_]+(\/[A-Za-z0-9_+-]+)+)$/.test(timeZone)) return false;
   try {
     formatter(timeZone, { hour: "numeric" });
-    return timeZone;
+    return true;
   } catch {
-    return DEFAULT_EXPERT_TIMEZONE;
+    return false;
+  }
+}
+
+/** A valid IANA zone, or the default when missing/garbled (a bad stored value must not break booking). */
+export function resolveTimeZone(timeZone: string | null | undefined): string {
+  return isValidTimeZone(timeZone) ? timeZone : DEFAULT_EXPERT_TIMEZONE;
+}
+
+/** Zones offered in the expert's timezone picker. An expert's stored zone is added to the picker if it is not in here. */
+export const COMMON_TIME_ZONES = [
+  "Asia/Kolkata",
+  "Asia/Dubai",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "Pacific/Auckland",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "UTC",
+];
+
+/**
+ * Tidies the spelling of a valid zone ("asia/kolkata" -> "Asia/Kolkata") by
+ * matching the offered list. Intl's own "canonical" name is not used: ICU
+ * reports Asia/Kolkata as the legacy Asia/Calcutta.
+ */
+export function canonicalTimeZone(timeZone: string): string {
+  return COMMON_TIME_ZONES.find((z) => z.toLowerCase() === timeZone.toLowerCase()) ?? timeZone;
+}
+
+/** The timezone this device is set to, or null if the browser will not say. */
+export function viewerTimeZone(): string | null {
+  try {
+    const zone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return isValidTimeZone(zone) ? zone : null;
+  } catch {
+    return null;
   }
 }
 

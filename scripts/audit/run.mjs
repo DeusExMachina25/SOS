@@ -329,6 +329,14 @@ async function fullFlows() {
     return expect(Boolean(r.error) || !r.data?.length || r.data[0].status !== "scheduled", r.error?.message ?? `status now ${r.data?.[0]?.status}`);
   });
 
+  // Expert timezone
+  await check("Profile", "complete data", "Expert saves their own timezone; a client cannot change it", async () => {
+    const mine = await expert.sb.from("expert_profiles").update({ timezone: "Asia/Dubai" }).eq("profile_id", expert.id).select("timezone");
+    const theirs = await client.sb.from("expert_profiles").update({ timezone: "Pacific/Auckland" }).eq("profile_id", expert.id).select("timezone");
+    const now2 = (await admin.from("expert_profiles").select("timezone").eq("profile_id", expert.id).single()).data.timezone;
+    await admin.from("expert_profiles").update({ timezone: "Asia/Kolkata" }).eq("profile_id", expert.id);
+    return expect(!mine.error && mine.data?.[0]?.timezone === "Asia/Dubai" && !theirs.data?.length && now2 === "Asia/Dubai", `expert ${mine.error?.message ?? mine.data?.[0]?.timezone}; client changed ${theirs.data?.length ? "YES" : "no"}; stored ${now2}`);
+  });
   // Vault
   const vaultSession = created.sessions[3];
   await check("Vault", "complete data", "Upload -> expert sees it -> signed download works -> delete cleans row and object", async () => {
@@ -426,6 +434,11 @@ async function fullFlows() {
     }
     return expect(!bad.length, bad.join("; "));
   });
+  await check("Profile", "missing data", "A new expert with no profile row gets a clear failure, not a silent success", async () => {
+    const r = await newExpert.sb.from("expert_profiles").update({ timezone: "Asia/Dubai" }).eq("profile_id", newExpert.id).select("profile_id");
+    return expect(!r.error && !r.data?.length, r.error?.message ?? `0 rows updated (the app turns this into "Complete your expert profile first")`);
+  });
+
   await check("Booking", "missing data", "Booking an expert who has no approved profile is blocked", async () => {
     const { data, error } = await client.sb.from("sessions").insert({ client_id: client.id, expert_id: newExpert.id, title: `${TAG} unapproved`, starts_at: iso(day(70)), ends_at: iso(day(70) + HOUR) }).select("id");
     if (data?.[0]) created.sessions.push(data[0].id);

@@ -5,6 +5,9 @@ import {
   dateInputInZone,
   addDaysToDateInput,
   resolveTimeZone,
+  isValidTimeZone,
+  canonicalTimeZone,
+  COMMON_TIME_ZONES,
   describeTimeZone,
   DEFAULT_EXPERT_TIMEZONE,
 } from "@/lib/data/slots";
@@ -128,5 +131,28 @@ describe("date helpers", () => {
   it("describes a zone for display", () => {
     expect(describeTimeZone(KOLKATA)).toContain("Asia/Kolkata");
     expect(describeTimeZone(null)).toContain("Asia/Kolkata");
+  });
+});
+
+describe("timezone validation", () => {
+  it("accepts real zones and rejects everything else", () => {
+    expect(isValidTimeZone("Asia/Kolkata")).toBe(true);
+    expect(isValidTimeZone("America/Los_Angeles")).toBe(true);
+    expect(isValidTimeZone("UTC")).toBe(true);
+    for (const bad of ["", null, undefined, "Not/AZone", "IST", "EST", "PST", "+05:30", "GMT+5:30 nonsense", "../etc/passwd"]) {
+      expect(isValidTimeZone(bad as string | null | undefined)).toBe(false);
+    }
+  });
+
+  it("rewrites a zone to its canonical spelling", () => {
+    expect(canonicalTimeZone("asia/kolkata")).toBe("Asia/Kolkata");
+    expect(canonicalTimeZone("America/New_York")).toBe("America/New_York");
+  });
+
+  it("every zone offered in the picker is valid and produces slots", () => {
+    for (const zone of COMMON_TIME_ZONES) {
+      expect(isValidTimeZone(zone), zone).toBe(true);
+      expect(slotsFor(MONDAY, NINE_TO_FIVE, zone), zone).toHaveLength(8);
+    }
   });
 });

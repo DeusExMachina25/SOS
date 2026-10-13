@@ -9,6 +9,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { canonicalTimeZone, isValidTimeZone } from "./slots";
 import {
   formatDuration,
   formatSessionDate,
@@ -503,6 +504,28 @@ export async function confirmUpiPaymentReceived(sessionId: string): Promise<void
   if (paymentError) throw new Error(`Failed to confirm payment: ${paymentError.message}`);
 
   // sessions.payment_status is derived from the payment by a DB trigger.
+}
+
+/**
+ * Sets the timezone the signed-in expert's availability and bookings are read
+ * in. Rejects anything that is not a real IANA zone: a bad value would
+ * silently fall back to the default for every client, which is worse than
+ * refusing it here.
+ */
+export async function setMyTimezone(timeZone: string): Promise<void> {
+  if (!isValidTimeZone(timeZone)) throw new Error("Choose a region timezone such as Asia/Kolkata.");
+  const sb = requireClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("You must be signed in.");
+
+  const { data, error } = await sb
+    .from("expert_profiles")
+    .update({ timezone: canonicalTimeZone(timeZone) })
+    .eq("profile_id", userId)
+    .select("profile_id");
+  if (error) throw new Error(`Failed to save timezone: ${error.message}`);
+  // RLS and a missing profile both look like "0 rows updated".
+  if (!data?.length) throw new Error("Complete your expert profile before setting a timezone.");
 }
 
 /** Sets the signed-in expert's UPI payout ID, shown to clients at checkout. */
