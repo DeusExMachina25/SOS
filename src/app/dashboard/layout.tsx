@@ -28,6 +28,8 @@ import { COMMON_TIME_ZONES, describeTimeZone, resolveTimeZone, viewerTimeZone } 
 import Sidebar, { type NavGroup } from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import { useUnreadThreads } from "@/components/dashboard/useUnreadThreads";
+import ExpertApplicationBanner from "@/components/dashboard/ExpertApplicationBanner";
+import type { ExpertStatus } from "@/lib/data/types";
 import { totalUnread, badgeText, unreadLabel } from "@/lib/data/unread";
 
 export default function DashboardLayout({
@@ -39,6 +41,7 @@ export default function DashboardLayout({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [theme, setTheme] = useState("dark");
   const [displayName, setDisplayName] = useState("");
+  const [expertStatus, setExpertStatus] = useState<ExpertStatus | null>(null);
   const [nameInput, setNameInput] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
@@ -98,6 +101,15 @@ export default function DashboardLayout({
   // Unread messages, live. Admins have no inbox, so nothing is loaded for them.
   const unreadThreads = useUnreadThreads(role !== "admin", pathname);
   const unreadTotal = totalUnread(unreadThreads);
+
+  // Where an expert's application stands, re-read on every page so it updates as soon as they submit or are approved.
+  // An expert account with no profile row yet is treated as invited: they still have to complete one.
+  useEffect(() => {
+    if (role !== "expert") return;
+    getMyExpertProfile()
+      .then((p) => setExpertStatus(p ? p.status : "invited"))
+      .catch((err) => console.error("Failed to load application status", err));
+  }, [role, pathname]);
 
   // Load the expert's payout UPI ID when they open Preferences.
   useEffect(() => {
@@ -272,6 +284,7 @@ export default function DashboardLayout({
         />
 
         <main id="main" className="flex-1 min-h-0 overflow-y-auto p-5 lg:p-7 pb-28 lg:pb-7">
+          {role === "expert" && !pathname.endsWith("/onboarding") && <ExpertApplicationBanner status={expertStatus} />}
           {children}
         </main>
       </div>

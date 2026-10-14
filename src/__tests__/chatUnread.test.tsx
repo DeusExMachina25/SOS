@@ -174,7 +174,8 @@ describe("ChatWorkspace: resilience and search", () => {
     queries.getUnreadThreads.mockRejectedValue(new Error("function my_unread_threads() does not exist"));
     render(<ChatWorkspace />);
     expect(await screen.findByRole("button", { name: "Ravi Menon" })).toBeTruthy();
-    expect(screen.getByText("hi")).toBeTruthy();
+    // messages load a moment after the list; wait for them rather than racing
+    expect(await screen.findByText("hi")).toBeTruthy();
   });
 
   it("keeps the conversation usable when marking read fails", async () => {

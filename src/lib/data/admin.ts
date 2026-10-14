@@ -180,3 +180,40 @@ export async function recordRefund(sessionId: string): Promise<void> {
   const { error } = await sb.rpc("admin_refund_session", { p_session_id: sessionId });
   if (error) throw new Error(error.message);
 }
+
+// ---------------------------------------------------------------------------
+// Expert invitations (server route: only the Auth admin API can create users)
+// ---------------------------------------------------------------------------
+
+async function inviteApi(body: Record<string, unknown>): Promise<{ link: string | null; emailed: boolean }> {
+  const res = await fetch("/api/admin/experts/invite", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  let json: { error?: string; link?: string | null; emailed?: boolean } = {};
+  try {
+    json = await res.json();
+  } catch {
+    /* a gateway error page is not JSON */
+  }
+  if (!res.ok) throw new Error(json.error ?? `The request failed (${res.status}).`);
+  return { link: json.link ?? null, emailed: json.emailed === true };
+}
+
+/** Invite someone as an expert: by email, or as a link to send yourself. */
+export function inviteExpert(input: { email: string; fullName: string; deliver: "email" | "link" }) {
+  return inviteApi({ action: "invite", ...input });
+}
+
+/** A fresh sign-in link for an invitation that hasn't been completed. */
+export async function newInviteLink(expertId: string): Promise<string> {
+  const { link } = await inviteApi({ action: "relink", expertId });
+  if (!link) throw new Error("No link was returned. Try again.");
+  return link;
+}
+
+/** Cancel an invitation nobody has signed in to. */
+export async function cancelInvite(expertId: string): Promise<void> {
+  await inviteApi({ action: "revoke", expertId });
+}

@@ -329,6 +329,15 @@ async function fullFlows() {
     }
     return expect(!out.length, out.join("; ") || "refused with 'Only an admin can do this'");
   });
+  await check("Admin", "complete data", "The invite route refuses everyone who is not a signed-in admin", async () => {
+    const body = { action: "invite", email: `audit-${Date.now()}@example.test`, fullName: "Audit Nobody", deliver: "link" };
+    const anon = await http("/api/admin/experts/invite", { method: "POST", body });
+    const asClient = await http("/api/admin/experts/invite", { method: "POST", body, cookie: cCookie });
+    const asExpert = await http("/api/admin/experts/invite", { method: "POST", body, cookie: eCookie });
+    const crossSite = await fetch(BASE + "/api/admin/experts/invite", { method: "POST", headers: { "content-type": "application/json", origin: "https://evil.example", cookie: cCookie }, body: JSON.stringify(body) });
+    const leaked = (await admin.from("profiles").select("id").eq("full_name", "Audit Nobody")).data?.length ?? 0;
+    return expect(anon.status === 401 && asClient.status === 403 && asExpert.status === 403 && crossSite.status === 403 && leaked === 0, `anonymous ${anon.status}, client ${asClient.status}, expert ${asExpert.status}, cross-site ${crossSite.status}; accounts created: ${leaked}`);
+  });
   await check("Admin", "complete data", "Clients and experts cannot read other people's payments or edit payouts", async () => {
     const seen = await client.sb.from("payments").select("id");
     const edit = await expert.sb.from("payment_transfers").update({ status: "transferred" }).neq("status", "transferred").select("id");

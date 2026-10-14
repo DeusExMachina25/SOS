@@ -37,6 +37,14 @@ payment (mock + UPI), vault round trip, chat, brand-new accounts with no data, p
 - Two real browsers/devices join with real LiveKit keys; camera/mic permission denied; rejoin after refresh;
   join 16 min early (blocked) and 59 min after end (allowed).
 
+**Expert invitations**
+- Invite a real address by email and by link; confirm the email arrives (spam folder too) and the link lands on `/auth/accept`, then onboarding, with no flash of the login page.
+- Open the same link twice (second use must show a clear "expired or used" message), and open one after it expires.
+- Complete the profile with bad input (rate `1e3`, bio too short, timezone abbreviations) and with good input; confirm the application appears under Needs review with the right details.
+- Try to invite an address that already has a client account (must be refused, not converted). Hit the email rate limit and confirm the message points at "Create link".
+- Cancel an invitation before sign-in (account gone) and after sign-in (must be refused). Re-send a new link and confirm the old one stops working.
+- Redirect URLs in Supabase include `/auth/accept` for every domain you use; confirm a client magic link also works end to end.
+
 **Admin console**
 - Sign in as a real admin on the Expert tab; confirm you land on `/dashboard/admin` and that a client/expert typing that URL is bounced.
 - Approve a real submitted expert and check they appear in the directory and can be booked; suspend them and check they vanish but existing sessions remain.

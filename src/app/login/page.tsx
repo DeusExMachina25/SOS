@@ -121,7 +121,8 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithOtp({
           email: cleanedInput,
           options: {
-            emailRedirectTo: `${window.location.origin}${postLoginPath("client")}`,
+            // /auth/accept turns the link into a session first; the dashboard's route guard would bounce it.
+            emailRedirectTo: `${window.location.origin}/auth/accept`,
           }
         });
         if (error) throw error;

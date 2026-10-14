@@ -32,8 +32,9 @@ Dev-only login shortcuts (`test@sos.com`, phone `0000000000` / OTP `123456`) are
 4. Make yourself an admin (the only way to get the `admin` role; the API cannot do it):
    `update public.profiles set role = 'admin' where id = '<your auth user id>';`
    Then sign in on the **Expert** tab of `/login` with that email and password; admins land on `/dashboard/admin`.
-5. Experts are **invite-only**: create the user in Authentication, set `profiles.role = 'expert'`, then have them complete their profile; approve with
-   `update public.expert_profiles set status = 'approved' where profile_id = '<id>';`
+5. Experts are **invite-only**, and you invite them from the admin console (see below). Add these to **Authentication → URL Configuration → Redirect URLs**, or invitation links will be refused:
+   `https://<domain>/auth/accept` (and `http://localhost:3000/auth/accept` for development).
+   Supabase's built-in email is rate-limited (a handful of messages an hour) and meant for testing; for real use, set up **custom SMTP** under Authentication → Emails. Until then, "Create link instead" in the invite panel gives you a link to send yourself.
 
 ### 2. Environment variables (Vercel → Project → Settings → Environment Variables)
 See `.env.example`. `SUPABASE_SERVICE_ROLE_KEY`, `LIVEKIT_API_SECRET`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` are server-only; never prefix them with `NEXT_PUBLIC_`.
@@ -52,7 +53,11 @@ Sign up as a client → book an approved expert → pay (small real amount) → 
 
 ## Admin console
 `/dashboard/admin` (admins only; the route guard and the database both enforce it):
-- **Experts**: review invited experts' submitted profiles; approve, reject, suspend or reinstate. Only approved experts are listed and bookable.
+- **Experts**: invite experts, review what they submit, and approve, reject, suspend or reinstate. Only approved experts are listed and bookable.
+  1. **Invite an expert** (name and email). They get an email with a link; or choose "Create link instead" and send it yourself. The account is created as an expert with an `invited` placeholder row.
+  2. They open the link (it lands on `/auth/accept`), choose a password, and complete their profile at `/dashboard/expert/onboarding`. Submitting moves them to **Needs review**.
+  3. You review and approve. The database refuses to approve an invitation that has no submitted profile.
+  An open invitation can be given a **new sign-in link** or **cancelled** (only while nobody has signed in to it). An existing account is never converted into an expert through an invitation. Sign-in links work once; send them privately.
 - **Payouts**: money collected through Razorpay is held by you until you pay the expert. Each booking has a 60% and a 40% payout; send the money yourself (UPI shown), then "Mark as sent" with a reference. The 40% share stays locked until the session is completed.
 - **Sessions**: every booking on the platform, with "Record refund" for paid sessions. A refund is recorded atomically (payment refunded, unsent payouts cancelled, session cancelled) but **does not move money**: refund the client in Razorpay yourself. It is refused if part of the payment was already paid out.
 Migration `0019` adds what this needs (admins can read payments; the two money actions are single database functions).

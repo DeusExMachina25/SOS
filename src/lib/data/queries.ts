@@ -12,6 +12,7 @@ import { supabase } from "@/utils/supabase/client";
 import { canonicalTimeZone, isValidTimeZone } from "./slots";
 import { normalizeDisplayName } from "./format";
 import type { UnreadThread } from "./unread";
+import type { ExpertProfileValue } from "./invite";
 import {
   formatDuration,
   formatSessionDate,
@@ -232,6 +233,73 @@ export async function upsertMyExpertProfile(input: {
   });
 
   if (error) throw new Error(`Failed to save profile: ${error.message}`);
+}
+
+/**
+ * Submits the signed-in expert's profile for review. Allowed while the
+ * application is 'invited' or already 'profile_submitted' (so they can fix
+ * something before it is reviewed); once approved, rejected or suspended it is
+ * the admin's call, and the database refuses the change anyway.
+ */
+export async function submitExpertApplication(value: ExpertProfileValue): Promise<void> {
+  const sb = requireClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("You must be signed in.");
+
+  const fields = {
+    professional_title: value.professionalTitle,
+    bio: value.bio,
+    location: value.location,
+    timezone: value.timezone,
+    years_experience: value.yearsExperience,
+    session_rate_inr: value.sessionRateInr,
+    firm: value.firm,
+    coa_registration: value.coaRegistration,
+    credentials: value.credentials,
+    specialties: value.specialties,
+    languages: value.languages,
+    upi_id: value.upiId,
+    status: "profile_submitted",
+  };
+
+  const { data: existing, error: lookupError } = await sb
+    .from("expert_profiles")
+    .select("status")
+    .eq("profile_id", userId)
+    .maybeSingle();
+  if (lookupError) throw new Error(`Failed to check your application: ${lookupError.message}`);
+
+  if (existing) {
+    if (existing.status !== "invited" && existing.status !== "profile_submitted") {
+      throw new Error("Your profile can't be changed here right now. Contact us if something needs correcting.");
+    }
+    const { data, error } = await sb.from("expert_profiles").update(fields).eq("profile_id", userId).select("profile_id");
+    if (error) throw new Error(`Failed to save your profile: ${error.message}`);
+    if (!data?.length) throw new Error("Your profile couldn't be saved. Please try again.");
+    return;
+  }
+
+  // An expert account made by hand has no row yet. The database forces a new
+  // row's status to 'profile_submitted', whatever is sent.
+  const { error } = await sb.from("expert_profiles").insert({ profile_id: userId, ...fields });
+  if (error) throw new Error(`Failed to save your profile: ${error.message}`);
+}
+
+/** Sets the signed-in user's password and remembers that they chose one. */
+export async function setMyPassword(password: string): Promise<void> {
+  const sb = requireClient();
+  const { error } = await sb.auth.updateUser({ password, data: { password_set: true } });
+  if (error) throw new Error(error.message);
+}
+
+/** The signed-in user's email, and whether they've chosen a password yet (an invited expert hasn't). */
+export async function getMyAuthInfo(): Promise<{ email: string | null; passwordSet: boolean } | null> {
+  const sb = requireClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return null;
+  return { email: user.email ?? null, passwordSet: user.user_metadata?.password_set === true };
 }
 
 // ---------------------------------------------------------------------------

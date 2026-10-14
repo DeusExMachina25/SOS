@@ -280,6 +280,36 @@ await expectOk("marking read again never moves the marker backwards", E, `select
 const after = (await db.query(`select last_read_at from public.thread_reads where thread_id='${thr}' and user_id='${E}'`)).rows[0].last_read_at;
 if (new Date(after) < new Date(before)) { console.log("FAIL: marker moved backwards"); failures++; }
 
+// --- Expert invitations ---------------------------------------------------------
+const INV = "55555555-5555-5555-5555-555555555555";
+const INV2 = "66666666-6666-6666-6666-666666666666";
+await db.exec(`
+  insert into auth.users (id,email) values ('${INV}','invited@x.com'),('${INV2}','invited2@x.com');
+  update public.profiles set role='expert' where id in ('${INV}','${INV2}');
+  insert into public.expert_profiles (profile_id, professional_title, session_rate_inr, status, invited_by)
+    values ('${INV}','',1,'invited','${A}'),('${INV2}','',1,'invited','${A}');
+`);
+const statusOf = async (id) => (await db.query(`select status::text s from public.expert_profiles where profile_id='${id}'`)).rows[0].s;
+
+await expectFail("invited expert approves themselves", INV, `update public.expert_profiles set status='approved' where profile_id='${INV}'`);
+await expectOk("invited expert submits their profile", INV, `update public.expert_profiles set professional_title='Landscape Architect', bio='A long enough bio for review.', location='Goa', session_rate_inr=3500, status='profile_submitted' where profile_id='${INV}'`);
+if ((await statusOf(INV)) !== "profile_submitted") { console.log("FAIL: submission did not take"); failures++; }
+
+// An RLS-blocked UPDATE changes zero rows instead of raising, so check the row.
+await as(INV, `update public.expert_profiles set status='profile_submitted', professional_title='Hijack' where profile_id='${INV2}'`).catch(() => {});
+const theirs = (await db.query(`select status::text s, professional_title t from public.expert_profiles where profile_id='${INV2}'`)).rows[0];
+if (theirs.s !== "invited" || theirs.t !== "") { console.log("VULNERABLE: an expert changed someone else's invitation", JSON.stringify(theirs)); failures++; } else console.log("blocked   : an expert cannot submit or edit someone else's invitation (row unchanged)");
+
+await expectFail("submitted expert approves themselves", INV, `update public.expert_profiles set status='approved' where profile_id='${INV}'`);
+await db.exec(`update public.expert_profiles set status='rejected' where profile_id='${INV}'`);
+await expectFail("rejected expert resubmits themselves", INV, `update public.expert_profiles set status='profile_submitted' where profile_id='${INV}'`);
+
+await expectFail("admin approves an invitation that has no profile yet", A, `update public.expert_profiles set status='approved' where profile_id='${INV2}'`);
+if ((await statusOf(INV2)) !== "invited") { console.log("VULNERABLE: an empty invitation was approved"); failures++; }
+await expectOk("admin approves once a profile was submitted", A, `update public.expert_profiles set status='approved' where profile_id='${INV}'`);
+const listed = (await as(C, `select count(*)::int n from public.public_experts where id='${INV2}'`)).rows[0].n;
+if (listed !== 0) { console.log("VULNERABLE: an invited placeholder is listed publicly"); failures++; } else console.log("blocked   : an invited placeholder is not listed publicly");
+
 const anon = await db.query(`select count(*)::int n from public.public_experts`);
 console.log("public_experts rows:", anon.rows[0].n);
 

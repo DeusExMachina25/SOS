@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { listExpertsForReview, setExpertStatus, type AdminExpert } from "@/lib/data/admin";
+import { listExpertsForReview, setExpertStatus, newInviteLink, cancelInvite, type AdminExpert } from "@/lib/data/admin";
+import InviteExpertPanel, { CopyLink } from "@/components/dashboard/InviteExpertPanel";
 import { expertActions, sortExperts, pendingReviewCount, EXPERT_STATUS_LABEL } from "@/lib/data/adminRules";
 import { formatInr } from "@/lib/data/format";
 import type { ExpertStatus } from "@/lib/data/types";
 
-type Filter = "review" | "approved" | "other" | "all";
+type Filter = "review" | "invited" | "approved" | "other" | "all";
 
 const STATUS_STYLE: Record<ExpertStatus, string> = {
   invited: "text-[var(--text-muted)] border-[var(--border-strong)]",
@@ -24,13 +25,44 @@ export default function AdminExpertsPage() {
   const [filter, setFilter] = useState<Filter>("review");
   const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
+  const [links, setLinks] = useState<Record<string, string>>({});
 
-  useEffect(() => {
+  const load = () =>
     listExpertsForReview()
       .then(setExperts)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load experts"))
       .finally(() => setLoading(false));
+
+  useEffect(() => {
+    load();
   }, []);
+
+  const relink = async (e: AdminExpert) => {
+    setError("");
+    setBusy(e.id);
+    try {
+      const link = await newInviteLink(e.id);
+      setLinks((prev) => ({ ...prev, [e.id]: link }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't create a new link");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const cancel = async (e: AdminExpert) => {
+    if (!window.confirm(`Cancel the invitation for ${e.fullName}?\n\nTheir account is deleted and the link stops working. You can invite them again later.`)) return;
+    setError("");
+    setBusy(e.id);
+    try {
+      await cancelInvite(e.id);
+      setExperts((prev) => prev.filter((x) => x.id !== e.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't cancel that invitation");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const change = async (expert: AdminExpert, to: ExpertStatus, confirmText?: string) => {
     if (confirmText && !window.confirm(`${expert.fullName}\n\n${confirmText}`)) return;
@@ -47,12 +79,22 @@ export default function AdminExpertsPage() {
   };
 
   const reviewCount = pendingReviewCount(experts);
+  const invitedCount = experts.filter((e) => e.status === "invited").length;
   const visible = sortExperts(experts).filter((e) =>
-    filter === "all" ? true : filter === "review" ? e.status === "profile_submitted" : filter === "approved" ? e.status === "approved" : !["profile_submitted", "approved"].includes(e.status)
+    filter === "all"
+      ? true
+      : filter === "review"
+      ? e.status === "profile_submitted"
+      : filter === "invited"
+      ? e.status === "invited"
+      : filter === "approved"
+      ? e.status === "approved"
+      : !["profile_submitted", "approved", "invited"].includes(e.status)
   );
 
   const tabs: { id: Filter; label: string }[] = [
     { id: "review", label: `Needs review${reviewCount ? ` (${reviewCount})` : ""}` },
+    { id: "invited", label: `Invited${invitedCount ? ` (${invitedCount})` : ""}` },
     { id: "approved", label: "Approved" },
     { id: "other", label: "Other" },
     { id: "all", label: "All" },
@@ -64,6 +106,8 @@ export default function AdminExpertsPage() {
         <h1 className="font-display text-3xl font-bold text-[var(--text-primary)]">Experts</h1>
         <p className="font-mono-sos text-[10px] tracking-[0.25em] text-[var(--text-faint)] mt-2">REVIEW APPLICATIONS · CONTROL WHO CAN BE BOOKED</p>
       </div>
+
+      <InviteExpertPanel onInvited={() => { setFilter("invited"); load(); }} />
 
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter experts">
         {tabs.map((t) => (
@@ -87,7 +131,11 @@ export default function AdminExpertsPage() {
         <p className="text-sm text-[var(--text-muted)] font-mono-sos">Loading experts…</p>
       ) : visible.length === 0 ? (
         <p className="text-sm text-[var(--text-muted)] font-mono-sos">
-          {filter === "review" ? "No applications waiting. New ones appear here once an invited expert submits their profile." : "Nobody in this view."}
+          {filter === "review"
+            ? "No applications waiting. New ones appear here once an invited expert submits their profile."
+            : filter === "invited"
+            ? "No open invitations. Use \"Invite an expert\" above to add one."
+            : "Nobody in this view."}
         </p>
       ) : (
         <ul className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -107,6 +155,22 @@ export default function AdminExpertsPage() {
                   </span>
                 </div>
 
+                {e.status === "invited" && (
+                  <div className="font-inter text-xs text-[var(--text-muted)]">
+                    <p>Invited {new Date(e.createdAt).toLocaleDateString()}. They haven&apos;t submitted a profile yet, so there is nothing to review.</p>
+                    {links[e.id] && <CopyLink link={links[e.id]} />}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button onClick={() => relink(e)} disabled={busy === e.id} className="flex items-center gap-2 border border-[var(--border-strong)] px-4 py-2.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] disabled:opacity-50">
+                        {busy === e.id && <Loader2 size={12} className="animate-spin" />} NEW SIGN-IN LINK
+                      </button>
+                      <button onClick={() => cancel(e)} disabled={busy === e.id} className="border border-[var(--border-strong)] px-4 py-2.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] transition-colors hover:border-[var(--color-orange)] hover:text-[var(--color-orange)] disabled:opacity-50">
+                        CANCEL INVITATION
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {e.status !== "invited" && (
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-3 font-inter text-xs">
                   {[
                     ["Location", e.location],
@@ -122,6 +186,7 @@ export default function AdminExpertsPage() {
                     </div>
                   ))}
                 </dl>
+                )}
 
                 {e.bio && (
                   <div>
