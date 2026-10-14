@@ -3,24 +3,23 @@
 import { Calendar as CalIcon, Video, Search, CalendarDays, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getMySessions, getMyPayments, confirmUpiPaymentReceived } from "@/lib/data/queries";
+import { getMySessions, getMyPayments, getMyPayoutRows, confirmUpiPaymentReceived, updateSessionStatus } from "@/lib/data/queries";
+import PaymentBadgeChip from "@/components/dashboard/PaymentBadgeChip";
+import { paymentBadge, payoutProgressBySession, type PayoutProgress } from "@/lib/data/paymentBadge";
 import type { Session, Payment } from "@/lib/data/types";
-
-const PAYMENT_BADGE: Record<string, { label: string; className: string }> = {
-  unpaid: { label: "Unpaid", className: "bg-[var(--bg-surface-2)] text-[var(--text-muted)] border-[var(--border-strong)]" },
-  processing: { label: "Awaiting Confirmation", className: "bg-[var(--color-orange)]/10 text-[var(--color-orange)] border-[var(--color-orange)]/20" },
-  escrow_held: { label: "Escrow Held", className: "bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/20" },
-  released: { label: "Paid", className: "bg-[var(--color-green)]/10 text-[var(--color-green)] border-[var(--color-green)]/20" },
-  refunded: { label: "Refunded", className: "bg-[var(--bg-surface-2)] text-[var(--text-muted)] border-[var(--border-strong)]" },
-};
 
 export default function ExpertSessionsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [paymentsBySession, setPaymentsBySession] = useState<Map<string, Payment>>(new Map());
+  const [payoutProgress, setPayoutProgress] = useState<Map<string, PayoutProgress>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [completing, setCompleting] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  // Captured once so "has it started?" is stable across renders.
+  const [loadedAt] = useState(() => Date.now());
 
   useEffect(() => {
     Promise.all([getMySessions(), getMyPayments()])
@@ -30,17 +29,27 @@ export default function ExpertSessionsPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load consultations"))
       .finally(() => setLoading(false));
+
+    // Payout progress only refines the badge; if it can't load, the page still works.
+    getMyPayoutRows()
+      .then((rows) => setPayoutProgress(payoutProgressBySession(rows)))
+      .catch((err) => console.error("Failed to load payout progress", err));
   }, []);
 
-  const filteredSessions = sessions.filter(s => activeFilter === "all" || s.status === activeFilter);
+  const needle = query.trim().toLowerCase();
+  const filteredSessions = sessions.filter(
+    (s) =>
+      (activeFilter === "all" || s.status === activeFilter) &&
+      (!needle || `${s.title} ${s.expertName} ${s.clientName}`.toLowerCase().includes(needle))
+  );
+  // A call is only joinable once paid; unpaid sessions show a payment prompt and refunded ones are over.
+  const canJoin = (s: Session) => s.status === "scheduled" && s.paymentStatus !== "unpaid" && s.paymentStatus !== "refunded";
 
-  const badgeFor = (session: Session) => {
-    const payment = paymentsBySession.get(session.id);
-    if (payment?.status === "processing") return PAYMENT_BADGE.processing;
-    return PAYMENT_BADGE[session.paymentStatus] ?? PAYMENT_BADGE.unpaid;
-  };
+  const badgeFor = (session: Session) =>
+    paymentBadge({ viewer: "expert", session, payment: paymentsBySession.get(session.id), payouts: payoutProgress.get(session.id) });
 
   const handleConfirmPayment = async (sessionId: string) => {
+    setError("");
     setConfirming(sessionId);
     try {
       await confirmUpiPaymentReceived(sessionId);
@@ -52,14 +61,28 @@ export default function ExpertSessionsPage() {
       });
       setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, paymentStatus: "released" } : s)));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to confirm payment");
+      setError(err instanceof Error ? err.message : "Failed to confirm payment");
     } finally {
       setConfirming(null);
     }
   };
 
+  const handleComplete = async (session: Session) => {
+    if (!window.confirm(`Mark "${session.title}" as completed? This can't be undone.`)) return;
+    setError("");
+    setCompleting(session.id);
+    try {
+      await updateSessionStatus(session.id, "completed");
+      setSessions((prev) => prev.map((s) => (s.id === session.id ? { ...s, status: "completed" } : s)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not mark this consultation completed");
+    } finally {
+      setCompleting(null);
+    }
+  };
+
   return (
-    <div className="w-full relative min-h-screen flex flex-col pt-6 pb-24">
+    <div className="w-full relative flex flex-col">
       {/* HEADER SECTION */}
       <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-[var(--border)] pb-8">
         <div>
@@ -74,6 +97,9 @@ export default function ExpertSessionsPage() {
             <input
               type="text"
               placeholder="Search consultations..."
+              aria-label="Search consultations"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               className="w-full bg-[var(--bg-surface-2)] border border-[var(--border-strong)] rounded-full pl-10 pr-4 py-3 text-sm outline-none focus:border-[var(--color-orange)] text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)]"
             />
           </div>
@@ -139,9 +165,7 @@ export default function ExpertSessionsPage() {
                   )}
                 </div>
 
-                <div className={`inline-block px-3 py-1 mb-6 text-[10px] font-bold rounded-full uppercase tracking-widest border ${badge.className}`}>
-                  {badge.label}
-                </div>
+                <PaymentBadgeChip badge={badge} className="mb-6" />
 
                 <div className="flex items-center gap-6 text-sm font-mono-sos text-[var(--text-faint)] mb-8">
                   <div className="flex items-center gap-2"><CalIcon size={14} className={session.status === 'scheduled' ? "text-[var(--color-orange)]" : ""} /> {session.date}</div>
@@ -160,13 +184,24 @@ export default function ExpertSessionsPage() {
                       Confirm Payment Received
                     </button>
                   )}
-                  {session.status === 'scheduled' ? (
-                    <Link
-                      href={`/dashboard/video-call?sessionId=${session.id}&sessionName=${encodeURIComponent(session.title)}`}
-                      className="btn-sos-filled px-6 py-3 text-xs w-full sm:w-auto text-center justify-center bg-[var(--color-orange)] hover:bg-[var(--color-orange)]/90 text-[var(--bg-base)] border-transparent shadow-md transition-colors rounded-2xl"
+                  {canJoin(session) && session.startsAt && new Date(session.startsAt).getTime() <= loadedAt && (
+                    <button
+                      onClick={() => handleComplete(session)}
+                      disabled={completing === session.id}
+                      className="px-6 py-3 text-xs w-full sm:w-auto text-center justify-center font-bold text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)] transition-colors rounded-2xl border border-[var(--border-strong)] disabled:opacity-50"
                     >
-                      <Video size={16} className="mr-2 inline" /> Join Video Call
-                    </Link>
+                      {completing === session.id ? "Saving…" : "Mark completed"}
+                    </button>
+                  )}
+                  {session.status === 'scheduled' ? (
+                    canJoin(session) && (
+                      <Link
+                        href={`/dashboard/video-call?sessionId=${session.id}&sessionName=${encodeURIComponent(session.title)}`}
+                        className="btn-sos-filled px-6 py-3 text-xs w-full sm:w-auto text-center justify-center bg-[var(--color-orange)] hover:bg-[var(--color-orange)]/90 text-[var(--bg-base)] border-transparent shadow-md transition-colors rounded-2xl"
+                      >
+                        <Video size={16} className="mr-2 inline" /> Join Video Call
+                      </Link>
+                    )
                   ) : (
                     <Link
                       href="/dashboard/expert/vault"

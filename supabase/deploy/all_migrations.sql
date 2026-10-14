@@ -1409,3 +1409,285 @@ commit;
 --  get_expert_busy_ranges is intentionally callable by signed-in users for booking.)
 alter function public.set_updated_at() set search_path = '';
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
+-- ===== 0017_sessions_valid_time_range.sql =====
+-- A booking whose end is before (or equal to) its start was accepted. It
+-- slipped past the double-booking overlap check (an inverted range overlaps
+-- nothing the way a real one does) and made the call window close before it
+-- opened. expert_time_off already had this check; sessions did not.
+--
+-- NOT VALID enforces the rule for every new or changed row without failing on
+-- any historic row; run `alter table public.sessions validate constraint
+-- sessions_valid_time_range;` once you've confirmed there are none.
+alter table public.sessions
+  drop constraint if exists sessions_valid_time_range;
+alter table public.sessions
+  add constraint sessions_valid_time_range
+  check (starts_at is null or ends_at is null or ends_at > starts_at) not valid;
+
+-- ===== 0018_session_status_lifecycle.sql =====
+-- Session status was only constrained for "completed" (expert-only). A
+-- participant could still:
+--   * flip a completed or cancelled session back to "scheduled";
+--   * cancel a session that was already paid, leaving the money held against
+--     a cancelled booking with no refund path;
+--   * mark an unpaid session completed.
+-- Finished bookings are now final, cancelling after payment is an admin
+-- (refund) action, and only a paid session can be completed. Admin and
+-- service-role writes, and writes made by other triggers, are unchanged.
+create or replace function private.sessions_before_update()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_uid uuid := (select auth.uid());
+begin
+  if v_uid is null or private.is_admin() then
+    return new;
+  end if;
+
+  -- Writes made by another trigger (e.g. payments -> sessions.payment_status
+  -- sync) arrive at depth > 1. A direct API update is always depth 1.
+  if pg_trigger_depth() > 1 then
+    return new;
+  end if;
+
+  if new.client_id is distinct from old.client_id
+     or new.expert_id is distinct from old.expert_id
+     or new.amount_inr is distinct from old.amount_inr
+     or new.payment_status is distinct from old.payment_status then
+    raise exception 'Booking parties, price and payment state cannot be modified directly';
+  end if;
+
+  if new.status::text is distinct from old.status::text then
+    if old.status::text in ('completed', 'cancelled') then
+      raise exception 'A % session cannot be changed', old.status;
+    end if;
+    if new.status::text not in ('completed', 'cancelled') then
+      raise exception 'Invalid session status change';
+    end if;
+    if new.status::text = 'cancelled' and old.payment_status::text <> 'unpaid' then
+      raise exception 'A paid session can only be cancelled by an admin, because it needs a refund';
+    end if;
+    if new.status::text = 'completed' then
+      if v_uid <> old.expert_id then
+        raise exception 'Only the expert can mark a session completed';
+      end if;
+      if old.payment_status::text not in ('escrow_held', 'released') then
+        raise exception 'Only a paid session can be marked completed';
+      end if;
+    end if;
+  end if;
+
+  return new;
+end $$;
+
+-- ===== 0019_admin_console.sql =====
+-- Support for the admin console (expert approval, payouts, refunds).
+--
+-- Admins could already approve experts (expert_profiles) and manage payout
+-- rows (payment_transfers), but two things were missing:
+--   * they could not READ payments, only participants could, so a payout row
+--     could not be traced back to what was paid;
+--   * a refund touches the payment, its payout rows and the session. Done as
+--     separate client calls, a failure partway leaves inconsistent money
+--     state, so each money action is one atomic database function.
+--
+-- The functions check private.is_admin() themselves and are executable only
+-- by signed-in users; anyone else is refused inside the function.
+
+-- A refunded payment's pending payouts must not stay "pending" forever.
+alter type public.transfer_status add value if not exists 'cancelled';
+
+-- Audit trail for manual payouts.
+alter table public.payment_transfers add column if not exists payout_reference text;
+alter table public.payment_transfers add column if not exists transferred_at timestamptz;
+
+-- Read-only: updates go through the functions below.
+drop policy if exists "Admins can view all payments" on public.payments;
+create policy "Admins can view all payments"
+  on public.payments for select to authenticated
+  using (private.is_admin());
+
+-- Record that a payout was sent to the expert (outside the app, e.g. UPI).
+create or replace function public.admin_mark_transfer_paid(p_transfer_id uuid, p_reference text default null)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not private.is_admin() then
+    raise exception 'Only an admin can do this';
+  end if;
+
+  update public.payment_transfers
+     set status = 'transferred',
+         payout_reference = nullif(btrim(p_reference), ''),
+         transferred_at = now()
+   where id = p_transfer_id
+     and status::text in ('pending', 'skipped_route_not_active');
+
+  if not found then
+    raise exception 'That payout is not waiting to be sent';
+  end if;
+end $$;
+
+-- Record a refund: payment -> refunded (a trigger flips the session's payment
+-- status), unsent payouts -> cancelled, and a still-scheduled session ->
+-- cancelled. This does NOT move money: the customer is refunded in Razorpay
+-- or by UPI separately.
+create or replace function public.admin_refund_session(p_session_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare
+  v_payment_id uuid;
+  v_status text;
+begin
+  if not private.is_admin() then
+    raise exception 'Only an admin can do this';
+  end if;
+
+  perform 1 from public.sessions where id = p_session_id for update;
+  if not found then
+    raise exception 'Session not found';
+  end if;
+
+  select id, status::text into v_payment_id, v_status
+    from public.payments where session_id = p_session_id for update;
+  if v_payment_id is null or v_status <> 'paid' then
+    raise exception 'Only a paid session can be refunded';
+  end if;
+
+  if exists (
+    select 1 from public.payment_transfers
+     where payment_id = v_payment_id and status::text = 'transferred'
+  ) then
+    raise exception 'Part of this payment was already paid out to the expert. Recover that first, then refund.';
+  end if;
+
+  update public.payment_transfers
+     set status = 'cancelled'
+   where payment_id = v_payment_id and status::text in ('pending', 'skipped_route_not_active');
+
+  update public.payments set status = 'refunded' where id = v_payment_id;
+
+  update public.sessions set status = 'cancelled'
+   where id = p_session_id and status::text = 'scheduled';
+end $$;
+
+revoke execute on function public.admin_mark_transfer_paid(uuid, text) from public, anon;
+revoke execute on function public.admin_refund_session(uuid) from public, anon;
+grant execute on function public.admin_mark_transfer_paid(uuid, text) to authenticated;
+grant execute on function public.admin_refund_session(uuid) to authenticated;
+
+-- ===== 0020_unread_messages.sql =====
+-- Unread message counts.
+--
+-- Nothing recorded what a user had read, so there was no way to count unread
+-- messages. This adds a per-user "last read" marker per conversation.
+--
+-- The marker lives in its own table, NOT as columns on chat_threads: a
+-- participant can read every column of their threads, so columns would have
+-- let each person see when the other last opened the chat (an accidental read
+-- receipt). Here row-level security shows a user only their own markers.
+--
+-- Writes go through mark_thread_read(), which only ever moves the caller's own
+-- marker forward, for a conversation they are in.
+--
+-- The marker is the created_at of the last message the user has seen, not
+-- "now". Both sides of the unread comparison then come from the messages'
+-- own clock, so it does not depend on the database timezone (created_at's
+-- default is timezone('utc', now()), which is only right when the session
+-- timezone is UTC) and a message that arrived a moment before the call but
+-- was never displayed cannot be marked read by accident.
+
+create table if not exists public.thread_reads (
+  thread_id    uuid not null references public.chat_threads(id) on delete cascade,
+  user_id      uuid not null references public.profiles(id) on delete cascade,
+  last_read_at timestamptz not null,
+  primary key (thread_id, user_id)
+);
+create index if not exists thread_reads_user_idx on public.thread_reads (user_id);
+
+alter table public.thread_reads enable row level security;
+
+drop policy if exists "Users see only their own read markers" on public.thread_reads;
+create policy "Users see only their own read markers"
+  on public.thread_reads for select to authenticated
+  using (user_id = (select auth.uid()));
+
+-- Read-only through the API; the function below is the only writer.
+revoke all on public.thread_reads from anon, authenticated;
+grant select on public.thread_reads to authenticated;
+
+-- Everything said before this migration counts as already read, so nobody
+-- opens the app to a pile of old "unread" messages. A thread with no messages
+-- yet gets the earliest possible marker, so its first message is unread.
+insert into public.thread_reads (thread_id, user_id, last_read_at)
+  select t.id, u.user_id,
+         coalesce((select max(m.created_at) from public.messages m where m.thread_id = t.id), '-infinity'::timestamptz)
+    from public.chat_threads t
+    cross join lateral (values (t.client_id), (t.expert_id)) as u(user_id)
+on conflict (thread_id, user_id) do nothing;
+
+-- Marks a conversation read for the caller, up to the given message (or up to
+-- the latest one when none is given). A conversation the caller is not part
+-- of, or a message from a different conversation, is silently ignored, so
+-- this cannot be used to probe which ids exist or to touch anyone else's
+-- marker. The marker only ever moves forward.
+create or replace function public.mark_thread_read(p_thread_id uuid, p_up_to_message_id uuid default null)
+returns void language plpgsql security definer set search_path = '' as $$
+declare
+  v_me uuid := (select auth.uid());
+  v_at timestamptz;
+begin
+  if v_me is null then
+    return;
+  end if;
+
+  if not exists (
+    select 1 from public.chat_threads t
+     where t.id = p_thread_id and v_me in (t.client_id, t.expert_id)
+  ) then
+    return;
+  end if;
+
+  if p_up_to_message_id is null then
+    select max(m.created_at) into v_at from public.messages m where m.thread_id = p_thread_id;
+  else
+    select m.created_at into v_at from public.messages m
+     where m.id = p_up_to_message_id and m.thread_id = p_thread_id;
+  end if;
+
+  if v_at is null then
+    return;
+  end if;
+
+  insert into public.thread_reads (thread_id, user_id, last_read_at)
+    values (p_thread_id, v_me, v_at)
+  on conflict (thread_id, user_id)
+    do update set last_read_at = greatest(public.thread_reads.last_read_at, excluded.last_read_at);
+end $$;
+
+-- The caller's conversations that have unread messages (only those), with the
+-- other person's name. SECURITY INVOKER: row-level security on chat_threads,
+-- messages and profiles still decides what the caller can see.
+create or replace function public.my_unread_threads()
+returns table (thread_id uuid, counterpart_id uuid, counterpart_name text, unread int, latest_at timestamptz)
+language sql stable security invoker set search_path = '' as $$
+  select t.id,
+         case when t.client_id = me.id then t.expert_id else t.client_id end,
+         coalesce(p.full_name, 'Someone'),
+         count(m.id)::int,
+         max(m.created_at)
+    from (select (select auth.uid()) as id) me
+    join public.chat_threads t on me.id in (t.client_id, t.expert_id)
+    join public.messages m
+      on m.thread_id = t.id
+     and m.sender_id <> me.id
+    left join public.thread_reads r
+      on r.thread_id = t.id and r.user_id = me.id
+    left join public.profiles p
+      on p.id = case when t.client_id = me.id then t.expert_id else t.client_id end
+   where m.created_at > coalesce(r.last_read_at, '-infinity'::timestamptz)
+   group by t.id, t.client_id, t.expert_id, p.full_name, me.id
+$$;
+
+revoke execute on function public.mark_thread_read(uuid, uuid) from public, anon;
+revoke execute on function public.my_unread_threads() from public, anon;
+grant execute on function public.mark_thread_read(uuid, uuid) to authenticated;
+grant execute on function public.my_unread_threads() to authenticated;

@@ -3,17 +3,11 @@
 import { Calendar as CalIcon, Video, Plus, Search, CalendarDays, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getMySessions, getMyPayments, getExpertById } from "@/lib/data/queries";
+import { getMySessions, getMyPayments, getExpertById, updateSessionStatus } from "@/lib/data/queries";
 import type { Session, Payment } from "@/lib/data/types";
 import PaymentModal from "@/components/dashboard/PaymentModal";
-
-const PAYMENT_BADGE: Record<string, { label: string; className: string }> = {
-  unpaid: { label: "Unpaid", className: "bg-[var(--bg-surface-2)] text-[var(--text-muted)] border-[var(--border-strong)]" },
-  processing: { label: "Awaiting Confirmation", className: "bg-[var(--color-orange)]/10 text-[var(--color-orange)] border-[var(--color-orange)]/20" },
-  escrow_held: { label: "Escrow Held", className: "bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/20" },
-  released: { label: "Paid", className: "bg-[var(--color-green)]/10 text-[var(--color-green)] border-[var(--color-green)]/20" },
-  refunded: { label: "Refunded", className: "bg-[var(--bg-surface-2)] text-[var(--text-muted)] border-[var(--border-strong)]" },
-};
+import PaymentBadgeChip from "@/components/dashboard/PaymentBadgeChip";
+import { paymentBadge } from "@/lib/data/paymentBadge";
 
 export default function ClientSessionsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -21,6 +15,8 @@ export default function ClientSessionsPage() {
   const [paymentsBySession, setPaymentsBySession] = useState<Map<string, Payment>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [cancelling, setCancelling] = useState<string | null>(null);
 
   const [payingSession, setPayingSession] = useState<Session | null>(null);
   const [payingExpertUpiId, setPayingExpertUpiId] = useState<string | null>(null);
@@ -35,13 +31,17 @@ export default function ClientSessionsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredSessions = sessions.filter(s => activeFilter === "all" || s.status === activeFilter);
+  const needle = query.trim().toLowerCase();
+  const filteredSessions = sessions.filter(
+    (s) =>
+      (activeFilter === "all" || s.status === activeFilter) &&
+      (!needle || `${s.title} ${s.expertName} ${s.clientName}`.toLowerCase().includes(needle))
+  );
+  // A call is only joinable once paid; unpaid sessions show a payment prompt and refunded ones are over.
+  const canJoin = (s: Session) => s.status === "scheduled" && s.paymentStatus !== "unpaid" && s.paymentStatus !== "refunded";
 
-  const badgeFor = (session: Session) => {
-    const payment = paymentsBySession.get(session.id);
-    if (payment?.status === "processing") return PAYMENT_BADGE.processing;
-    return PAYMENT_BADGE[session.paymentStatus] ?? PAYMENT_BADGE.unpaid;
-  };
+  const badgeFor = (session: Session) =>
+    paymentBadge({ viewer: "client", session, payment: paymentsBySession.get(session.id) });
 
   const handleOpenPayment = async (session: Session) => {
     setPayingSession(session);
@@ -54,8 +54,22 @@ export default function ClientSessionsPage() {
     }
   };
 
+  const handleCancel = async (session: Session) => {
+    if (!window.confirm(`Cancel "${session.title}"? You haven't paid, so there is nothing to refund.`)) return;
+    setError("");
+    setCancelling(session.id);
+    try {
+      await updateSessionStatus(session.id, "cancelled");
+      setSessions((prev) => prev.map((s) => (s.id === session.id ? { ...s, status: "cancelled" } : s)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not cancel this session");
+    } finally {
+      setCancelling(null);
+    }
+  };
+
   return (
-    <div className="w-full relative min-h-screen flex flex-col pt-6 pb-24">
+    <div className="w-full relative flex flex-col">
       {/* HEADER SECTION */}
       <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-[var(--border)] pb-8">
         <div>
@@ -70,6 +84,9 @@ export default function ClientSessionsPage() {
             <input
               type="text"
               placeholder="Search sessions..."
+              aria-label="Search sessions"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               className="w-full bg-[var(--bg-surface-2)] border border-[var(--border-strong)] rounded-full pl-10 pr-4 py-3 text-sm outline-none focus:border-[var(--color-orange)] text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)]"
             />
           </div>
@@ -141,9 +158,7 @@ export default function ClientSessionsPage() {
                   )}
                 </div>
 
-                <div className={`inline-block px-3 py-1 mb-6 text-[10px] font-bold rounded-full uppercase tracking-widest border ${badge.className}`}>
-                  {badge.label}
-                </div>
+                <PaymentBadgeChip badge={badge} className="mb-6" />
 
                 <div className="flex items-center gap-6 text-sm font-mono-sos text-[var(--text-faint)] mb-8">
                   <div className="flex items-center gap-2"><CalIcon size={14} className={session.status === 'scheduled' ? "text-[var(--color-orange)]" : ""} /> {session.date}</div>
@@ -160,13 +175,24 @@ export default function ClientSessionsPage() {
                       <CreditCard size={14} /> Complete Payment
                     </button>
                   )}
-                  {session.status === 'scheduled' ? (
-                    <Link
-                      href={`/dashboard/video-call?sessionId=${session.id}&sessionName=${encodeURIComponent(session.title)}`}
-                      className="btn-sos-filled px-6 py-3 text-xs w-full sm:w-auto text-center justify-center bg-[var(--color-orange)] hover:bg-[var(--color-orange)]/90 text-[var(--bg-base)] border-transparent shadow-md transition-colors rounded-2xl"
+                  {session.status === 'scheduled' && session.paymentStatus === 'unpaid' && payment?.status !== 'processing' && (
+                    <button
+                      onClick={() => handleCancel(session)}
+                      disabled={cancelling === session.id}
+                      className="px-6 py-3 text-xs w-full sm:w-auto text-center justify-center font-bold text-[var(--text-muted)] hover:text-[var(--color-orange)] transition-colors rounded-2xl border border-[var(--border-strong)] disabled:opacity-50"
                     >
-                      <Video size={16} className="mr-2 inline" /> Join Video Call
-                    </Link>
+                      {cancelling === session.id ? "Cancelling…" : "Cancel booking"}
+                    </button>
+                  )}
+                  {session.status === 'scheduled' ? (
+                    canJoin(session) && (
+                      <Link
+                        href={`/dashboard/video-call?sessionId=${session.id}&sessionName=${encodeURIComponent(session.title)}`}
+                        className="btn-sos-filled px-6 py-3 text-xs w-full sm:w-auto text-center justify-center bg-[var(--color-orange)] hover:bg-[var(--color-orange)]/90 text-[var(--bg-base)] border-transparent shadow-md transition-colors rounded-2xl"
+                      >
+                        <Video size={16} className="mr-2 inline" /> Join Video Call
+                      </Link>
+                    )
                   ) : (
                     <Link
                       href="/dashboard/client/vault"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, CreditCard, Smartphone, Copy, Check, Loader2 } from "lucide-react";
 import { payWithRazorpay, payMockRazorpay, markUpiPaymentSent, getPaymentForSession } from "@/lib/data/queries";
@@ -35,6 +35,14 @@ export default function PaymentModal({
   const [copied, setCopied] = useState(false);
 
   const isProd = process.env.NODE_ENV === "production";
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const handleRazorpay = async () => {
     setError("");
@@ -83,10 +91,13 @@ export default function PaymentModal({
 
   const handleCopy = () => {
     if (!expertUpiId) return;
-    navigator.clipboard.writeText(expertUpiId).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    navigator.clipboard
+      .writeText(expertUpiId)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => setError("Couldn't copy automatically. Select the UPI ID and copy it manually."));
   };
 
   return (
@@ -96,6 +107,9 @@ export default function PaymentModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[9999] bg-[var(--bg-overlay)] backdrop-blur-md flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Complete payment"
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -105,6 +119,7 @@ export default function PaymentModal({
         >
           <button
             onClick={onClose}
+            aria-label="Close"
             className="absolute top-8 right-8 text-[var(--text-muted)] hover:text-white transition-colors p-2 rounded-full hover:bg-[var(--bg-surface-2)] z-50"
           >
             <X size={24} />
@@ -144,6 +159,7 @@ export default function PaymentModal({
                           onClick={handleCopy}
                           className="w-11 h-11 shrink-0 rounded-xl bg-[var(--bg-base)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--color-green)] hover:border-[var(--color-green)]/50 transition-all"
                           title="Copy UPI ID"
+                          aria-label="Copy UPI ID"
                         >
                           {copied ? <Check size={16} className="text-[var(--color-green)]" /> : <Copy size={16} />}
                         </button>

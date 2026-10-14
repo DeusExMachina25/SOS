@@ -70,7 +70,7 @@ export async function createRazorpayOrder(args: {
  */
 export async function markOrderPaid(orderId: string, paymentId: string) {
   const admin = createSupabaseAdminClient();
-  const { data: payment, error } = await admin
+  const { data: updated, error } = await admin
     .from("payments")
     .update({ status: "paid", razorpay_payment_id: paymentId })
     .eq("razorpay_order_id", orderId)
@@ -78,9 +78,27 @@ export async function markOrderPaid(orderId: string, paymentId: string) {
     .select("id, amount_inr")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!payment) return false; // unknown order, or already processed
+
+  // No row updated: the order is unknown, or an earlier call (verify, the
+  // webhook, or a retry) already marked it paid. In the second case that call
+  // may have died before writing the payout rows, so make sure they exist
+  // rather than leaving a paid payment with no transfers.
+  let payment = updated;
+  if (!payment) {
+    const { data: alreadyPaid, error: lookupErr } = await admin
+      .from("payments")
+      .select("id, amount_inr")
+      .eq("razorpay_order_id", orderId)
+      .eq("status", "paid")
+      .maybeSingle();
+    if (lookupErr) throw new Error(lookupErr.message);
+    if (!alreadyPaid) return false; // unknown order
+    payment = alreadyPaid;
+  }
 
   const booking = Math.round(payment.amount_inr * 0.6);
+  // ignoreDuplicates: never overwrite a row an admin has already moved past
+  // 'pending' (e.g. 'transferred') back to 'pending'.
   const { error: tErr } = await admin.from("payment_transfers").upsert(
     [
       {
@@ -96,8 +114,8 @@ export async function markOrderPaid(orderId: string, paymentId: string) {
         status: "pending",
       },
     ],
-    { onConflict: "payment_id,transfer_type" }
+    { onConflict: "payment_id,transfer_type", ignoreDuplicates: true }
   );
   if (tErr) throw new Error(tErr.message);
-  return true;
+  return Boolean(updated);
 }
