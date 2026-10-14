@@ -27,6 +27,8 @@ import { getMyExpertProfile, getMyProfile, setMyUpiId, setMyTimezone, setMyDispl
 import { COMMON_TIME_ZONES, describeTimeZone, resolveTimeZone, viewerTimeZone } from "@/lib/data/slots";
 import Sidebar, { type NavGroup } from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
+import { useUnreadThreads } from "@/components/dashboard/useUnreadThreads";
+import { totalUnread, badgeText, unreadLabel } from "@/lib/data/unread";
 
 export default function DashboardLayout({
   children,
@@ -92,6 +94,10 @@ export default function DashboardLayout({
   // Determine base path for the role
   const role = pathname.includes("/expert") ? "expert" : pathname.includes("/admin") ? "admin" : "client";
   const basePath = `/dashboard/${role}`;
+
+  // Unread messages, live. Admins have no inbox, so nothing is loaded for them.
+  const unreadThreads = useUnreadThreads(role !== "admin", pathname);
+  const unreadTotal = totalUnread(unreadThreads);
 
   // Load the expert's payout UPI ID when they open Preferences.
   useEffect(() => {
@@ -202,7 +208,7 @@ export default function DashboardLayout({
       label: "Workspace",
       items: [
         { name: "Vault", icon: FolderLock, path: `${basePath}/vault` },
-        { name: "Messages", icon: MessageSquare, path: `${basePath}/chat` },
+        { name: "Messages", icon: MessageSquare, path: `${basePath}/chat`, badge: unreadTotal },
         { name: "Video Call", icon: Video, path: `/dashboard/video-call` },
       ],
     },
@@ -258,6 +264,7 @@ export default function DashboardLayout({
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenProfile={() => setIsProfileOpen(true)}
+          unreadThreads={unreadThreads}
           searchPages={navGroups
             .flatMap((g) => g.items)
             .filter((item) => !item.onSelect)
@@ -284,7 +291,17 @@ export default function DashboardLayout({
               }`}
             >
               {active && <span className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />}
-              <item.icon size={17} strokeWidth={1.75} />
+              <span className="relative">
+                <item.icon size={17} strokeWidth={1.75} />
+                {typeof item.badge === "number" && item.badge > 0 && (
+                  <span
+                    aria-label={unreadLabel(item.badge)}
+                    className="absolute -top-2 -right-3 flex h-3.5 min-w-3.5 items-center justify-center bg-[var(--color-orange)] px-0.5 font-mono-sos text-[8px] leading-none text-[var(--bg-base)] tabular-nums"
+                  >
+                    {badgeText(item.badge)}
+                  </span>
+                )}
+              </span>
               <span className="font-mono-sos text-[7px] tracking-[0.15em]">{item.name}</span>
             </Link>
           );

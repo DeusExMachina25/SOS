@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import SosMark from "../shared/SosMark";
+import { badgeText, unreadLabel } from "@/lib/data/unread";
 
 export interface NavItem {
   name: string;
@@ -72,8 +73,11 @@ export default function Sidebar({ groups, role, footer }: SidebarProps) {
                     />
                     <span className="flex-1 truncate">{item.name}</span>
                     {typeof item.badge === "number" && item.badge > 0 && (
-                      <span className="font-mono-sos text-[9px] px-1.5 py-0.5 bg-[var(--color-orange)] text-[var(--bg-base)] tabular-nums">
-                        {item.badge}
+                      <span
+                        aria-label={item.name === "Messages" ? unreadLabel(item.badge) : undefined}
+                        className="font-mono-sos text-[9px] px-1.5 py-0.5 bg-[var(--color-orange)] text-[var(--bg-base)] tabular-nums"
+                      >
+                        {badgeText(item.badge)}
                       </span>
                     )}
                   </>

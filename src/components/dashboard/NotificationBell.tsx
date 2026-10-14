@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { getMySessions, getMyPayments } from "@/lib/data/queries";
-import { actionCount, buildNotices, type Notice } from "@/lib/data/notifications";
+import { actionCount, buildNotices } from "@/lib/data/notifications";
+import type { UnreadThread } from "@/lib/data/unread";
+import type { Payment, Session } from "@/lib/data/types";
 
 const REFRESH_MS = 60_000;
 
@@ -14,16 +16,16 @@ const REFRESH_MS = 60_000;
  * from live sessions and payments, so it needs no read/unread bookkeeping and
  * an item disappears as soon as it is dealt with.
  */
-export default function NotificationBell({ role }: { role: "client" | "expert" }) {
+export default function NotificationBell({ role, unreadThreads = [] }: { role: "client" | "expert"; unreadThreads?: UnreadThread[] }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [notices, setNotices] = useState<Notice[]>([]);
+  const [data, setData] = useState<{ sessions: Session[]; payments: Payment[]; at: number }>({ sessions: [], payments: [], at: 0 });
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const load = () => {
     Promise.all([getMySessions(), getMyPayments()])
       .then(([sessions, payments]) => {
-        setNotices(buildNotices({ role, sessions, payments, now: Date.now() }));
+        setData({ sessions, payments, at: Date.now() });
         setStatus("ready");
       })
       .catch((err) => {
@@ -37,7 +39,6 @@ export default function NotificationBell({ role }: { role: "client" | "expert" }
     load();
     const id = setInterval(load, REFRESH_MS);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role]);
 
   useEffect(() => {
@@ -56,6 +57,11 @@ export default function NotificationBell({ role }: { role: "client" | "expert" }
     };
   }, [open]);
 
+  // Unread messages arrive from the layout's live count, so they update the moment one lands.
+  const notices = useMemo(
+    () => buildNotices({ role, sessions: data.sessions, payments: data.payments, now: data.at, unread: unreadThreads }),
+    [role, data, unreadThreads]
+  );
   const count = actionCount(notices);
 
   return (

@@ -11,6 +11,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { canonicalTimeZone, isValidTimeZone } from "./slots";
 import { normalizeDisplayName } from "./format";
+import type { UnreadThread } from "./unread";
 import {
   formatDuration,
   formatSessionDate,
@@ -979,6 +980,70 @@ export function subscribeToMessages(
         });
       }
     )
+    .subscribe();
+
+  return () => {
+    void sb.removeChannel(channel);
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Unread messages
+// ---------------------------------------------------------------------------
+
+/** The signed-in user's conversations that have unread messages (only those). */
+export async function getUnreadThreads(): Promise<UnreadThread[]> {
+  const sb = requireClient();
+  const { data, error } = await sb.rpc("my_unread_threads");
+  if (error) throw new Error(`Failed to load unread counts: ${error.message}`);
+  return ((data ?? []) as {
+    thread_id: string;
+    counterpart_id: string;
+    counterpart_name: string | null;
+    unread: number;
+    latest_at: string | null;
+  }[]).map((r) => ({
+    threadId: r.thread_id,
+    counterpartId: r.counterpart_id,
+    counterpartName: r.counterpart_name ?? "Someone",
+    unread: r.unread,
+    latestAt: r.latest_at,
+  }));
+}
+
+/**
+ * Marks a conversation read up to a message (or everything, if none is
+ * named). Naming the last message the user actually saw means one that
+ * arrived a moment earlier but was never displayed stays unread.
+ */
+export async function markThreadRead(threadId: string, upToMessageId?: string): Promise<void> {
+  const sb = requireClient();
+  const { error } = await sb.rpc("mark_thread_read", {
+    p_thread_id: threadId,
+    p_up_to_message_id: upToMessageId ?? null,
+  });
+  if (error) throw new Error(`Failed to mark conversation read: ${error.message}`);
+}
+
+/**
+ * One live feed of every new message the signed-in user may see (row-level
+ * security limits Realtime to their own conversations). Used for the sidebar
+ * badge and the conversation list; the open conversation uses the same feed.
+ */
+export function subscribeToMyMessages(onMessage: (message: Message) => void): () => void {
+  const sb = requireClient();
+  const channel = sb
+    .channel(`my-messages:${Math.random().toString(36).slice(2)}`)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+      const m = payload.new as Record<string, unknown>;
+      onMessage({
+        id: m.id as string,
+        threadId: m.thread_id as string,
+        senderId: m.sender_id as string,
+        body: m.body as string,
+        createdAt: m.created_at as string,
+      });
+    })
     .subscribe();
 
   return () => {

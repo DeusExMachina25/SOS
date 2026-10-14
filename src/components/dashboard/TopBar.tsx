@@ -4,6 +4,7 @@ import React from "react";
 import { Moon, Sun } from "lucide-react";
 import DashboardSearch from "./DashboardSearch";
 import NotificationBell from "./NotificationBell";
+import type { UnreadThread } from "@/lib/data/unread";
 
 interface TopBarProps {
   /** Breadcrumb tail — the current page name */
@@ -16,6 +17,8 @@ interface TopBarProps {
   action?: React.ReactNode;
   /** Pages the search box can jump to. */
   searchPages: { name: string; href: string }[];
+  /** Conversations with unread messages, for the bell. */
+  unreadThreads?: UnreadThread[];
 }
 
 export default function TopBar({
@@ -26,6 +29,7 @@ export default function TopBar({
   onOpenProfile,
   action,
   searchPages,
+  unreadThreads = [],
 }: TopBarProps) {
   const dashboardRole = role === "expert" ? "expert" : "client";
   return (
@@ -43,7 +47,7 @@ export default function TopBar({
             admin console has its own pages instead. */}
         {role !== "admin" && <DashboardSearch role={dashboardRole} pages={searchPages} />}
 
-        {role !== "admin" && <NotificationBell role={dashboardRole} />}
+        {role !== "admin" && <NotificationBell role={dashboardRole} unreadThreads={unreadThreads} />}
 
         {/* Theme */}
         <button

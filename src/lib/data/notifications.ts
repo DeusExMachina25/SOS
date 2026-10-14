@@ -6,6 +6,7 @@
  */
 
 import type { Payment, Session } from "./types";
+import type { UnreadThread } from "./unread";
 
 export interface Notice {
   id: string;
@@ -34,11 +35,25 @@ export function buildNotices(input: {
   sessions: Session[];
   payments: Payment[];
   now: number;
+  /** Conversations with unread messages. Optional: the bell still works without them. */
+  unread?: UnreadThread[];
 }): Notice[] {
-  const { role, sessions, payments, now } = input;
+  const { role, sessions, payments, now, unread = [] } = input;
   const base = roleBase(role);
   const paymentOf = new Map(payments.map((p) => [p.sessionId, p]));
   const out: (Notice & { sortKey: number })[] = [];
+
+  for (const t of unread) {
+    if (t.unread <= 0) continue;
+    out.push({
+      id: `msg-${t.threadId}`,
+      tone: "action",
+      title: t.unread === 1 ? `New message from ${t.counterpartName}` : `${t.unread} new messages from ${t.counterpartName}`,
+      detail: "Open your conversation",
+      href: `${base}/chat`,
+      sortKey: 0, // messages first: someone is waiting
+    });
+  }
 
   for (const s of sessions) {
     if (s.status !== "scheduled") continue;

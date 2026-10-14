@@ -7,6 +7,10 @@ const dir = new URL("../supabase/migrations/", import.meta.url);
 const db = new PGlite();
 
 // --- Minimal Supabase environment stubs -----------------------------------
+// Supabase sessions run in UTC. Several columns default to timezone('utc', now()),
+// which is only the right instant when the session timezone is UTC, so mirror it
+// here instead of inheriting the machine's local timezone.
+await db.exec(`set timezone to 'UTC'`);
 await db.exec(`
   create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
   create schema auth; create schema storage; create schema extensions;
@@ -220,6 +224,61 @@ await expectOk("admin approves an expert", A, `update public.expert_profiles set
 await expectOk("admin suspends an expert", A, `update public.expert_profiles set status='suspended' where profile_id='44444444-4444-4444-4444-444444444444'`);
 const susp = await as(C, `select count(*)::int n from public.public_experts where id='44444444-4444-4444-4444-444444444444'`);
 if (susp.rows[0].n !== 0) { console.log("VULNERABLE: suspended expert still listed"); failures++; } else console.log("blocked   : suspended expert is not listed");
+
+// --- Unread messages ----------------------------------------------------------
+const thr = (await db.query(`insert into public.chat_threads (client_id, expert_id) values ('${C}','${E}') returning id`)).rows[0].id;
+const unreadOf = async (uid) => (await as(uid, `select thread_id, counterpart_name, unread from public.my_unread_threads()`)).rows;
+await db.exec(`
+  update public.profiles set full_name='Dr Expert' where id='${E}';
+  insert into public.messages (thread_id, sender_id, body, created_at) values
+    ('${thr}','${C}','hi', now() - interval '3 minutes'),
+    ('${thr}','${C}','are you there', now() - interval '2 minutes'),
+    ('${thr}','${E}','yes', now() - interval '1 minute');
+`);
+
+let u = await unreadOf(E);
+if (u.length !== 1 || u[0].unread !== 2 || u[0].counterpart_name !== "Bob") { console.log("FAIL: expert unread", JSON.stringify(u)); failures++; } else console.log("allowed   : expert sees 2 unread from the client, by name");
+u = await unreadOf(C);
+if (u.length !== 1 || u[0].unread !== 1 || u[0].counterpart_name !== "Dr Expert") { console.log("FAIL: client unread", JSON.stringify(u)); failures++; } else console.log("allowed   : client sees 1 unread; their own messages do not count");
+if ((await unreadOf(C2)).length !== 0) { console.log("VULNERABLE: stranger sees unread for someone else's thread"); failures++; } else console.log("blocked   : stranger sees no unread counts");
+if ((await unreadOf(A)).length !== 0) { console.log("FAIL: admin sees other people's unread"); failures++; } else console.log("allowed   : admin is not a participant, so counts only their own (none)");
+
+// A stranger cannot mark someone else's conversation read, or even tell it exists.
+await expectOk("stranger marks a thread they are not in as read (silently ignored)", C2, `select public.mark_thread_read('${thr}')`);
+await expectOk("marking a thread that does not exist is silently ignored", C2, `select public.mark_thread_read('00000000-0000-0000-0000-000000000000')`);
+if ((await unreadOf(E))[0]?.unread !== 2) { console.log("VULNERABLE: a stranger changed the expert's unread"); failures++; } else console.log("blocked   : stranger could not change the expert's unread count");
+const strangerRows = (await db.query(`select count(*)::int n from public.thread_reads where user_id='${C2}'`)).rows[0].n;
+if (strangerRows !== 0) { console.log("VULNERABLE: stranger got a read marker on a thread they are not in"); failures++; }
+
+// Read markers are private: no read receipts.
+await expectFail("client writes a read marker directly", C, `insert into public.thread_reads (thread_id, user_id, last_read_at) values ('${thr}','${C}', now())`);
+await expectFail("client edits the expert's read marker", C, `update public.thread_reads set last_read_at = now() where user_id='${E}'`);
+const seen = await as(C, `select count(*)::int n from public.thread_reads where user_id <> '${C}'`);
+if (seen.rows[0].n !== 0) { console.log("VULNERABLE: client can see the expert's read markers (read receipts)"); failures++; } else console.log("blocked   : client cannot see the expert's read markers");
+
+await expectOk("expert marks the conversation read", E, `select public.mark_thread_read('${thr}')`);
+if ((await unreadOf(E)).length !== 0) { console.log("FAIL: still unread after marking read"); failures++; } else console.log("allowed   : expert's unread drops to zero after reading");
+if ((await unreadOf(C)).length !== 1) { console.log("FAIL: the expert reading changed the client's unread"); failures++; } else console.log("allowed   : the client's unread is unaffected by the expert reading");
+
+// Reading up to a specific message leaves later ones unread (no lost microseconds).
+const msgs = (await db.query(`select id, body from public.messages where thread_id='${thr}' and sender_id='${C}' order by created_at`)).rows;
+await db.exec(`delete from public.thread_reads where thread_id='${thr}' and user_id='${E}'`);
+await expectOk("expert reads up to the first message only", E, `select public.mark_thread_read('${thr}', '${msgs[0].id}')`);
+u = await unreadOf(E);
+if (u.length !== 1 || u[0].unread !== 1) { console.log("FAIL: reading up to a message should leave the later one unread", JSON.stringify(u)); failures++; } else console.log("allowed   : reading up to one message leaves the later one unread");
+await expectOk("naming a message from another conversation is ignored", E, `select public.mark_thread_read('${thr}', '${(await db.query(`select id from public.messages where thread_id <> '${thr}' limit 1`)).rows[0]?.id ?? "00000000-0000-0000-0000-000000000000"}')`);
+await expectOk("expert then reads everything", E, `select public.mark_thread_read('${thr}')`);
+if ((await unreadOf(E)).length !== 0) { console.log("FAIL: not zero after reading everything"); failures++; }
+
+// A new message after reading is unread again; the marker never moves backwards.
+await db.exec(`insert into public.messages (thread_id, sender_id, body) values ('${thr}','${C}','one more')`);
+u = await unreadOf(E);
+if (u.length !== 1 || u[0].unread !== 1) { console.log("FAIL: new message not counted", JSON.stringify(u)); failures++; } else console.log("allowed   : a message after reading counts as unread");
+const before = (await db.query(`select last_read_at from public.thread_reads where thread_id='${thr}' and user_id='${E}'`)).rows[0].last_read_at;
+await db.exec(`update public.thread_reads set last_read_at = now() + interval '1 hour' where thread_id='${thr}' and user_id='${E}'`);
+await expectOk("marking read again never moves the marker backwards", E, `select public.mark_thread_read('${thr}')`);
+const after = (await db.query(`select last_read_at from public.thread_reads where thread_id='${thr}' and user_id='${E}'`)).rows[0].last_read_at;
+if (new Date(after) < new Date(before)) { console.log("FAIL: marker moved backwards"); failures++; }
 
 const anon = await db.query(`select count(*)::int n from public.public_experts`);
 console.log("public_experts rows:", anon.rows[0].n);

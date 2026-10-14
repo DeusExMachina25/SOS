@@ -1,16 +1,31 @@
 "use client";
 
 import { Search, Star, Loader2 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   getMyChatThreads,
   getMessages,
   sendMessage,
-  subscribeToMessages,
+  subscribeToMyMessages,
   getCurrentUserId,
+  getUnreadThreads,
+  markThreadRead,
 } from "@/lib/data/queries";
 import { formatMessageTime } from "@/lib/data/format";
+import { notifyUnreadChanged } from "@/lib/data/unreadEvents";
+import {
+  applyIncomingMessage,
+  badgeText,
+  filterThreads,
+  sortThreadsByActivity,
+  toUnreadMap,
+  unreadLabel,
+  withLatestMessage,
+  type UnreadMap,
+} from "@/lib/data/unread";
 import type { ChatThreadSummary, Message } from "@/lib/data/types";
+
+const isVisible = () => typeof document === "undefined" || document.visibilityState === "visible";
 
 export default function ChatWorkspace() {
   const [threads, setThreads] = useState<ChatThreadSummary[]>([]);
@@ -18,40 +33,105 @@ export default function ChatWorkspace() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [unread, setUnread] = useState<UnreadMap>(new Map());
+  const [query, setQuery] = useState("");
   const [loadingThreads, setLoadingThreads] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const feedRef = useRef<HTMLDivElement>(null);
 
+  // The live feed outlives renders, so it reads the current values through refs.
+  const activeRef = useRef<string | null>(null);
+  const userRef = useRef<string | null>(null);
   useEffect(() => {
-    Promise.all([getMyChatThreads(), getCurrentUserId()])
-      .then(([myThreads, currentUserId]) => {
-        setThreads(myThreads);
+    activeRef.current = activeThreadId;
+    userRef.current = userId;
+  }, [activeThreadId, userId]);
+
+  /** Marks a conversation read (up to a message), clears its badge now, and tells the sidebar to recount. */
+  const markRead = useCallback((threadId: string, upToMessageId?: string) => {
+    setUnread((prev) => {
+      if (!prev.has(threadId)) return prev;
+      const next = new Map(prev);
+      next.delete(threadId);
+      return next;
+    });
+    markThreadRead(threadId, upToMessageId)
+      .then(notifyUnreadChanged)
+      .catch((err) => console.error("Could not mark the conversation read", err));
+  }, []);
+
+  useEffect(() => {
+    Promise.all([getMyChatThreads(), getCurrentUserId(), getUnreadThreads().catch(() => [])])
+      .then(([myThreads, currentUserId, unreadThreads]) => {
+        const ordered = sortThreadsByActivity(myThreads);
+        setThreads(ordered);
         setUserId(currentUserId);
-        if (myThreads.length > 0) setActiveThreadId(myThreads[0].id);
+        setUnread(toUnreadMap(unreadThreads));
+        if (ordered.length > 0) setActiveThreadId(ordered[0].id);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load conversations"))
       .finally(() => setLoadingThreads(false));
   }, []);
 
+  // Open conversation: load it, then mark it read up to the last message actually shown.
   useEffect(() => {
     if (!activeThreadId) return;
+    let cancelled = false;
 
     queueMicrotask(() => {
       setLoadingMessages(true);
       getMessages(activeThreadId)
-        .then(setMessages)
+        .then((loaded) => {
+          if (cancelled) return;
+          setMessages(loaded);
+          if (loaded.length > 0 && isVisible()) markRead(activeThreadId, loaded[loaded.length - 1].id);
+        })
         .catch((err) => setError(err instanceof Error ? err.message : "Failed to load messages"))
         .finally(() => setLoadingMessages(false));
     });
 
-    const unsubscribe = subscribeToMessages(activeThreadId, (msg) => {
-      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
-    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeThreadId, markRead]);
 
+  // One live feed for the whole inbox: new messages in the open conversation
+  // appear in it, and every other conversation gets its preview and badge updated.
+  useEffect(() => {
+    if (!userId) return;
+    const unsubscribe = subscribeToMyMessages((msg) => {
+      const open = activeRef.current;
+      const me = userRef.current;
+
+      setThreads((prev) => {
+        if (prev.some((t) => t.id === msg.threadId)) return sortThreadsByActivity(withLatestMessage(prev, msg));
+        // A conversation the other person just started: fetch the list again.
+        getMyChatThreads()
+          .then((fresh) => setThreads(sortThreadsByActivity(fresh)))
+          .catch((err) => console.error("Could not refresh conversations", err));
+        return prev;
+      });
+
+      if (msg.threadId === open) {
+        setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+        if (msg.senderId !== me && isVisible()) markRead(msg.threadId, msg.id);
+      }
+      setUnread((prev) => applyIncomingMessage(prev, msg, { me, activeThreadId: open, viewing: isVisible() }));
+    });
     return unsubscribe;
-  }, [activeThreadId]);
+  }, [userId, markRead]);
+
+  // Coming back to a background tab with a conversation open reads it.
+  useEffect(() => {
+    const onVisible = () => {
+      const open = activeRef.current;
+      if (isVisible() && open) markRead(open);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [markRead]);
 
   useEffect(() => {
     feedRef.current?.scrollTo({ top: feedRef.current.scrollHeight, behavior: "smooth" });
@@ -72,6 +152,7 @@ export default function ChatWorkspace() {
   };
 
   const activeThread = threads.find(t => t.id === activeThreadId);
+  const visibleThreads = filterThreads(threads, query);
 
   return (
     <div className="w-full md:h-full md:min-h-[480px] relative flex flex-col md:flex-row gap-6">
@@ -84,6 +165,9 @@ export default function ChatWorkspace() {
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search conversations"
               placeholder="Search conversations..."
               className="w-full bg-[var(--bg-surface-2)] border border-[var(--border)] rounded-full pl-10 pr-4 py-3 text-sm outline-none focus:border-[var(--color-orange)] text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-faint)]"
             />
@@ -95,31 +179,50 @@ export default function ChatWorkspace() {
             <p className="text-xs text-[var(--text-muted)] font-mono-sos p-4">Loading…</p>
           ) : threads.length === 0 ? (
             <p className="text-xs text-[var(--text-muted)] font-mono-sos p-4">No conversations yet.</p>
+          ) : visibleThreads.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)] font-mono-sos p-4">No conversations match &ldquo;{query.trim()}&rdquo;.</p>
           ) : (
-            threads.map(thread => (
-              <div
-                key={thread.id}
-                onClick={() => setActiveThreadId(thread.id)}
-                className={`p-4 rounded-2xl flex items-center gap-4 cursor-pointer transition-all ${
-                  activeThreadId === thread.id
-                    ? "bg-[var(--bg-surface-2)] border border-[var(--color-orange)]/50 shadow-[0_4px_20px_rgba(255,91,46,0.1)]"
-                    : "border border-transparent hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-2)]"
-                }`}
-              >
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--bg-surface-2)] to-[var(--bg-base)] border border-[var(--border)] flex items-center justify-center shrink-0">
-                  <Star size={16} className={activeThreadId === thread.id ? "text-[var(--color-orange)]" : "text-[var(--text-muted)]"} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <h3 className="text-sm font-bold text-[var(--text-primary)] truncate">{thread.counterpartName}</h3>
-                    <span className="text-[10px] text-[var(--text-faint)] font-mono-sos">{formatMessageTime(thread.lastMessageAt)}</span>
+            visibleThreads.map(thread => {
+              const count = unread.get(thread.id) ?? 0;
+              return (
+                <div
+                  key={thread.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${thread.counterpartName}${count ? `, ${unreadLabel(count)}` : ""}`}
+                  onClick={() => setActiveThreadId(thread.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveThreadId(thread.id); } }}
+                  className={`p-4 rounded-2xl flex items-center gap-4 cursor-pointer transition-all ${
+                    activeThreadId === thread.id
+                      ? "bg-[var(--bg-surface-2)] border border-[var(--color-orange)]/50 shadow-[0_4px_20px_rgba(255,91,46,0.1)]"
+                      : "border border-transparent hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-2)]"
+                  }`}
+                >
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--bg-surface-2)] to-[var(--bg-base)] border border-[var(--border)] flex items-center justify-center shrink-0">
+                    <Star size={16} className={activeThreadId === thread.id ? "text-[var(--color-orange)]" : "text-[var(--text-muted)]"} />
                   </div>
-                  <p className="text-xs truncate text-[var(--text-muted)]">
-                    {thread.lastMessage ?? "No messages yet"}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1 gap-2">
+                      <h3 className={`text-sm text-[var(--text-primary)] truncate ${count ? "font-extrabold" : "font-bold"}`}>{thread.counterpartName}</h3>
+                      <span className="text-[10px] text-[var(--text-faint)] font-mono-sos shrink-0">{formatMessageTime(thread.lastMessageAt)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`text-xs truncate ${count ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>
+                        {thread.lastMessage ?? "No messages yet"}
+                      </p>
+                      {count > 0 && (
+                        <span
+                          aria-hidden="true"
+                          className="shrink-0 min-w-5 h-5 px-1.5 flex items-center justify-center bg-[var(--color-orange)] text-[var(--bg-base)] font-mono-sos text-[10px] font-bold tabular-nums rounded-full"
+                        >
+                          {badgeText(count)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

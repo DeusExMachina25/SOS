@@ -335,6 +335,17 @@ async function fullFlows() {
     return expect(!seen.error && (edit.data?.length ?? 0) === 0, `client reads own payments only (${seen.data?.length}); expert changed ${edit.data?.length ?? 0} payout rows`);
   });
 
+  const signInStranger = async () => {
+    try {
+      const email = `audit-stranger-${Date.now()}@example.test`;
+      const { data, error } = await admin.auth.admin.createUser({ email, password: "password", email_confirm: true, user_metadata: { full_name: "Audit Stranger" } });
+      if (error) return null;
+      created.users.push(data.user.id);
+      await admin.from("profiles").upsert({ id: data.user.id, email, full_name: "Audit Stranger", role: "client" });
+      return await signIn(email);
+    } catch { return null; }
+  };
+
   // Session lifecycle
   await check("Lifecycle", "complete data", "Expert marks a paid, started session completed; client cannot", async () => {
     const id = await mk("lifecycle-complete", { start: now - 2 * HOUR, end: now - HOUR, pay: "paid" });
@@ -412,6 +423,29 @@ async function fullFlows() {
     const spoof = await client.sb.from("messages").insert({ thread_id: th.id, sender_id: expert.id, body: `${TAG} spoof` }).select("id");
     if (spoof.data?.[0]) await admin.from("messages").delete().eq("id", spoof.data[0].id);
     return expect(!sent.error && read.data?.length === 1 && Boolean(spoof.error), `send ${sent.error?.message ?? "ok"}, expert reads ${read.data?.length}, spoof ${spoof.error ? "blocked" : "ALLOWED"}`);
+  });
+  await check("Chat", "complete data", "Unread counts: sent -> unread for the other person only -> read clears it, privately", async () => {
+    const th = (await client.sb.from("chat_threads").select("id").eq("client_id", client.id).eq("expert_id", expert.id).single()).data;
+    const first = await expert.sb.rpc("my_unread_threads");
+    if (first.error && /Could not find the function|does not exist/i.test(first.error.message)) return ["warn", "unread functions missing (is migration 0020 applied?)"];
+    if (first.error) return ["fail", first.error.message];
+    const sent = await client.sb.from("messages").insert({ thread_id: th.id, sender_id: client.id, body: `${TAG} unread test` }).select("id").single();
+    const expertSees = (await expert.sb.rpc("my_unread_threads")).data?.find((r) => r.thread_id === th.id)?.unread ?? 0;
+    const senderSees = (await client.sb.rpc("my_unread_threads")).data?.find((r) => r.thread_id === th.id)?.unread ?? 0;
+    await expert.sb.rpc("mark_thread_read", { p_thread_id: th.id, p_up_to_message_id: sent.data.id });
+    const afterRead = (await expert.sb.rpc("my_unread_threads")).data?.find((r) => r.thread_id === th.id)?.unread ?? 0;
+    const markers = await client.sb.from("thread_reads").select("user_id");
+    const sawOthers = (markers.data ?? []).some((m) => m.user_id !== client.id);
+    return expect(expertSees >= 1 && senderSees === 0 && afterRead === 0 && !sawOthers, `expert unread ${expertSees}, sender unread ${senderSees}, after reading ${afterRead}, client can see someone else's marker: ${sawOthers ? "YES" : "no"}`);
+  });
+  await check("Chat", "missing data", "A stranger cannot mark someone else's conversation read or see their counts", async () => {
+    const th = (await client.sb.from("chat_threads").select("id").eq("client_id", client.id).eq("expert_id", expert.id).single()).data;
+    const stranger = await signInStranger();
+    if (!stranger) return ["warn", "no third account available for this check"];
+    const r = await stranger.sb.rpc("mark_thread_read", { p_thread_id: th.id });
+    const theirs = await stranger.sb.rpc("my_unread_threads");
+    const markers = await admin.from("thread_reads").select("user_id").eq("thread_id", th.id);
+    return expect(!r.error && !(theirs.data ?? []).length && !(markers.data ?? []).some((m) => m.user_id === stranger.id), `mark ${r.error?.message ?? "ignored"}; stranger sees ${theirs.data?.length ?? 0} unread threads`);
   });
   await check("Chat", "missing data", "Empty and oversized messages are rejected", async () => {
     const th = (await client.sb.from("chat_threads").select("id").eq("client_id", client.id).eq("expert_id", expert.id).single()).data;
