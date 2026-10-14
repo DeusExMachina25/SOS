@@ -96,3 +96,22 @@ export function toScheduledAtIso(
 
   return new Date(year, month - 1, day, hours, minutes).toISOString();
 }
+
+export const DISPLAY_NAME_MIN = 2;
+export const DISPLAY_NAME_MAX = 80;
+
+/**
+ * Cleans a display name typed by a user: collapses runs of whitespace and
+ * trims. Returns the cleaned name, or an error message when it can't be used
+ * (too short/long, or contains control characters that would break layouts
+ * and emails).
+ */
+export function normalizeDisplayName(raw: string): { ok: true; name: string } | { ok: false; error: string } {
+  if (/[\u0000-\u001f\u007f]/.test(raw.replace(/\s/g, " "))) {
+    return { ok: false, error: "Names can't contain control characters." };
+  }
+  const name = raw.replace(/\s+/g, " ").trim();
+  if (name.length < DISPLAY_NAME_MIN) return { ok: false, error: `Enter at least ${DISPLAY_NAME_MIN} characters.` };
+  if (name.length > DISPLAY_NAME_MAX) return { ok: false, error: `Keep it under ${DISPLAY_NAME_MAX} characters.` };
+  return { ok: true, name };
+}

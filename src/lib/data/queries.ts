@@ -10,6 +10,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { canonicalTimeZone, isValidTimeZone } from "./slots";
+import { normalizeDisplayName } from "./format";
 import {
   formatDuration,
   formatSessionDate,
@@ -84,6 +85,24 @@ export async function getMyProfile(): Promise<MyProfile | null> {
     fullName: (data.full_name as string) ?? "User",
     role: data.role as MyProfile["role"],
   };
+}
+
+/** Renames the signed-in user. Returns the saved (cleaned) name. */
+export async function setMyDisplayName(raw: string): Promise<string> {
+  const cleaned = normalizeDisplayName(raw);
+  if (!cleaned.ok) throw new Error(cleaned.error);
+  const sb = requireClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("You must be signed in.");
+
+  const { data, error } = await sb
+    .from("profiles")
+    .update({ full_name: cleaned.name })
+    .eq("id", userId)
+    .select("full_name");
+  if (error) throw new Error(`Failed to save name: ${error.message}`);
+  if (!data?.length) throw new Error("We couldn't find your profile to update.");
+  return cleaned.name;
 }
 
 // ---------------------------------------------------------------------------

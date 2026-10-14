@@ -337,6 +337,15 @@ async function fullFlows() {
     await admin.from("expert_profiles").update({ timezone: "Asia/Kolkata" }).eq("profile_id", expert.id);
     return expect(!mine.error && mine.data?.[0]?.timezone === "Asia/Dubai" && !theirs.data?.length && now2 === "Asia/Dubai", `expert ${mine.error?.message ?? mine.data?.[0]?.timezone}; client changed ${theirs.data?.length ? "YES" : "no"}; stored ${now2}`);
   });
+  await check("Profile", "complete data", "A user can rename themselves but not someone else", async () => {
+    const original = (await admin.from("profiles").select("full_name").eq("id", client.id).single()).data.full_name;
+    const own = await client.sb.from("profiles").update({ full_name: "Audit Rename" }).eq("id", client.id).select("full_name");
+    const other = await client.sb.from("profiles").update({ full_name: "Hijacked" }).eq("id", expert.id).select("full_name");
+    const expertName = (await admin.from("profiles").select("full_name").eq("id", expert.id).single()).data.full_name;
+    await admin.from("profiles").update({ full_name: original }).eq("id", client.id);
+    return expect(!own.error && own.data?.[0]?.full_name === "Audit Rename" && !other.data?.length && expertName !== "Hijacked", `own ${own.error?.message ?? own.data?.[0]?.full_name}; other rows changed ${other.data?.length ?? 0}`);
+  });
+
   // Vault
   const vaultSession = created.sessions[3];
   await check("Vault", "complete data", "Upload -> expert sees it -> signed download works -> delete cleans row and object", async () => {

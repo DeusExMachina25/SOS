@@ -10,6 +10,8 @@ export interface NavItem {
   name: string;
   icon: LucideIcon;
   path: string;
+  /** When set, the item runs this instead of navigating (e.g. open the Preferences panel). */
+  onSelect?: () => void;
   /** Unread/pending count rendered as a pill on the right */
   badge?: number;
 }
@@ -52,33 +54,41 @@ export default function Sidebar({ groups, role, footer }: SidebarProps) {
 
             <ul>
               {group.items.map(item => {
-                const active = pathname === item.path;
+                const active = !item.onSelect && pathname === item.path;
+                const className = `relative flex w-full items-center gap-3 px-5 py-2.5 text-left font-inter text-[13px] transition-colors duration-200 ${
+                  active
+                    ? "text-[var(--text-primary)] bg-[var(--bg-surface-2)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)]"
+                }`;
+                const content = (
+                  <>
+                    {active && (
+                      <span className="absolute left-0 top-0 bottom-0 w-[2px] bg-[var(--color-primary)]" />
+                    )}
+                    <item.icon
+                      size={15}
+                      strokeWidth={1.75}
+                      className={active ? "text-[var(--color-primary)]" : "text-[var(--text-faint)]"}
+                    />
+                    <span className="flex-1 truncate">{item.name}</span>
+                    {typeof item.badge === "number" && item.badge > 0 && (
+                      <span className="font-mono-sos text-[9px] px-1.5 py-0.5 bg-[var(--color-orange)] text-[var(--bg-base)] tabular-nums">
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
+                );
                 return (
                   <li key={item.name}>
-                    <Link
-                      href={item.path}
-                      aria-current={active ? "page" : undefined}
-                      className={`relative flex items-center gap-3 px-5 py-2.5 font-inter text-[13px] transition-colors duration-200 ${
-                        active
-                          ? "text-[var(--text-primary)] bg-[var(--bg-surface-2)]"
-                          : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)]"
-                      }`}
-                    >
-                      {active && (
-                        <span className="absolute left-0 top-0 bottom-0 w-[2px] bg-[var(--color-primary)]" />
-                      )}
-                      <item.icon
-                        size={15}
-                        strokeWidth={1.75}
-                        className={active ? "text-[var(--color-primary)]" : "text-[var(--text-faint)]"}
-                      />
-                      <span className="flex-1 truncate">{item.name}</span>
-                      {typeof item.badge === "number" && item.badge > 0 && (
-                        <span className="font-mono-sos text-[9px] px-1.5 py-0.5 bg-[var(--color-orange)] text-[var(--bg-base)] tabular-nums">
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
+                    {item.onSelect ? (
+                      <button type="button" onClick={item.onSelect} className={className}>
+                        {content}
+                      </button>
+                    ) : (
+                      <Link href={item.path} aria-current={active ? "page" : undefined} className={className}>
+                        {content}
+                      </Link>
+                    )}
                   </li>
                 );
               })}
