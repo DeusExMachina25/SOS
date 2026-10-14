@@ -38,9 +38,12 @@ export default function TopBar({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <DashboardSearch role={dashboardRole} pages={searchPages} />
+        {/* Search and the bell read the signed-in user's own sessions and
+            payments; for an admin that would be the whole platform, so the
+            admin console has its own pages instead. */}
+        {role !== "admin" && <DashboardSearch role={dashboardRole} pages={searchPages} />}
 
-        <NotificationBell role={dashboardRole} />
+        {role !== "admin" && <NotificationBell role={dashboardRole} />}
 
         {/* Theme */}
         <button

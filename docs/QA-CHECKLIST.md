@@ -37,6 +37,13 @@ payment (mock + UPI), vault round trip, chat, brand-new accounts with no data, p
 - Two real browsers/devices join with real LiveKit keys; camera/mic permission denied; rejoin after refresh;
   join 16 min early (blocked) and 59 min after end (allowed).
 
+**Admin console**
+- Sign in as a real admin on the Expert tab; confirm you land on `/dashboard/admin` and that a client/expert typing that URL is bounced.
+- Approve a real submitted expert and check they appear in the directory and can be booked; suspend them and check they vanish but existing sessions remain.
+- Pay a real (test-mode) Razorpay booking, send the payout yourself, record it, and reconcile the amount and reference. Try recording the 40% share before completing the session (it must be locked).
+- Record a refund on a test-mode payment and refund the client in Razorpay; confirm the session shows Refunded and the payouts show Cancelled.
+- Try to refund after a payout was recorded (must be refused).
+
 **Accounts and access**
 - Real sign-up for client (email link and phone OTP) and the expert invite flow; expired/reused links.
 - Sign out in one tab while another is open; a session expiring mid-booking.

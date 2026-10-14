@@ -18,7 +18,10 @@ import {
   UserCircle2,
   Globe2,
   Smartphone,
-  Check
+  Check,
+  ShieldCheck,
+  Wallet,
+  Receipt
 } from "lucide-react";
 import { getMyExpertProfile, getMyProfile, setMyUpiId, setMyTimezone, setMyDisplayName } from "@/lib/data/queries";
 import { COMMON_TIME_ZONES, describeTimeZone, resolveTimeZone, viewerTimeZone } from "@/lib/data/slots";
@@ -158,13 +161,33 @@ export default function DashboardLayout({
     ? "Sessions"
     : pathname.endsWith("/availability")
     ? "Availability"
+    : pathname.endsWith("/experts")
+    ? "Experts"
+    : pathname.endsWith("/payouts")
+    ? "Payouts"
     : pathname.includes("/video-call")
     ? "Video Call"
     : "Overview";
 
   /* Grouped like a console rail: the work you do daily, the live room,
      then the account. Mirrors the sidebar grammar of the reference. */
-  const navGroups: NavGroup[] = [
+  const adminNav: NavGroup[] = [
+    {
+      label: "Admin",
+      items: [
+        { name: "Overview", icon: LayoutDashboard, path: basePath },
+        { name: "Experts", icon: ShieldCheck, path: `${basePath}/experts` },
+        { name: "Payouts", icon: Wallet, path: `${basePath}/payouts` },
+        { name: "Sessions", icon: Receipt, path: `${basePath}/sessions` },
+      ],
+    },
+    {
+      label: "Account",
+      items: [{ name: "Settings", icon: Settings, path: basePath, onSelect: () => setIsProfileOpen(true) }],
+    },
+  ];
+
+  const navGroups: NavGroup[] = role === "admin" ? adminNav : [
     {
       label: "Main",
       items: [

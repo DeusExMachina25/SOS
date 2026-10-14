@@ -147,6 +147,80 @@ const s4 = await db.query(`select payment_status from public.sessions where id='
 console.log("service-role razorpay paid -> session payment_status:", s4.rows[0].payment_status);
 if (s4.rows[0].payment_status !== "escrow_held") { console.log("FAIL: razorpay status"); failures++; }
 
+// --- Admin console: money actions ------------------------------------------
+const payS3 = (await db.query(`select id from public.payments where session_id='${s3}'`)).rows[0].id;
+await db.exec(`
+  insert into public.payment_transfers (payment_id, transfer_type, amount_inr, status) values
+    ('${payS3}','booking_release',2400,'pending'),('${payS3}','completion_release',1600,'pending');
+`);
+const tBooking = (await db.query(`select id from public.payment_transfers where payment_id='${payS3}' and transfer_type='booking_release'`)).rows[0].id;
+
+await expectFail("client marks a payout sent", C, `select public.admin_mark_transfer_paid('${tBooking}', 'x')`);
+await expectFail("expert marks their own payout sent", E, `select public.admin_mark_transfer_paid('${tBooking}', 'x')`);
+await expectFail("client refunds a session", C, `select public.admin_refund_session('${s3}')`);
+await expectFail("expert refunds a session", E, `select public.admin_refund_session('${s3}')`);
+// An RLS-blocked UPDATE raises nothing, it just changes zero rows, so check the row itself.
+await as(E, `update public.payment_transfers set status='transferred' where id='${tBooking}'`).catch(() => {});
+await as(C, `update public.payment_transfers set status='transferred', amount_inr=1 where id='${tBooking}'`).catch(() => {});
+const untouched = (await db.query(`select status::text, amount_inr from public.payment_transfers where id='${tBooking}'`)).rows[0];
+if (untouched.status !== "pending" || untouched.amount_inr !== 2400) { console.log("VULNERABLE: a participant changed a payout row", JSON.stringify(untouched)); failures++; }
+else console.log("blocked   : expert and client cannot edit a payout row (row unchanged)");
+const strangerSeesPay = await as(C2, `select count(*)::int n from public.payments`);
+if (strangerSeesPay.rows[0].n !== 0) { console.log("VULNERABLE: stranger reads payments"); failures++; } else console.log("blocked   : stranger reads payments");
+const adminSeesPay = await as(A, `select count(*)::int n from public.payments`);
+if (adminSeesPay.rows[0].n < 2) { console.log("FAIL: admin cannot read all payments"); failures++; } else console.log("allowed   : admin reads all payments (" + adminSeesPay.rows[0].n + ")");
+
+await expectOk("admin marks a payout sent", A, `select public.admin_mark_transfer_paid('${tBooking}', '  UTR-123  ')`);
+const tDone = (await db.query(`select status, payout_reference, transferred_at is not null as stamped from public.payment_transfers where id='${tBooking}'`)).rows[0];
+if (tDone.status !== "transferred" || tDone.payout_reference !== "UTR-123" || !tDone.stamped) { console.log("FAIL: payout not recorded", JSON.stringify(tDone)); failures++; }
+await expectFail("admin marks the same payout sent twice", A, `select public.admin_mark_transfer_paid('${tBooking}', 'again')`);
+await expectFail("admin refunds after part was paid out", A, `select public.admin_refund_session('${s3}')`);
+
+// A fresh paid session with nothing paid out yet: the refund must be all-or-nothing.
+await db.exec(`
+  insert into public.sessions (client_id, expert_id, title, starts_at, ends_at, amount_inr)
+    values ('${C}','${E}','Refundable','${new Date(Date.now()+86400e3*12).toISOString()}','${new Date(Date.now()+86400e3*12+3600e3).toISOString()}',3000);
+`);
+const s5 = (await db.query(`select id from public.sessions where title='Refundable'`)).rows[0].id;
+await db.exec(`set role service_role`);
+await db.exec(`insert into public.payments (session_id, method, status, amount_inr, razorpay_order_id) values ('${s5}','razorpay','created',3000,'order_R')`);
+await db.exec(`update public.payments set status='paid', razorpay_payment_id='pay_R' where razorpay_order_id='order_R'`);
+await db.exec(`reset role`);
+const payS5 = (await db.query(`select id from public.payments where session_id='${s5}'`)).rows[0].id;
+await db.exec(`insert into public.payment_transfers (payment_id, transfer_type, amount_inr, status) values ('${payS5}','booking_release',1800,'pending'),('${payS5}','completion_release',1200,'pending')`);
+
+await db.exec(`
+  insert into public.sessions (client_id, expert_id, title, starts_at, ends_at, amount_inr)
+    values ('${C}','${E}','Never paid','${new Date(Date.now()+86400e3*15).toISOString()}','${new Date(Date.now()+86400e3*15+3600e3).toISOString()}',3000);
+`);
+const sUnpaid = (await db.query(`select id from public.sessions where title='Never paid'`)).rows[0].id;
+await expectFail("admin refunds an unpaid session", A, `select public.admin_refund_session('${sUnpaid}')`);
+await expectFail("admin refunds a session that does not exist", A, `select public.admin_refund_session('00000000-0000-0000-0000-000000000000')`);
+await expectOk("admin refunds a paid session", A, `select public.admin_refund_session('${s5}')`);
+const refunded = (await db.query(`
+  select (select status::text from public.payments where id='${payS5}') pay,
+         (select payment_status::text from public.sessions where id='${s5}') sess_pay,
+         (select status::text from public.sessions where id='${s5}') sess,
+         (select array_agg(status::text) from public.payment_transfers where payment_id='${payS5}') transfers`)).rows[0];
+console.log("   after refund:", JSON.stringify(refunded));
+if (refunded.pay !== "refunded" || refunded.sess_pay !== "refunded" || refunded.sess !== "cancelled" || !refunded.transfers.every((t) => t === "cancelled")) {
+  console.log("FAIL: refund did not update everything"); failures++;
+}
+await expectFail("admin refunds the same session twice", A, `select public.admin_refund_session('${s5}')`);
+
+// Expert approval stays admin-only.
+await db.exec(`
+  insert into auth.users (id,email) values ('44444444-4444-4444-4444-444444444444','e2@x.com');
+  update public.profiles set role='expert' where id='44444444-4444-4444-4444-444444444444';
+  insert into public.expert_profiles (profile_id, professional_title, bio, location, session_rate_inr, status)
+    values ('44444444-4444-4444-4444-444444444444','Planner','bio','Pune',4000,'profile_submitted');
+`);
+await expectFail("expert approves themselves", "44444444-4444-4444-4444-444444444444", `update public.expert_profiles set status='approved' where profile_id='44444444-4444-4444-4444-444444444444'`);
+await expectOk("admin approves an expert", A, `update public.expert_profiles set status='approved' where profile_id='44444444-4444-4444-4444-444444444444'`);
+await expectOk("admin suspends an expert", A, `update public.expert_profiles set status='suspended' where profile_id='44444444-4444-4444-4444-444444444444'`);
+const susp = await as(C, `select count(*)::int n from public.public_experts where id='44444444-4444-4444-4444-444444444444'`);
+if (susp.rows[0].n !== 0) { console.log("VULNERABLE: suspended expert still listed"); failures++; } else console.log("blocked   : suspended expert is not listed");
+
 const anon = await db.query(`select count(*)::int n from public.public_experts`);
 console.log("public_experts rows:", anon.rows[0].n);
 

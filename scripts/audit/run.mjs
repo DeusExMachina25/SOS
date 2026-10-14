@@ -305,6 +305,36 @@ async function fullFlows() {
     return expect(ins.data.amount_inr === 5000 && Boolean(selfConfirm.error) && !confirm.error && s.payment_status === "released", `amount ${ins.data.amount_inr}, self-confirm ${selfConfirm.error ? "blocked" : "ALLOWED"}, expert ${confirm.error ? confirm.error.message : "ok"}, session ${s.payment_status}`);
   });
 
+  // Admin boundary (no admin account needed: these prove everyone else is kept out)
+  await check("Admin", "complete data", "Clients and experts are redirected away from every admin page", async () => {
+    const bad = [];
+    for (const [who, cookie, home] of [["client", cCookie, "/dashboard/client"], ["expert", eCookie, "/dashboard/expert"]]) {
+      for (const p of ["/dashboard/admin", "/dashboard/admin/experts", "/dashboard/admin/payouts", "/dashboard/admin/sessions"]) {
+        const r = await http(p, { cookie });
+        if (!isRedirectTo(r, home)) bad.push(`${who} ${p} -> ${r.status} ${r.location}`);
+      }
+    }
+    return expect(!bad.length, bad.join("; "));
+  });
+  await check("Admin", "complete data", "Only an admin can record a payout or a refund", async () => {
+    const out = [];
+    for (const [who, sb] of [["client", client.sb], ["expert", expert.sb]]) {
+      const pay = await sb.rpc("admin_mark_transfer_paid", { p_transfer_id: "00000000-0000-0000-0000-000000000000" });
+      const ref = await sb.rpc("admin_refund_session", { p_session_id: created.sessions[0] ?? "00000000-0000-0000-0000-000000000000" });
+      for (const [name, r] of [["payout", pay], ["refund", ref]]) {
+        if (!r.error) out.push(`${who} ${name} ALLOWED`);
+        else if (/Could not find the function|does not exist/i.test(r.error.message)) out.push(`${who} ${name}: function missing (is migration 0019 applied?)`);
+        else if (!/Only an admin/i.test(r.error.message)) out.push(`${who} ${name}: refused for another reason (${r.error.message})`);
+      }
+    }
+    return expect(!out.length, out.join("; ") || "refused with 'Only an admin can do this'");
+  });
+  await check("Admin", "complete data", "Clients and experts cannot read other people's payments or edit payouts", async () => {
+    const seen = await client.sb.from("payments").select("id");
+    const edit = await expert.sb.from("payment_transfers").update({ status: "transferred" }).neq("status", "transferred").select("id");
+    return expect(!seen.error && (edit.data?.length ?? 0) === 0, `client reads own payments only (${seen.data?.length}); expert changed ${edit.data?.length ?? 0} payout rows`);
+  });
+
   // Session lifecycle
   await check("Lifecycle", "complete data", "Expert marks a paid, started session completed; client cannot", async () => {
     const id = await mk("lifecycle-complete", { start: now - 2 * HOUR, end: now - HOUR, pay: "paid" });
