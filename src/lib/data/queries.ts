@@ -372,6 +372,21 @@ export async function getMyPayments(): Promise<Payment[]> {
   return ((data ?? []) as PaymentRow[]).map(mapPayment);
 }
 
+/**
+ * Payout status per session for the signed-in user. Row-level security lets an
+ * expert (or client) read the payout schedule of their own sessions, and an
+ * admin all of them.
+ */
+export async function getMyPayoutRows(): Promise<{ sessionId: string; status: string }[]> {
+  const sb = requireClient();
+  const { data, error } = await sb.from("payment_transfers").select("status, payments!inner ( session_id )");
+  if (error) throw new Error(`Failed to load payouts: ${error.message}`);
+  return ((data ?? []) as unknown as { status: string; payments: { session_id: string } | { session_id: string }[] | null }[]).flatMap((r) => {
+    const payment = Array.isArray(r.payments) ? r.payments[0] : r.payments;
+    return payment ? [{ sessionId: payment.session_id, status: r.status }] : [];
+  });
+}
+
 export async function getPaymentForSession(sessionId: string): Promise<Payment | null> {
   const sb = requireClient();
   const { data, error } = await sb

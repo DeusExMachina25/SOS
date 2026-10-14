@@ -77,6 +77,7 @@ let confirmAnswer = true;
 beforeEach(() => {
   Object.values(admin).forEach((f) => f.mockReset());
   queries.getMySessions.mockReset();
+  admin.listPayouts.mockResolvedValue([]); // pages that don't care about payouts still load them
   confirmAnswer = true;
   vi.stubGlobal("confirm", vi.fn(() => confirmAnswer));
   window.confirm = (globalThis as unknown as { confirm: () => boolean }).confirm;
@@ -242,6 +243,35 @@ describe("Admin / Sessions", () => {
     render(<AdminSessionsPage />);
     fireEvent.click(await screen.findByRole("button", { name: "RECORD REFUND" }));
     expect((window.confirm as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatch(/expert has to return the money/);
+  });
+
+  it("labels a paid session by how far its payouts have got, never as escrow", async () => {
+    queries.getMySessions.mockResolvedValue([
+      session({ id: "done", title: "All sent", status: "completed" }),
+      session({ id: "part", title: "Half sent" }),
+      session({ id: "none", title: "Nothing sent", status: "completed" }),
+    ]);
+    admin.listPayouts.mockResolvedValue([
+      payout({ id: "1", sessionId: "done", status: "transferred" }),
+      payout({ id: "2", sessionId: "done", status: "transferred", type: "completion_release" }),
+      payout({ id: "3", sessionId: "part", status: "transferred" }),
+      payout({ id: "4", sessionId: "part", status: "pending", type: "completion_release" }),
+      payout({ id: "5", sessionId: "none", status: "pending" }),
+    ]);
+    render(<AdminSessionsPage />);
+    const row = async (title: string) => (await screen.findByText(title)).closest("li")!;
+    await waitFor(async () => expect(within(await row("All sent")).getByText("PAID OUT")).toBeTruthy());
+    expect(within(await row("Half sent")).getByText("PARTLY PAID OUT")).toBeTruthy();
+    expect(within(await row("Nothing sent")).getByText("PAID · PAYOUT DUE")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/escrow/i);
+  });
+
+  it("still lists sessions when the payout rows fail to load", async () => {
+    queries.getMySessions.mockResolvedValue([session({ id: "a", title: "Facade options" })]);
+    admin.listPayouts.mockRejectedValue(new Error("boom"));
+    render(<AdminSessionsPage />);
+    expect(await screen.findByText("Facade options")).toBeTruthy();
+    expect(await screen.findByText("PAID · PAYOUT PENDING")).toBeTruthy();
   });
 
   it("filters and searches", async () => {

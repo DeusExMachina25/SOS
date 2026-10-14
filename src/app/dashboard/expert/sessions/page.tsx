@@ -3,21 +3,16 @@
 import { Calendar as CalIcon, Video, Search, CalendarDays, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getMySessions, getMyPayments, confirmUpiPaymentReceived, updateSessionStatus } from "@/lib/data/queries";
+import { getMySessions, getMyPayments, getMyPayoutRows, confirmUpiPaymentReceived, updateSessionStatus } from "@/lib/data/queries";
+import PaymentBadgeChip from "@/components/dashboard/PaymentBadgeChip";
+import { paymentBadge, payoutProgressBySession, type PayoutProgress } from "@/lib/data/paymentBadge";
 import type { Session, Payment } from "@/lib/data/types";
-
-const PAYMENT_BADGE: Record<string, { label: string; className: string }> = {
-  unpaid: { label: "Unpaid", className: "bg-[var(--bg-surface-2)] text-[var(--text-muted)] border-[var(--border-strong)]" },
-  processing: { label: "Awaiting Confirmation", className: "bg-[var(--color-orange)]/10 text-[var(--color-orange)] border-[var(--color-orange)]/20" },
-  escrow_held: { label: "Escrow Held", className: "bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/20" },
-  released: { label: "Paid", className: "bg-[var(--color-green)]/10 text-[var(--color-green)] border-[var(--color-green)]/20" },
-  refunded: { label: "Refunded", className: "bg-[var(--bg-surface-2)] text-[var(--text-muted)] border-[var(--border-strong)]" },
-};
 
 export default function ExpertSessionsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [paymentsBySession, setPaymentsBySession] = useState<Map<string, Payment>>(new Map());
+  const [payoutProgress, setPayoutProgress] = useState<Map<string, PayoutProgress>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -34,6 +29,11 @@ export default function ExpertSessionsPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load consultations"))
       .finally(() => setLoading(false));
+
+    // Payout progress only refines the badge; if it can't load, the page still works.
+    getMyPayoutRows()
+      .then((rows) => setPayoutProgress(payoutProgressBySession(rows)))
+      .catch((err) => console.error("Failed to load payout progress", err));
   }, []);
 
   const needle = query.trim().toLowerCase();
@@ -45,11 +45,8 @@ export default function ExpertSessionsPage() {
   // A call is only joinable once paid; unpaid sessions show a payment prompt and refunded ones are over.
   const canJoin = (s: Session) => s.status === "scheduled" && s.paymentStatus !== "unpaid" && s.paymentStatus !== "refunded";
 
-  const badgeFor = (session: Session) => {
-    const payment = paymentsBySession.get(session.id);
-    if (payment?.status === "processing") return PAYMENT_BADGE.processing;
-    return PAYMENT_BADGE[session.paymentStatus] ?? PAYMENT_BADGE.unpaid;
-  };
+  const badgeFor = (session: Session) =>
+    paymentBadge({ viewer: "expert", session, payment: paymentsBySession.get(session.id), payouts: payoutProgress.get(session.id) });
 
   const handleConfirmPayment = async (sessionId: string) => {
     setError("");
@@ -168,9 +165,7 @@ export default function ExpertSessionsPage() {
                   )}
                 </div>
 
-                <div className={`inline-block px-3 py-1 mb-6 text-[10px] font-bold rounded-full uppercase tracking-widest border ${badge.className}`}>
-                  {badge.label}
-                </div>
+                <PaymentBadgeChip badge={badge} className="mb-6" />
 
                 <div className="flex items-center gap-6 text-sm font-mono-sos text-[var(--text-faint)] mb-8">
                   <div className="flex items-center gap-2"><CalIcon size={14} className={session.status === 'scheduled' ? "text-[var(--color-orange)]" : ""} /> {session.date}</div>

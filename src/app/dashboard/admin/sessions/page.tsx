@@ -3,34 +3,33 @@
 import { useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { getMySessions } from "@/lib/data/queries";
-import { recordRefund } from "@/lib/data/admin";
+import { recordRefund, listPayouts } from "@/lib/data/admin";
+import { paymentBadge, payoutProgressBySession, type PayoutProgress } from "@/lib/data/paymentBadge";
 import { canRefund, refundWarning } from "@/lib/data/adminRules";
 import { formatInr } from "@/lib/data/format";
-import type { PaymentStatus, Session } from "@/lib/data/types";
+import type { Session } from "@/lib/data/types";
 
 type Filter = "all" | "paid" | "unpaid" | "refunded";
 
-const PAYMENT_LABEL: Record<PaymentStatus, string> = {
-  unpaid: "Unpaid",
-  escrow_held: "Paid · held",
-  released: "Paid · direct to expert",
-  refunded: "Refunded",
-};
-
 export default function AdminSessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [progress, setProgress] = useState<Map<string, PayoutProgress>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
-  const load = () =>
+  const load = () => {
     // An admin's RLS scope is every session, so this is the whole platform.
-    getMySessions()
+    listPayouts()
+      .then((rows) => setProgress(payoutProgressBySession(rows.map((r) => ({ sessionId: r.sessionId, status: r.status })))))
+      .catch((err) => console.error("Failed to load payout progress", err));
+    return getMySessions()
       .then(setSessions)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load sessions"))
       .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     load();
@@ -111,7 +110,7 @@ export default function AdminSessionsPage() {
               <div className="flex items-center gap-4 shrink-0">
                 <div className="text-right">
                   <p className="font-display text-xl text-[var(--text-primary)]">{formatInr(s.amountInr)}</p>
-                  <p className="font-mono-sos text-[9px] tracking-[0.15em] text-[var(--text-muted)]">{PAYMENT_LABEL[s.paymentStatus].toUpperCase()}</p>
+                  <p className="font-mono-sos text-[9px] tracking-[0.15em] text-[var(--text-muted)]">{paymentBadge({ viewer: "admin", session: s, payouts: progress.get(s.id) }).label.toUpperCase()}</p>
                 </div>
                 {canRefund(s) && (
                   <button
