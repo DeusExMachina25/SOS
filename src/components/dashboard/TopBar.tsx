@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { Search, Bell, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
+import DashboardSearch from "./DashboardSearch";
+import NotificationBell from "./NotificationBell";
 
 interface TopBarProps {
   /** Breadcrumb tail — the current page name */
@@ -12,7 +14,8 @@ interface TopBarProps {
   onOpenProfile: () => void;
   /** Right-hand call to action, e.g. "Book a session" */
   action?: React.ReactNode;
-  notifications?: number;
+  /** Pages the search box can jump to. */
+  searchPages: { name: string; href: string }[];
 }
 
 export default function TopBar({
@@ -22,8 +25,9 @@ export default function TopBar({
   onToggleTheme,
   onOpenProfile,
   action,
-  notifications = 0
+  searchPages,
 }: TopBarProps) {
+  const dashboardRole = role === "expert" ? "expert" : "client";
   return (
     <header className="flex items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--bg-surface)] px-5 lg:px-7 h-[72px] shrink-0">
       {/* Breadcrumb */}
@@ -34,30 +38,9 @@ export default function TopBar({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Search */}
-        <label className="hidden md:flex items-center gap-2 border border-[var(--border)] bg-[var(--bg-base)] px-3 h-9 w-[200px] xl:w-[260px] focus-within:border-[var(--border-strong)] transition-colors">
-          <Search size={13} className="text-[var(--text-faint)] shrink-0" strokeWidth={1.75} />
-          <input
-            type="search"
-            placeholder="Search"
-            aria-label="Search the dashboard"
-            className="w-full bg-transparent font-inter text-[12px] text-[var(--text-primary)] placeholder:text-[var(--text-faint)] focus:outline-none"
-          />
-        </label>
+        <DashboardSearch role={dashboardRole} pages={searchPages} />
 
-        {/* Notifications */}
-        <button
-          type="button"
-          aria-label={`Notifications${notifications ? `, ${notifications} unread` : ""}`}
-          className="relative flex h-9 w-9 items-center justify-center border border-[var(--border)] text-[var(--text-muted)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
-        >
-          <Bell size={14} strokeWidth={1.75} />
-          {notifications > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center bg-[var(--color-orange)] px-1 font-mono-sos text-[8px] text-[var(--bg-base)] tabular-nums">
-              {notifications}
-            </span>
-          )}
-        </button>
+        <NotificationBell role={dashboardRole} />
 
         {/* Theme */}
         <button

@@ -235,6 +235,10 @@ export default function DashboardLayout({
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenProfile={() => setIsProfileOpen(true)}
+          searchPages={navGroups
+            .flatMap((g) => g.items)
+            .filter((item) => !item.onSelect)
+            .map((item) => ({ name: item.name, href: item.path }))}
         />
 
         <main id="main" className="flex-1 min-h-0 overflow-y-auto p-5 lg:p-7 pb-28 lg:pb-7">
