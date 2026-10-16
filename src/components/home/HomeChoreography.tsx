@@ -12,6 +12,7 @@ import MinimalStoryBox from "./MinimalStoryBox";
 import NineDotLoop from "../shared/NineDotLoop";
 import PositionTrackerBackground from "../shared/PositionTrackerBackground";
 import VideoDiorama from "./VideoDiorama";
+import HowItWorks from "./HowItWorks";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -32,6 +33,7 @@ export default function HomeChoreography() {
   const compassRef = useRef<HTMLDivElement>(null);
   const narrative1aRef = useRef<HTMLDivElement>(null);
   const narrative1bRef = useRef<HTMLDivElement>(null);
+  const howRef = useRef<HTMLDivElement>(null);
   const dioramaRef = useRef<HTMLDivElement>(null);
   const narrative2aRef = useRef<HTMLDivElement>(null);
   const narrative2bRef = useRef<HTMLDivElement>(null);
@@ -48,7 +50,7 @@ export default function HomeChoreography() {
 
     // Reset components to initial states
     const els = [
-      typewriterRef, compassRef, dioramaRef, figmaRef, ctaRef,
+      typewriterRef, compassRef, howRef, dioramaRef, figmaRef, ctaRef,
       narrative1aRef, narrative1bRef, narrative2aRef, narrative2bRef, narrative3Ref
     ];
     els.forEach(el => {
@@ -98,14 +100,16 @@ export default function HomeChoreography() {
         .to(narrative1aRef.current, { autoAlpha: 0, x: "-80vw", duration: 1.5 }, 4.0)
         .to(narrative1bRef.current, { autoAlpha: 1, y: 0, x: "-20vw", duration: 1.5 }, 4.2)
 
-      // Phase 4: Compass exits right, Narrative 1b exits right, Diorama enters right, Narrative 2a enters left
+      // Phase 4: Compass exits right, Narrative 1b exits right, How-it-works enters right, Narrative 2a enters left
       tl.to(compassRef.current, { autoAlpha: 0, x: "80vw", duration: 1.5 }, 6.0)
         .to(narrative1bRef.current, { autoAlpha: 0, x: "80vw", duration: 1.5 }, 6.0)
-        .to(dioramaRef.current, { autoAlpha: 1, y: 0, x: "20vw", duration: 1.5 }, 6.2)
+        .to(howRef.current, { autoAlpha: 1, y: 0, x: "20vw", duration: 1.5 }, 6.2)
         .to(narrative2aRef.current, { autoAlpha: 1, y: 0, x: "-20vw", duration: 1.5 }, 6.4)
 
-      // Phase 5: Diorama moves left, Narrative 2a exits left, Narrative 2b enters right
-      tl.to(dioramaRef.current, { x: "-20vw", duration: 1.5 }, 8.0)
+      // Phase 5: How-it-works exits right, Diorama enters left, Narrative 2a exits left, Narrative 2b enters right
+      tl.to(howRef.current, { autoAlpha: 0, x: "80vw", duration: 1.5 }, 8.0)
+        .set(dioramaRef.current, { x: "-20vw" }, 8.0)
+        .to(dioramaRef.current, { autoAlpha: 1, y: 0, duration: 1.5 }, 8.0)
         .to(narrative2aRef.current, { autoAlpha: 0, x: "-80vw", duration: 1.5 }, 8.0)
         .to(narrative2bRef.current, { autoAlpha: 1, y: 0, x: "20vw", duration: 1.5 }, 8.2)
 
@@ -144,14 +148,16 @@ export default function HomeChoreography() {
       tl.to(narrative1aRef.current, { autoAlpha: 0, y: "30vh", duration: 1.5 }, 4.0)
         .to(narrative1bRef.current, { ...enter, y: LOW }, 4.2);
 
-      // Phase 4: compass out, diorama in, "How a Session Works"
+      // Phase 4: compass out, how-it-works in, "How a Session Works"
       tl.to(compassRef.current, { autoAlpha: 0, y: "-34vh", duration: 1.5 }, 6.0)
         .to(narrative1bRef.current, { autoAlpha: 0, y: "30vh", duration: 1.5 }, 6.0)
-        .to(dioramaRef.current, { ...enter, y: TOP }, 6.2)
+        .to(howRef.current, { ...enter, y: TOP }, 6.2)
         .to(narrative2aRef.current, { ...enter, y: LOW }, 6.4);
 
-      // Phase 5: "Grounded in Trust"
-      tl.to(narrative2aRef.current, { autoAlpha: 0, y: "30vh", duration: 1.5 }, 8.0)
+      // Phase 5: how-it-works out, diorama in, "Grounded in Trust"
+      tl.to(howRef.current, { autoAlpha: 0, y: "-34vh", duration: 1.5 }, 8.0)
+        .to(dioramaRef.current, { ...enter, y: TOP }, 8.2)
+        .to(narrative2aRef.current, { autoAlpha: 0, y: "30vh", duration: 1.5 }, 8.0)
         .to(narrative2bRef.current, { ...enter, y: LOW }, 8.2);
 
       // Phase 6: diorama out, nine-dot puzzle in, "Don't just think it..."
@@ -223,6 +229,10 @@ export default function HomeChoreography() {
                 "Second Opinions see beyond the original facade and a fresh set of eyes can be the veneer to your plywood. Speak to one of our vetted experts who has no stake in your plan except making it truly yours."
               ]}
             />
+          </div>
+
+          <div ref={howRef} className="absolute z-10 pointer-events-auto">
+            <HowItWorks />
           </div>
 
           <div ref={dioramaRef} className="absolute z-10 pointer-events-auto">
