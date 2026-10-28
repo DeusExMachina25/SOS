@@ -4,11 +4,13 @@
  *
  * Run:  node scripts/seed-dev-users.mjs
  *
- * Reads keys from .env.local. NEVER run against production with these creds —
- * the shared password below is for local development only.
+ * Reads keys from .env.local. Refuses to run unless that project is marked as a
+ * dev project (DEV_SEED_PROJECT_REF, see scripts/lib/dev-guard.mjs): the shared
+ * password below is for throwaway dev projects only.
  */
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
+import { assertDevProject } from "./lib/dev-guard.mjs";
 
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")
@@ -19,6 +21,8 @@ const env = Object.fromEntries(
       return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
     })
 );
+
+assertDevProject(env, "seed-dev-users");
 
 const admin = createClient(
   env.NEXT_PUBLIC_SUPABASE_URL,

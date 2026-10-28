@@ -12,10 +12,9 @@ export const metadata: Metadata = {
   },
 };
 
-import Navbar from "@/components/layout/Navbar";
 import Preloader from "@/components/layout/Preloader";
-import SiteFooter from "@/components/layout/SiteFooter";
 import ScrollMemory from "@/components/layout/ScrollMemory";
+import SiteChrome from "@/components/layout/SiteChrome";
 
 export default function RootLayout({
   children,
@@ -48,11 +47,7 @@ export default function RootLayout({
         </a>
         <ScrollMemory />
         <Preloader />
-        <Navbar />
-        <main id="main" className="flex-1 mt-20 md:mt-24">
-          {children}
-        </main>
-        <SiteFooter />
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );

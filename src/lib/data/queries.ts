@@ -9,6 +9,10 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { canonicalTimeZone, isValidTimeZone } from "./slots";
+import { normalizeDisplayName } from "./format";
+import type { UnreadThread } from "./unread";
+import type { ExpertProfileValue } from "./invite";
 import {
   formatDuration,
   formatSessionDate,
@@ -83,6 +87,24 @@ export async function getMyProfile(): Promise<MyProfile | null> {
     fullName: (data.full_name as string) ?? "User",
     role: data.role as MyProfile["role"],
   };
+}
+
+/** Renames the signed-in user. Returns the saved (cleaned) name. */
+export async function setMyDisplayName(raw: string): Promise<string> {
+  const cleaned = normalizeDisplayName(raw);
+  if (!cleaned.ok) throw new Error(cleaned.error);
+  const sb = requireClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("You must be signed in.");
+
+  const { data, error } = await sb
+    .from("profiles")
+    .update({ full_name: cleaned.name })
+    .eq("id", userId)
+    .select("full_name");
+  if (error) throw new Error(`Failed to save name: ${error.message}`);
+  if (!data?.length) throw new Error("We couldn't find your profile to update.");
+  return cleaned.name;
 }
 
 // ---------------------------------------------------------------------------
@@ -211,6 +233,73 @@ export async function upsertMyExpertProfile(input: {
   });
 
   if (error) throw new Error(`Failed to save profile: ${error.message}`);
+}
+
+/**
+ * Submits the signed-in expert's profile for review. Allowed while the
+ * application is 'invited' or already 'profile_submitted' (so they can fix
+ * something before it is reviewed); once approved, rejected or suspended it is
+ * the admin's call, and the database refuses the change anyway.
+ */
+export async function submitExpertApplication(value: ExpertProfileValue): Promise<void> {
+  const sb = requireClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("You must be signed in.");
+
+  const fields = {
+    professional_title: value.professionalTitle,
+    bio: value.bio,
+    location: value.location,
+    timezone: value.timezone,
+    years_experience: value.yearsExperience,
+    session_rate_inr: value.sessionRateInr,
+    firm: value.firm,
+    coa_registration: value.coaRegistration,
+    credentials: value.credentials,
+    specialties: value.specialties,
+    languages: value.languages,
+    upi_id: value.upiId,
+    status: "profile_submitted",
+  };
+
+  const { data: existing, error: lookupError } = await sb
+    .from("expert_profiles")
+    .select("status")
+    .eq("profile_id", userId)
+    .maybeSingle();
+  if (lookupError) throw new Error(`Failed to check your application: ${lookupError.message}`);
+
+  if (existing) {
+    if (existing.status !== "invited" && existing.status !== "profile_submitted") {
+      throw new Error("Your profile can't be changed here right now. Contact us if something needs correcting.");
+    }
+    const { data, error } = await sb.from("expert_profiles").update(fields).eq("profile_id", userId).select("profile_id");
+    if (error) throw new Error(`Failed to save your profile: ${error.message}`);
+    if (!data?.length) throw new Error("Your profile couldn't be saved. Please try again.");
+    return;
+  }
+
+  // An expert account made by hand has no row yet. The database forces a new
+  // row's status to 'profile_submitted', whatever is sent.
+  const { error } = await sb.from("expert_profiles").insert({ profile_id: userId, ...fields });
+  if (error) throw new Error(`Failed to save your profile: ${error.message}`);
+}
+
+/** Sets the signed-in user's password and remembers that they chose one. */
+export async function setMyPassword(password: string): Promise<void> {
+  const sb = requireClient();
+  const { error } = await sb.auth.updateUser({ password, data: { password_set: true } });
+  if (error) throw new Error(error.message);
+}
+
+/** The signed-in user's email, and whether they've chosen a password yet (an invited expert hasn't). */
+export async function getMyAuthInfo(): Promise<{ email: string | null; passwordSet: boolean } | null> {
+  const sb = requireClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return null;
+  return { email: user.email ?? null, passwordSet: user.user_metadata?.password_set === true };
 }
 
 // ---------------------------------------------------------------------------
@@ -352,6 +441,21 @@ export async function getMyPayments(): Promise<Payment[]> {
   return ((data ?? []) as PaymentRow[]).map(mapPayment);
 }
 
+/**
+ * Payout status per session for the signed-in user. Row-level security lets an
+ * expert (or client) read the payout schedule of their own sessions, and an
+ * admin all of them.
+ */
+export async function getMyPayoutRows(): Promise<{ sessionId: string; status: string }[]> {
+  const sb = requireClient();
+  const { data, error } = await sb.from("payment_transfers").select("status, payments!inner ( session_id )");
+  if (error) throw new Error(`Failed to load payouts: ${error.message}`);
+  return ((data ?? []) as unknown as { status: string; payments: { session_id: string } | { session_id: string }[] | null }[]).flatMap((r) => {
+    const payment = Array.isArray(r.payments) ? r.payments[0] : r.payments;
+    return payment ? [{ sessionId: payment.session_id, status: r.status }] : [];
+  });
+}
+
 export async function getPaymentForSession(sessionId: string): Promise<Payment | null> {
   const sb = requireClient();
   const { data, error } = await sb
@@ -362,6 +466,15 @@ export async function getPaymentForSession(sessionId: string): Promise<Payment |
 
   if (error) throw new Error(`Failed to load payment: ${error.message}`);
   return data ? mapPayment(data as PaymentRow) : null;
+}
+
+/** Reads an error body without throwing when the server answered with HTML/empty (e.g. a 502). */
+async function readJson<T = Record<string, unknown>>(res: Response): Promise<T> {
+  try {
+    return (await res.json()) as T;
+  } catch {
+    return {} as T;
+  }
 }
 
 /**
@@ -377,8 +490,8 @@ export async function payMockRazorpay(sessionId: string): Promise<Payment> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sessionId }),
   });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error ?? "Failed to process payment");
+  const body = await readJson<{ error?: string; payment?: unknown }>(res);
+  if (!res.ok) throw new Error(body.error ?? `Failed to process payment (${res.status})`);
   return mapPayment(body.payment as PaymentRow);
 }
 
@@ -414,9 +527,10 @@ export async function payWithRazorpay(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sessionId }),
   });
-  const order = await orderRes.json();
-  if (!orderRes.ok) throw new Error(order.error ?? "Could not start payment");
+  const order = await readJson<{ error?: string; keyId: string; orderId: string; amount: number; currency: string; email?: string | null }>(orderRes);
+  if (!orderRes.ok) throw new Error(order.error ?? `Could not start payment (${orderRes.status})`);
   await loadRazorpayScript();
+  if (!window.Razorpay) throw new Error("The payment window is blocked. Disable any ad blocker for this site and try again.");
 
   return new Promise<boolean>((resolve, reject) => {
     const rzp = new window.Razorpay!({
@@ -435,11 +549,24 @@ export async function payWithRazorpay(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId, ...r }),
         });
-        if (res.ok) resolve(true);
-        else reject(new Error((await res.json()).error ?? "Payment could not be verified"));
+        if (res.ok) {
+          resolve(true);
+          return;
+        }
+        const body = await readJson<{ error?: string }>(res);
+        // The charge already went through at Razorpay; the webhook will still
+        // mark the session paid, so don't tell the user it simply failed.
+        reject(
+          new Error(
+            `${body.error ?? "Payment could not be verified"}. If money left your account it will show as paid here shortly; please don't pay again.`
+          )
+        );
       },
     });
-    rzp.on("payment.failed", () => reject(new Error("Payment failed. Please try again.")));
+    // Razorpay shows its own failure message and lets the user retry inside
+    // the same window, so a failed attempt must not settle this promise: a
+    // successful retry still needs to reach the handler above.
+    rzp.on("payment.failed", () => {});
     rzp.open();
   });
 }
@@ -480,6 +607,28 @@ export async function confirmUpiPaymentReceived(sessionId: string): Promise<void
   if (paymentError) throw new Error(`Failed to confirm payment: ${paymentError.message}`);
 
   // sessions.payment_status is derived from the payment by a DB trigger.
+}
+
+/**
+ * Sets the timezone the signed-in expert's availability and bookings are read
+ * in. Rejects anything that is not a real IANA zone: a bad value would
+ * silently fall back to the default for every client, which is worse than
+ * refusing it here.
+ */
+export async function setMyTimezone(timeZone: string): Promise<void> {
+  if (!isValidTimeZone(timeZone)) throw new Error("Choose a region timezone such as Asia/Kolkata.");
+  const sb = requireClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("You must be signed in.");
+
+  const { data, error } = await sb
+    .from("expert_profiles")
+    .update({ timezone: canonicalTimeZone(timeZone) })
+    .eq("profile_id", userId)
+    .select("profile_id");
+  if (error) throw new Error(`Failed to save timezone: ${error.message}`);
+  // RLS and a missing profile both look like "0 rows updated".
+  if (!data?.length) throw new Error("Complete your expert profile before setting a timezone.");
 }
 
 /** Sets the signed-in expert's UPI payout ID, shown to clients at checkout. */
@@ -672,7 +821,9 @@ export async function uploadVaultFile(
   if (!userId) throw new Error("You must be signed in to upload.");
 
   // Path is session-scoped so Storage policies can mirror the table's RLS.
-  const storagePath = `${sessionId}/${Date.now()}-${file.name}`;
+  // Keep the object key to safe characters; the original name is stored on the row.
+  const safeName = file.name.replace(/[^\w.-]+/g, "_").slice(-120) || "file";
+  const storagePath = `${sessionId}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await sb.storage
     .from(VAULT_BUCKET)
@@ -692,7 +843,11 @@ export async function uploadVaultFile(
     .select(VAULT_COLUMNS)
     .single();
 
-  if (error) throw new Error(`Failed to record file: ${error.message}`);
+  if (error) {
+    // Don't leave an unreachable object behind when the row insert fails.
+    await sb.storage.from(VAULT_BUCKET).remove([storagePath]);
+    throw new Error(`Failed to record file: ${error.message}`);
+  }
   return mapVaultFile(data as unknown as VaultRow);
 }
 
@@ -758,25 +913,22 @@ export async function getMyChatThreads(): Promise<ChatThreadSummary[]> {
   const rows = (threads ?? []) as unknown as ThreadRow[];
   if (rows.length === 0) return [];
 
-  const { data: recentMessages } = await sb
-    .from("messages")
-    .select("thread_id, body, created_at")
-    .in(
-      "thread_id",
-      rows.map((r) => r.id)
-    )
-    .order("created_at", { ascending: false });
-
+  // One newest-message lookup per thread: bounded by the thread count, unlike
+  // loading every message of every conversation just to keep the first of each.
   const lastByThread = new Map<string, { body: string; created_at: string }>();
-  for (const m of recentMessages ?? []) {
-    const threadId = m.thread_id as string;
-    if (!lastByThread.has(threadId)) {
-      lastByThread.set(threadId, {
-        body: m.body as string,
-        created_at: m.created_at as string,
-      });
-    }
-  }
+  await Promise.all(
+    rows.slice(0, 50).map(async (r) => {
+      const { data: last, error: lastErr } = await sb
+        .from("messages")
+        .select("body, created_at")
+        .eq("thread_id", r.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastErr) throw new Error(`Failed to load conversations: ${lastErr.message}`);
+      if (last) lastByThread.set(r.id, { body: last.body as string, created_at: last.created_at as string });
+    })
+  );
 
   return rows.map((row) => {
     const isClient = row.client_id === userId;
@@ -815,7 +967,20 @@ export async function getOrCreateThread(
     .select("id")
     .single();
 
-  if (error) throw new Error(`Failed to open chat: ${error.message}`);
+  if (error) {
+    // Two tabs (or the booking flow and the chat page) can race on the unique
+    // (client, expert) pair; the loser should just use the winner's thread.
+    if (error.code === "23505") {
+      const { data: raced } = await sb
+        .from("chat_threads")
+        .select("id")
+        .eq("client_id", clientId)
+        .eq("expert_id", expertId)
+        .maybeSingle();
+      if (raced?.id) return raced.id as string;
+    }
+    throw new Error(`Failed to open chat: ${error.message}`);
+  }
   return data.id as string;
 }
 
@@ -883,6 +1048,70 @@ export function subscribeToMessages(
         });
       }
     )
+    .subscribe();
+
+  return () => {
+    void sb.removeChannel(channel);
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Unread messages
+// ---------------------------------------------------------------------------
+
+/** The signed-in user's conversations that have unread messages (only those). */
+export async function getUnreadThreads(): Promise<UnreadThread[]> {
+  const sb = requireClient();
+  const { data, error } = await sb.rpc("my_unread_threads");
+  if (error) throw new Error(`Failed to load unread counts: ${error.message}`);
+  return ((data ?? []) as {
+    thread_id: string;
+    counterpart_id: string;
+    counterpart_name: string | null;
+    unread: number;
+    latest_at: string | null;
+  }[]).map((r) => ({
+    threadId: r.thread_id,
+    counterpartId: r.counterpart_id,
+    counterpartName: r.counterpart_name ?? "Someone",
+    unread: r.unread,
+    latestAt: r.latest_at,
+  }));
+}
+
+/**
+ * Marks a conversation read up to a message (or everything, if none is
+ * named). Naming the last message the user actually saw means one that
+ * arrived a moment earlier but was never displayed stays unread.
+ */
+export async function markThreadRead(threadId: string, upToMessageId?: string): Promise<void> {
+  const sb = requireClient();
+  const { error } = await sb.rpc("mark_thread_read", {
+    p_thread_id: threadId,
+    p_up_to_message_id: upToMessageId ?? null,
+  });
+  if (error) throw new Error(`Failed to mark conversation read: ${error.message}`);
+}
+
+/**
+ * One live feed of every new message the signed-in user may see (row-level
+ * security limits Realtime to their own conversations). Used for the sidebar
+ * badge and the conversation list; the open conversation uses the same feed.
+ */
+export function subscribeToMyMessages(onMessage: (message: Message) => void): () => void {
+  const sb = requireClient();
+  const channel = sb
+    .channel(`my-messages:${Math.random().toString(36).slice(2)}`)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+      const m = payload.new as Record<string, unknown>;
+      onMessage({
+        id: m.id as string,
+        threadId: m.thread_id as string,
+        senderId: m.sender_id as string,
+        body: m.body as string,
+        createdAt: m.created_at as string,
+      });
+    })
     .subscribe();
 
   return () => {

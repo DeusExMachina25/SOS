@@ -58,6 +58,9 @@ export async function GET(request: NextRequest) {
       { status: 402 }
     );
   }
+  if (session.payment_status === "refunded") {
+    return NextResponse.json({ error: "This session was refunded" }, { status: 409 });
+  }
   // Doors open 15 minutes before the start and close 60 minutes after the end.
   const now = Date.now();
   const opens = session.starts_at ? new Date(session.starts_at).getTime() - 15 * 60_000 : 0;

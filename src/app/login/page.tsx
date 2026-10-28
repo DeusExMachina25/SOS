@@ -20,7 +20,7 @@ function friendlyAuthError(err: unknown, fallback: string): string {
 }
 
 /** Where to go after signing in: the page the route guard bounced them from, if it belongs to their dashboard. */
-function postLoginPath(role: "client" | "expert"): string {
+function postLoginPath(role: "client" | "expert" | "admin"): string {
   const base = `/dashboard/${role}`;
   try {
     const from = new URLSearchParams(window.location.search).get("redirectedFrom");
@@ -121,7 +121,8 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithOtp({
           email: cleanedInput,
           options: {
-            emailRedirectTo: `${window.location.origin}${postLoginPath("client")}`,
+            // /auth/accept turns the link into a session first; the dashboard's route guard would bounce it.
+            emailRedirectTo: `${window.location.origin}/auth/accept`,
           }
         });
         if (error) throw error;
@@ -309,11 +310,13 @@ export default function LoginPage() {
           .eq("id", data.user.id)
           .single();
         
-        if (profileErr || !profile || profile.role !== 'expert') {
-          // Reject non-expert logins
+        if (profileErr || !profile || (profile.role !== 'expert' && profile.role !== 'admin')) {
+          // Reject anyone who is neither an invited expert nor an admin
           await supabase.auth.signOut();
-          throw new Error("Access denied: only pre-registered experts can log in here.");
+          throw new Error("Access denied: only pre-registered experts and admins can log in here.");
         }
+        router.push(postLoginPath(profile.role === 'admin' ? "admin" : "expert"));
+        return;
       }
       
       router.push(postLoginPath("expert"));

@@ -12,22 +12,25 @@ import {
   MessageSquare,
   Video,
   LogOut,
-  CircleUserRound,
   Settings,
   Moon,
-  Sun,
   X,
   UserCircle2,
-  Image as ImageIcon,
   Globe2,
   Smartphone,
-  Banknote,
-  Database,
+  Check,
   ShieldCheck,
-  Wifi,
-  Check
+  Wallet,
+  Receipt
 } from "lucide-react";
-import { getMyExpertProfile, setMyUpiId } from "@/lib/data/queries";
+import { getMyExpertProfile, getMyProfile, setMyUpiId, setMyTimezone, setMyDisplayName } from "@/lib/data/queries";
+import { COMMON_TIME_ZONES, describeTimeZone, resolveTimeZone, viewerTimeZone } from "@/lib/data/slots";
+import Sidebar, { type NavGroup } from "@/components/dashboard/Sidebar";
+import TopBar from "@/components/dashboard/TopBar";
+import { useUnreadThreads } from "@/components/dashboard/useUnreadThreads";
+import ExpertApplicationBanner from "@/components/dashboard/ExpertApplicationBanner";
+import type { ExpertStatus } from "@/lib/data/types";
+import { totalUnread, badgeText, unreadLabel } from "@/lib/data/unread";
 
 export default function DashboardLayout({
   children,
@@ -36,12 +39,22 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [currency, setCurrency] = useState("INR");
   const [theme, setTheme] = useState("dark");
+  const [displayName, setDisplayName] = useState("");
+  const [expertStatus, setExpertStatus] = useState<ExpertStatus | null>(null);
+  const [nameInput, setNameInput] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
+  const [nameError, setNameError] = useState("");
   const [upiId, setUpiId] = useState("");
   const [upiSaving, setUpiSaving] = useState(false);
   const [upiSaved, setUpiSaved] = useState(false);
   const [upiError, setUpiError] = useState("");
+  // The expert's stored timezone ("" until loaded), what their availability and bookings are read in.
+  const [expertZone, setExpertZone] = useState("");
+  const [zoneSaving, setZoneSaving] = useState(false);
+  const [zoneSaved, setZoneSaved] = useState(false);
+  const [zoneError, setZoneError] = useState("");
 
   // Load saved theme on mount
   useEffect(() => {
@@ -50,6 +63,29 @@ export default function DashboardLayout({
     setTheme(savedTheme);
     document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);
+
+  // The signed-in user's name, for the sidebar and the Preferences field.
+  useEffect(() => {
+    getMyProfile()
+      .then((profile) => setDisplayName(profile?.fullName ?? ""))
+      .catch((err) => console.error("Failed to load profile", err));
+  }, []);
+
+  useEffect(() => {
+    if (!isProfileOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the draft each time the panel opens
+    setNameInput(displayName);
+    setNameError("");
+  }, [isProfileOpen, displayName]);
+
+  useEffect(() => {
+    if (!isProfileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsProfileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isProfileOpen]);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -62,13 +98,45 @@ export default function DashboardLayout({
   const role = pathname.includes("/expert") ? "expert" : pathname.includes("/admin") ? "admin" : "client";
   const basePath = `/dashboard/${role}`;
 
+  // Unread messages, live. Admins have no inbox, so nothing is loaded for them.
+  const unreadThreads = useUnreadThreads(role !== "admin", pathname);
+  const unreadTotal = totalUnread(unreadThreads);
+
+  // Where an expert's application stands, re-read on every page so it updates as soon as they submit or are approved.
+  // An expert account with no profile row yet is treated as invited: they still have to complete one.
+  useEffect(() => {
+    if (role !== "expert") return;
+    getMyExpertProfile()
+      .then((p) => setExpertStatus(p ? p.status : "invited"))
+      .catch((err) => console.error("Failed to load application status", err));
+  }, [role, pathname]);
+
   // Load the expert's payout UPI ID when they open Preferences.
   useEffect(() => {
     if (!isProfileOpen || role !== "expert") return;
     getMyExpertProfile()
-      .then((profile) => setUpiId(profile?.upiId ?? ""))
+      .then((profile) => {
+        setUpiId(profile?.upiId ?? "");
+        setExpertZone(resolveTimeZone(profile?.timezone));
+      })
       .catch((err) => console.error(err));
   }, [isProfileOpen, role]);
+
+  const handleSaveName = async () => {
+    setNameError("");
+    setNameSaving(true);
+    try {
+      const saved = await setMyDisplayName(nameInput);
+      setDisplayName(saved);
+      setNameInput(saved);
+      setNameSaved(true);
+      setTimeout(() => setNameSaved(false), 2000);
+    } catch (err) {
+      setNameError(err instanceof Error ? err.message : "Failed to save name");
+    } finally {
+      setNameSaving(false);
+    }
+  };
 
   const handleSaveUpi = async () => {
     setUpiError("");
@@ -84,6 +152,24 @@ export default function DashboardLayout({
     }
   };
 
+  const handleZoneChange = async (next: string) => {
+    const previous = expertZone;
+    setExpertZone(next);
+    setZoneError("");
+    setZoneSaved(false);
+    setZoneSaving(true);
+    try {
+      await setMyTimezone(next);
+      setZoneSaved(true);
+      setTimeout(() => setZoneSaved(false), 2000);
+    } catch (err) {
+      setExpertZone(previous);
+      setZoneError(err instanceof Error ? err.message : "Failed to save timezone");
+    } finally {
+      setZoneSaving(false);
+    }
+  };
+
   // Breadcrumbs title calculations
   const pageName = pathname.endsWith("/vault")
     ? "Vault"
@@ -93,235 +179,237 @@ export default function DashboardLayout({
     ? "Sessions"
     : pathname.endsWith("/availability")
     ? "Availability"
+    : pathname.endsWith("/experts")
+    ? "Experts"
+    : pathname.endsWith("/payouts")
+    ? "Payouts"
     : pathname.includes("/video-call")
     ? "Video Call"
     : "Overview";
 
-  const navItems = [
-    { name: "Overview", icon: LayoutDashboard, path: `${basePath}`, colorClass: "text-[var(--color-primary)] group-hover/nav:text-[var(--color-primary)]" },
-    { name: "Sessions", icon: CalendarDays, path: `${basePath}/sessions`, colorClass: "text-[var(--color-orange)] group-hover/nav:text-[var(--color-orange)]" },
-    ...(role === "expert"
-      ? [{ name: "Availability", icon: CalendarClock, path: `${basePath}/availability`, colorClass: "text-[var(--color-primary)] group-hover/nav:text-[var(--color-primary)]" }]
-      : []),
-    { name: "Vault", icon: FolderLock, path: `${basePath}/vault`, colorClass: "text-[var(--color-green)] group-hover/nav:text-[var(--color-green)]" },
-    { name: "Messages", icon: MessageSquare, path: `${basePath}/chat`, colorClass: "text-[var(--color-orange)] group-hover/nav:text-[var(--color-orange)]" },
-    { name: "Video Call", icon: Video, path: `/dashboard/video-call`, colorClass: "text-[var(--color-primary)] group-hover/nav:text-[var(--color-primary)]" },
+  /* Grouped like a console rail: the work you do daily, the live room,
+     then the account. Mirrors the sidebar grammar of the reference. */
+  const adminNav: NavGroup[] = [
+    {
+      label: "Admin",
+      items: [
+        { name: "Overview", icon: LayoutDashboard, path: basePath },
+        { name: "Experts", icon: ShieldCheck, path: `${basePath}/experts` },
+        { name: "Payouts", icon: Wallet, path: `${basePath}/payouts` },
+        { name: "Sessions", icon: Receipt, path: `${basePath}/sessions` },
+      ],
+    },
+    {
+      label: "Account",
+      items: [{ name: "Settings", icon: Settings, path: basePath, onSelect: () => setIsProfileOpen(true) }],
+    },
   ];
 
+  const navGroups: NavGroup[] = role === "admin" ? adminNav : [
+    {
+      label: "Main",
+      items: [
+        { name: "Overview", icon: LayoutDashboard, path: `${basePath}` },
+        { name: "Sessions", icon: CalendarDays, path: `${basePath}/sessions` },
+        ...(role === "expert"
+          ? [{ name: "Availability", icon: CalendarClock, path: `${basePath}/availability` }]
+          : []),
+      ],
+    },
+    {
+      label: "Workspace",
+      items: [
+        { name: "Vault", icon: FolderLock, path: `${basePath}/vault` },
+        { name: "Messages", icon: MessageSquare, path: `${basePath}/chat`, badge: unreadTotal },
+        { name: "Video Call", icon: Video, path: `/dashboard/video-call` },
+      ],
+    },
+    {
+      label: "Account",
+      items: [
+        { name: "Settings", icon: Settings, path: `${basePath}`, onSelect: () => setIsProfileOpen(true) },
+      ],
+    },
+  ];
+
+  /* h-[100dvh], not min-h-screen: <main> below needs a definite height for its
+     own overflow-y-auto to scroll and for h-full children to resolve. */
   return (
-    <div className="min-h-screen flex flex-col relative bg-transparent overflow-x-hidden">
-      
-      {/* 1. THE GOLD STANDARD TOP HEADER */}
-      <header className="w-full h-20 z-[90] glass-panel border-b border-[var(--border-strong)] flex items-center justify-between px-8 shrink-0 relative backdrop-blur-xl">
-        {/* BREADCRUMBS */}
-        <div className="flex items-center gap-2 text-xs font-mono-sos text-[var(--text-muted)] tracking-wider">
-          <span className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer">SOS</span>
-          <span className="text-[var(--color-primary)]">/</span>
-          <span className="capitalize opacity-60">{role}</span>
-          <span className="text-[var(--color-primary)]">/</span>
-          <span className="text-[var(--text-primary)] font-bold">{pageName}</span>
-        </div>
+    <div className="h-[100dvh] overflow-hidden flex relative bg-transparent">
 
-        {/* LIVE SYSTEM STATUS COCKPIT */}
-        <div className="hidden lg:flex items-center gap-6 bg-[var(--bg-base)] px-5 py-2.5 rounded-full border border-[var(--border)] shadow-inner">
-          <div className="flex items-center gap-2 text-[10px] font-mono-sos font-bold text-[var(--text-muted)]">
-            <Database size={12} className="text-[var(--color-green)]" />
-            <span>DB SYNC</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-green)] animate-pulse"></span>
+      <Sidebar
+        groups={navGroups}
+        role={role}
+        footer={
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 shrink-0 border border-[var(--border-strong)] overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://api.dicebear.com/7.x/shapes/svg?seed=SOS_${role}&backgroundColor=transparent`}
+                alt=""
+                className="h-full w-full p-1 opacity-80"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-inter text-[12px] text-[var(--text-primary)] truncate">
+                {displayName || `${role.charAt(0).toUpperCase()}${role.slice(1)} account`}
+              </p>
+              <p className="font-mono-sos text-[8px] tracking-[0.2em] text-[var(--text-faint)]">
+                Online &amp; secure
+              </p>
+            </div>
+            <Link
+              href="/login"
+              aria-label="Sign out"
+              className="flex h-7 w-7 items-center justify-center border border-[var(--border)] text-[var(--text-faint)] transition-colors hover:border-[var(--color-orange)] hover:text-[var(--color-orange)]"
+            >
+              <LogOut size={12} strokeWidth={1.75} />
+            </Link>
           </div>
-          <div className="h-3 w-px bg-[var(--border-strong)]"></div>
-          <div className="flex items-center gap-2 text-[10px] font-mono-sos font-bold text-[var(--text-muted)]">
-            <ShieldCheck size={12} className="text-[var(--color-primary)]" />
-            <span>AES-256</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]"></span>
-          </div>
-          <div className="h-3 w-px bg-[var(--border-strong)]"></div>
-          <div className="flex items-center gap-2 text-[10px] font-mono-sos font-bold text-[var(--text-muted)]">
-            <Wifi size={12} className="text-[var(--color-green)]" />
-            <span>LIVEKIT AUDIO</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-green)] animate-pulse"></span>
-          </div>
-        </div>
+        }
+      />
 
-        {/* PROFILE BADGE & STATUS */}
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden sm:block">
-            <p className="text-xs font-bold text-[var(--text-primary)] capitalize">{role} Account</p>
-            <p className="text-[9px] font-mono-sos text-[var(--text-faint)] tracking-widest uppercase">Safe Connect</p>
-          </div>
-          <div 
-            onClick={() => setIsProfileOpen(true)}
-            className="w-9 h-9 rounded-full bg-[var(--bg-surface-2)] border border-[var(--border-strong)] flex items-center justify-center relative overflow-hidden cursor-pointer hover:border-[var(--color-primary)] transition-all"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=SOS_${role}&backgroundColor=transparent`} alt="Profile" className="w-full h-full p-1 opacity-80" />
-            <div className="absolute bottom-0 right-0 w-2 h-2 bg-[var(--color-green)] rounded-full border border-[var(--bg-base)]"></div>
-          </div>
-        </div>
-      </header>
+      <div className="flex flex-1 flex-col min-w-0">
+        <TopBar
+          pageName={pageName}
+          role={role}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenProfile={() => setIsProfileOpen(true)}
+          unreadThreads={unreadThreads}
+          searchPages={navGroups
+            .flatMap((g) => g.items)
+            .filter((item) => !item.onSelect)
+            .map((item) => ({ name: item.name, href: item.path }))}
+        />
 
-      {/* 2. THE HORIZONTAL MAGNETIC ISLAND */}
-      <aside className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] glass-panel border border-[var(--border-strong)] shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[24px] flex flex-row items-center justify-center px-6 w-max max-w-[95vw] group transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bottom-8 hover:px-8 hover:shadow-[0_30px_60px_rgba(0,0,0,0.6)] backdrop-blur-3xl h-[68px]">
+        <main id="main" className="flex-1 min-h-0 overflow-y-auto p-5 lg:p-7 pb-28 lg:pb-7">
+          {role === "expert" && !pathname.endsWith("/onboarding") && <ExpertApplicationBanner status={expertStatus} />}
+          {children}
+        </main>
+      </div>
 
-        {/* NAVIGATION LINKS */}
-        <nav className="flex flex-row items-center justify-center gap-1 md:gap-3 w-full h-full">
-          {navItems.map((item) => (
-            <Link 
-              key={item.name} 
+      {/* Mobile rail — the sidebar collapses below lg, so the same routes
+          ride the bottom edge instead. */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] flex items-stretch border-t border-[var(--border-strong)] bg-[var(--bg-overlay)] backdrop-blur-xl">
+        {navGroups.flatMap(g => g.items).filter(item => !item.onSelect).slice(0, 5).map(item => {
+          const active = pathname === item.path;
+          return (
+            <Link
+              key={item.name}
               href={item.path}
-              className={`group/nav flex flex-col items-center justify-center gap-1 w-[72px] sm:w-[84px] py-1.5 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.08] font-inter text-xs tracking-wide font-semibold whitespace-nowrap h-full relative ${
-                pathname === item.path 
-                  ? "text-[var(--text-primary)]" 
-                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              aria-current={active ? "page" : undefined}
+              className={`relative flex flex-1 flex-col items-center justify-center gap-1 py-3 transition-colors ${
+                active ? "text-[var(--color-primary)]" : "text-[var(--text-muted)]"
               }`}
             >
-              {/* Active Indicator */}
-              {pathname === item.path && (
-                <motion.div layoutId="active-nav-indicator" className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_8px_var(--color-primary)]" />
-              )}
-              <item.icon size={20} className={`shrink-0 transition-colors duration-300 z-10 ${pathname === item.path ? item.colorClass.split(" ")[0] : `text-[var(--text-muted)] ${item.colorClass}`}`} />
-              <div className="absolute top-[60%] opacity-0 group-hover/nav:opacity-100 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] translate-y-2 group-hover/nav:translate-y-0 flex flex-col items-center">
-                <span className="text-[8px] uppercase tracking-[0.18em] font-bold mt-1">{item.name}</span>
-              </div>
-            </Link>
-          ))}
-          
-          <div className="w-px h-6 bg-[var(--border-strong)] mx-1"></div>
-
-          {/* ACCOUNT DROPDOWN */}
-          <div className="relative group/account h-full flex flex-col justify-center items-center w-[72px] sm:w-[84px]">
-            <div className="cursor-pointer flex flex-col items-center justify-center gap-1 w-full py-1.5 rounded-2xl border border-transparent transition-all duration-300 hover:-translate-y-1 hover:scale-[1.08] h-full relative">
-              <CircleUserRound size={22} strokeWidth={1.5} className="text-[var(--text-muted)] group-hover/account:text-[var(--color-primary)] transition-colors duration-300 z-10" />
-              <div className="absolute top-[60%] opacity-0 group-hover/account:opacity-100 transition-all duration-500 translate-y-2 group-hover/account:translate-y-0 flex flex-col items-center">
-                <span className="text-[8px] uppercase tracking-[0.18em] font-bold mt-1 text-[var(--color-primary)]">{role}</span>
-              </div>
-            </div>
-
-            {/* Dropdown Menu (Popout Up) */}
-            <div className="absolute bottom-[115%] right-1/2 translate-x-1/2 w-72 p-4 rounded-[24px] glass-panel opacity-0 pointer-events-none group-hover/account:opacity-100 group-hover/account:pointer-events-auto transition-all duration-300 translate-y-4 group-hover/account:translate-y-0 flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-[var(--border-strong)] z-[110] backdrop-blur-3xl">
-              <div className="px-4 py-3 border-b border-[var(--border)] mb-2 text-center">
-                <p className="text-sm font-bold text-[var(--text-primary)] capitalize font-display tracking-wide">{role} Profile</p>
-                <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-green)] shadow-[0_0_8px_rgba(184,207,79,0.8)] animate-pulse"></div>
-                  <p className="text-[8px] text-[var(--text-muted)] tracking-widest uppercase font-mono-sos">Online & Secure</p>
-                </div>
-              </div>
-              
-              <button onClick={() => setIsProfileOpen(true)} className="w-full px-4 py-3 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)] rounded-xl transition-all flex items-center justify-between font-inter font-bold tracking-wider group">
-                <Settings size={16} className="text-[var(--text-faint)] group-hover:text-[var(--color-primary)] transition-colors" />
-                Preferences
-              </button>
-              <button onClick={toggleTheme} className="w-full px-4 py-3 mt-0.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)] rounded-xl transition-all flex items-center justify-between font-inter font-bold tracking-wider group">
-                {theme === "dark" ? (
-                  <>
-                    <Sun size={16} className="text-[var(--text-faint)] group-hover:text-[var(--color-primary)] transition-colors" />
-                    Switch to Light
-                  </>
-                ) : (
-                  <>
-                    <Moon size={16} className="text-[var(--text-faint)] group-hover:text-[var(--color-primary)] transition-colors" />
-                    Switch to Dark
-                  </>
+              {active && <span className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />}
+              <span className="relative">
+                <item.icon size={17} strokeWidth={1.75} />
+                {typeof item.badge === "number" && item.badge > 0 && (
+                  <span
+                    aria-label={unreadLabel(item.badge)}
+                    className="absolute -top-2 -right-3 flex h-3.5 min-w-3.5 items-center justify-center bg-[var(--color-orange)] px-0.5 font-mono-sos text-[8px] leading-none text-[var(--bg-base)] tabular-nums"
+                  >
+                    {badgeText(item.badge)}
+                  </span>
                 )}
-              </button>
-              
-              <div className="w-full h-px bg-[var(--border)] my-2"></div>
-              
-              <Link href="/login" className="px-4 py-3 text-xs text-[var(--color-orange)] hover:bg-[rgba(255,91,46,0.1)] rounded-xl transition-all flex items-center justify-between font-inter font-bold border border-transparent hover:border-[rgba(255,91,46,0.2)] tracking-wider group">
-                <LogOut size={16} className="transition-transform group-hover:-translate-x-0.5" />
-                Secure Sign Out
-              </Link>
-            </div>
-          </div>
-        </nav>
-      </aside>
+              </span>
+              <span className="font-mono-sos text-[7px] tracking-[0.15em]">{item.name}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
-      {/* Main Content Area */}
-      <main className="flex-1 w-full pl-[50px] pr-[50px] pt-6 pb-32 xl:pb-24 relative transition-all duration-500 min-w-0 z-10 xl:h-[calc(100vh-80px)] xl:overflow-hidden flex flex-col">
-        {children}
-      </main>
-
-      {/* PROFILE PREFERENCES MODAL */}
+      {/* PROFILE PREFERENCES MODAL — only controls that do something live here. */}
       <AnimatePresence>
         {isProfileOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9999] bg-[var(--bg-overlay)] backdrop-blur-md flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Profile preferences"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 250 }}
               className="glass-panel p-10 max-w-2xl w-full relative border-organic shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-y-auto max-h-[90vh] backdrop-blur-2xl"
             >
-              <button 
+              <button
                 onClick={() => setIsProfileOpen(false)}
+                aria-label="Close"
                 className="absolute top-8 right-8 text-[var(--text-muted)] hover:text-white transition-colors p-2 rounded-full hover:bg-[var(--bg-surface-2)] z-50"
               >
                 <X size={24} />
               </button>
-              
+
               <h2 className="font-display text-4xl font-bold mb-2 text-embossed">Profile Preferences</h2>
-              <p className="text-xs text-[var(--text-muted)] mb-10 font-mono-sos uppercase tracking-widest">Customize your SOS experience</p>
+              <p className="text-xs text-[var(--text-muted)] mb-10 font-mono-sos uppercase tracking-widest">Changes save as you make them</p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                {/* Left Col: Identity */}
+                {/* Left Col: who you are, how it looks */}
                 <div className="space-y-8">
                   <div>
-                    <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><UserCircle2 size={14} className="text-[var(--color-primary)]"/> DISPLAY NAME</label>
-                    <input type="text" defaultValue="Client" className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-lg outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner font-bold" />
+                    <label htmlFor="pref-name" className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2">
+                      <UserCircle2 size={14} className="text-[var(--color-primary)]"/> DISPLAY NAME
+                    </label>
+                    <div className="flex gap-3">
+                      <input
+                        id="pref-name"
+                        type="text"
+                        value={nameInput}
+                        maxLength={120}
+                        autoComplete="name"
+                        onChange={(e) => { setNameInput(e.target.value); setNameError(""); }}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !nameSaving) handleSaveName(); }}
+                        className="flex-1 min-w-0 bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-lg outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner font-bold"
+                      />
+                      <button
+                        onClick={handleSaveName}
+                        disabled={nameSaving || nameInput.trim() === displayName}
+                        className="px-6 rounded-2xl bg-[var(--bg-surface-2)] border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-bold hover:border-[var(--color-green)] transition-all disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {nameSaved ? <Check size={14} className="text-[var(--color-green)]" aria-label="Saved" /> : nameSaving ? "..." : "Save"}
+                      </button>
+                    </div>
+                    {nameError && <p className="text-[10px] text-[var(--color-orange)] mt-2">{nameError}</p>}
+                    <p className="text-[10px] text-[var(--text-faint)] mt-2 italic">*{role === "expert" ? "Clients see this on your profile and in messages." : "Your expert sees this on bookings and in messages."}</p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><ImageIcon size={14} className="text-[var(--color-orange)]"/> AVATAR SELECTION</label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className={`aspect-square rounded-2xl border-2 cursor-pointer transition-all ${i === 1 ? 'border-[var(--color-primary)] shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)] bg-[var(--color-primary)]/10' : 'border-[var(--border)] hover:border-[var(--border-strong)] bg-[var(--bg-base)]'} flex items-center justify-center overflow-hidden`}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=SOS${i}&backgroundColor=transparent`} alt={`Avatar ${i}`} className="w-full h-full opacity-80 hover:opacity-100 p-2" />
-                        </div>
-                      ))}
+                    <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Moon size={14} className="text-[var(--color-primary)]"/> INTERFACE THEME</label>
+                    <div className="flex bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl p-1 shadow-inner">
+                      <button onClick={() => { setTheme("dark"); document.documentElement.setAttribute("data-theme", "dark"); localStorage.setItem("sos-theme", "dark"); }} aria-pressed={theme === "dark"} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${theme === "dark" ? "text-white bg-[var(--bg-surface-2)] shadow-md border border-[var(--border)]" : "text-[var(--text-muted)]"}`}>Dark</button>
+                      <button onClick={() => { setTheme("light"); document.documentElement.setAttribute("data-theme", "light"); localStorage.setItem("sos-theme", "light"); }} aria-pressed={theme === "light"} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${theme === "light" ? "text-primary bg-[var(--bg-surface-2)] shadow-md border border-[var(--border)]" : "text-[var(--text-muted)]"}`}>Light</button>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Col: Settings */}
+                {/* Right Col: money and time */}
                 <div className="space-y-8">
-                  
-                  {/* Currency Selection */}
-                  <div>
-                    <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Banknote size={14} className="text-[var(--color-green)]"/> DEFAULT CURRENCY</label>
-                    <select 
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer font-bold"
-                    >
-                      <option value="INR">₹ INR (Indian Rupee)</option>
-                      <option value="USD">$ USD (US Dollar)</option>
-                      <option value="EUR">€ EUR (Euro)</option>
-                    </select>
-                  </div>
-
                   {role === "expert" && (
                     <div>
-                      <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Smartphone size={14} className="text-[var(--color-green)]"/> PAYOUT UPI ID</label>
+                      <label htmlFor="pref-upi" className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Smartphone size={14} className="text-[var(--color-green)]"/> PAYOUT UPI ID</label>
                       <div className="flex gap-3">
                         <input
+                          id="pref-upi"
                           type="text"
                           value={upiId}
                           onChange={(e) => { setUpiId(e.target.value); setUpiError(""); }}
                           placeholder="yourname@upi"
-                          className="flex-1 bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner font-bold"
+                          className="flex-1 min-w-0 bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner font-bold"
                         />
                         <button
                           onClick={handleSaveUpi}
                           disabled={upiSaving}
                           className="px-6 rounded-2xl bg-[var(--bg-surface-2)] border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-bold hover:border-[var(--color-green)] transition-all disabled:opacity-50 flex items-center gap-2"
                         >
-                          {upiSaved ? <Check size={14} className="text-[var(--color-green)]" /> : upiSaving ? "..." : "Save"}
+                          {upiSaved ? <Check size={14} className="text-[var(--color-green)]" aria-label="Saved" /> : upiSaving ? "..." : "Save"}
                         </button>
                       </div>
                       {upiError && <p className="text-[10px] text-[var(--color-orange)] mt-2">{upiError}</p>}
@@ -330,45 +418,44 @@ export default function DashboardLayout({
                   )}
 
                   <div>
-                    <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Globe2 size={14} className="text-[var(--color-primary)]"/> GLOBAL TIMEZONE</label>
-                    <select className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer font-bold">
-                      <option>Indian Standard Time (IST)</option>
-                      <option>Eastern Standard Time (EST)</option>
-                      <option>Pacific Standard Time (PST)</option>
-                      <option>Greenwich Mean Time (GMT)</option>
-                    </select>
-                    <p className="text-[10px] text-[var(--text-faint)] mt-2 italic">*Experts can adjust their availability from their profile settings.</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Moon size={14} className="text-[var(--color-primary)]"/> INTERFACE THEME</label>
-                    <div className="flex bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl p-1 shadow-inner">
-                      <button onClick={() => { setTheme("dark"); document.documentElement.setAttribute("data-theme", "dark"); localStorage.setItem("sos-theme", "dark"); }} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${theme === "dark" ? "text-white bg-[var(--bg-surface-2)] shadow-md border border-[var(--border)]" : "text-[var(--text-muted)]"}`}>Dark</button>
-                      <button onClick={() => { setTheme("light"); document.documentElement.setAttribute("data-theme", "light"); localStorage.setItem("sos-theme", "light"); }} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${theme === "light" ? "text-primary bg-[var(--bg-surface-2)] shadow-md border border-[var(--border)]" : "text-[var(--text-muted)]"}`}>Light</button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2"><Smartphone size={14} className="text-[var(--color-orange)]"/> NOTIFICATION ROUTING</label>
-                    <div className="space-y-3">
-                      <label className="flex items-center justify-between p-4 bg-[var(--bg-base)] border border-[var(--border)] rounded-2xl cursor-pointer hover:border-[var(--border-strong)] transition-colors shadow-inner">
-                        <span className="text-xs font-bold text-[var(--text-primary)]">Email Receipts</span>
-                        <input type="checkbox" defaultChecked className="w-5 h-5 accent-[var(--color-primary)]" />
-                      </label>
-                      <label className="flex items-center justify-between p-4 bg-[var(--bg-base)] border border-[var(--border)] rounded-2xl cursor-pointer hover:border-[var(--border-strong)] transition-colors shadow-inner">
-                        <span className="text-xs font-bold text-[var(--text-primary)]">SMS Urgent Alerts</span>
-                        <input type="checkbox" defaultChecked className="w-5 h-5 accent-[var(--color-primary)]" />
-                      </label>
-                    </div>
+                    <label htmlFor="pref-timezone" className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest flex items-center gap-2">
+                      <Globe2 size={14} className="text-[var(--color-primary)]"/> {role === "expert" ? "YOUR TIMEZONE" : "TIMEZONE"}
+                      {zoneSaved && <Check size={14} className="text-[var(--color-green)]" aria-label="Saved" />}
+                    </label>
+                    {role === "expert" ? (
+                      <>
+                        <select
+                          id="pref-timezone"
+                          value={expertZone}
+                          disabled={!expertZone || zoneSaving}
+                          onChange={(e) => handleZoneChange(e.target.value)}
+                          className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer font-bold disabled:opacity-60"
+                        >
+                          {!expertZone && <option value="">Loading…</option>}
+                          {[...new Set([...(expertZone ? [expertZone] : []), ...COMMON_TIME_ZONES])]
+                            .sort((x, y) => (x === expertZone ? -1 : y === expertZone ? 1 : 0))
+                            .map((zone) => (
+                              <option key={zone} value={zone}>{describeTimeZone(zone)}</option>
+                            ))}
+                        </select>
+                        {zoneError && <p className="text-[10px] text-[var(--color-orange)] mt-2">{zoneError}</p>}
+                        <p className="text-[10px] text-[var(--text-faint)] mt-2 italic">*Your weekly availability and the dates clients pick are read in this timezone. Clients see your times converted to theirs.</p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-[var(--text-primary)] font-bold px-1">
+                        {describeTimeZone(viewerTimeZone())}
+                        <span className="block text-[10px] text-[var(--text-faint)] mt-2 italic font-normal">*Taken from this device. Booking times are shown in your expert&apos;s timezone with your own time beside each one.</span>
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={() => setIsProfileOpen(false)}
                 className="btn-sos-filled w-full py-5 text-lg text-center justify-center rounded-2xl tracking-widest mt-10 shadow-[0_10px_30px_rgba(var(--color-primary-rgb),0.3)]"
               >
-                Save Preferences
+                Done
               </button>
             </motion.div>
           </motion.div>

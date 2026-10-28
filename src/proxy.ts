@@ -30,6 +30,20 @@ export async function proxy(request: NextRequest) {
 
   const clientSection = pathname.startsWith("/dashboard/client");
   const expertSection = pathname.startsWith("/dashboard/expert");
+  const adminSection = pathname === "/dashboard/admin" || pathname.startsWith("/dashboard/admin/");
+
+  if (user && (adminSection || pathname === "/dashboard")) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+    const role = profile?.role;
+    if (adminSection && role !== "admin") {
+      // Not an admin: send them to their own dashboard. (The database is the
+      // real gate; this just keeps the pages from loading empty.)
+      return NextResponse.redirect(new URL(role === "expert" ? "/dashboard/expert" : "/dashboard/client", request.url));
+    }
+    if (pathname === "/dashboard" && role === "admin") {
+      return NextResponse.redirect(new URL("/dashboard/admin", request.url));
+    }
+  }
 
   if (user && (clientSection || expertSection)) {
     const { data: profile } = await supabase
