@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "backend/**",
+    // Design source files (logo prototypes, mock-ups); not part of the app.
+    "design/**",
   ]),
 ]);
 

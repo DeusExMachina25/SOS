@@ -1,0 +1,39 @@
+# Runs on every pull request and every push to main.
+# A red check means something below failed; open the run to see which step.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Unit tests
+        run: npm test
+      - name: Database rules (migrations + RLS attacks on an in-process Postgres)
+        run: npm run test:db
+      - name: Combined migration file is up to date
+        run: |
+          node scripts/build-all-migrations.mjs
+          git diff --exit-code supabase/deploy/all_migrations.sql || {
+            echo "::error::Run 'node scripts/build-all-migrations.mjs' and commit the result."; exit 1; }
+      - name: Production build
+        run: npm run build

@@ -53,3 +53,7 @@ rehearsal-shots/
 
 # audit output
 /reports/
+
+# playwright output
+/test-results/
+/playwright-report/
