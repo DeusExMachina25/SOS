@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { subscribePointer } from "@/lib/motion/pointer";
 
 interface CompassProps {
   tiltMode?: '2d' | '2.5d' | '3d';
@@ -23,10 +24,11 @@ export default function Compass({ tiltMode = '2d', style, className = "" }: Comp
     let lastScrollY = window.scrollY;
     let rafId: number;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-    };
+    // Mouse on a computer, tilt on a phone
+    const unsubscribePointer = subscribePointer(({ x, y }) => {
+      mouseX = x;
+      mouseY = y;
+    });
 
     const handleScroll = () => {
       isSpinning = true;
@@ -36,7 +38,6 @@ export default function Compass({ tiltMode = '2d', style, className = "" }: Comp
       }, 150);
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("scroll", handleScroll);
 
     const animate = () => {
@@ -74,7 +75,7 @@ export default function Compass({ tiltMode = '2d', style, className = "" }: Comp
     rafId = requestAnimationFrame(animate);
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
+      unsubscribePointer();
       window.removeEventListener("scroll", handleScroll);
       cancelAnimationFrame(rafId);
       clearTimeout(spinTimeout);

@@ -521,35 +521,6 @@ body::before {
   );
 }
 
-/* Measurement columns */
-.pt-grid {
-  position: absolute;
-  inset: 0 2rem;
-  display: flex;
-  gap: 8px;
-}
-.pt-col {
-  position: relative;
-  flex: 1 1 auto;
-  background-color: var(--color-primary-pale);
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  overflow: hidden;
-}
-.pt-fill {
-  position: absolute;
-  inset: 0;
-  transform: scaleY(0);
-  transform-origin: bottom center;
-  background: linear-gradient(
-    to top,
-    rgba(255, 218, 185, 0.10),
-    rgba(255, 218, 185, 0.01) 65%,
-    transparent
-  );
-  will-change: transform;
-}
-
 /* Left rail ruler */
 .pt-rail {
   position: absolute;
@@ -626,8 +597,6 @@ body::before {
 }
 
 @media (max-width: 767px) {
-  .pt-col-wide-only { display: none; }
-  .pt-grid { inset: 0 1rem; }
   .pt-scan { left: 1rem; right: 1rem; }
   .pt-hud { right: 1rem; }
 }

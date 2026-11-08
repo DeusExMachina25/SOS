@@ -9,6 +9,7 @@ import FacadeSectionCut from "./FacadeSectionCut";
 import VeneerStack from "./VeneerStack";
 import VettingColumns from "./VettingColumns";
 import { submitInquiry } from "@/lib/inquiries";
+import { subscribePointer } from "@/lib/motion/pointer";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -141,15 +142,11 @@ export default function UsChoreography() {
     const heroXTo = gsap.quickTo(heroImageRef.current, "x", { duration: 0.8, ease: "power3.out" });
     const heroYTo = gsap.quickTo(heroImageRef.current, "y", { duration: 0.8, ease: "power3.out" });
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const centerX = e.clientX / window.innerWidth - 0.5;
-      const centerY = e.clientY / window.innerHeight - 0.5;
-      
-      heroXTo(centerX * 50); 
-      heroYTo(centerY * 50);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
+    // Mouse on a computer, tilt on a phone
+    const unsubscribePointer = subscribePointer(({ x, y }) => {
+      heroXTo((x / window.innerWidth - 0.5) * 50);
+      heroYTo((y / window.innerHeight - 0.5) * 50);
+    });
 
     // Hero Text Reveal
     gsap.fromTo(heroTextRef.current, 
@@ -283,7 +280,7 @@ export default function UsChoreography() {
     }
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
+      unsubscribePointer();
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
   }, []);
