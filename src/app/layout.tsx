@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "SOS | Second Opinions",
   description: "Book an hour with a vetted architect or designer for a second opinion on your plans.",
   openGraph: {
-    title: "SOS | Second Opinions",
+    title: "SOS | Expert Consultation",
     description: "Book an hour with a vetted architect or designer for a second opinion on your plans.",
     type: "website",
   },
