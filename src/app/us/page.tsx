@@ -2,7 +2,7 @@ import PageBlocks from "@/components/blocks/PageBlocks";
 
 export const metadata = {
   title: "About Us | SOS",
-  description: "Why we started SOS and how we choose the experts you meet.",
+  description: "The Genesis and Manifesto of SOS",
 };
 
 /** Blocks and their order are set in src/config/pageLayout.ts. */
