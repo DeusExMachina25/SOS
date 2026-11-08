@@ -106,23 +106,23 @@ function attach(): () => void {
   cleanups.push(() => window.removeEventListener("touchmove", onTouch));
 
   if (!reduceMotion && typeof DeviceOrientationEvent !== "undefined") {
-    const listen = () => {
-      window.addEventListener("deviceorientation", onOrientation);
-      cleanups.push(() => window.removeEventListener("deviceorientation", onOrientation));
-    };
+    // Listen straight away: browsers that need no permission start sending
+    // tilt now, and the rest start once the visitor allows it below.
+    window.addEventListener("deviceorientation", onOrientation);
+    cleanups.push(() => window.removeEventListener("deviceorientation", onOrientation));
 
     const Orientation = DeviceOrientationEvent as unknown as {
       requestPermission?: () => Promise<"granted" | "denied">;
     };
 
     if (typeof Orientation.requestPermission === "function") {
-      // iOS: the prompt can only be opened from a tap.
+      // iOS (and some newer browsers): the prompt can only open from a tap.
       const ask = () => {
         window.removeEventListener("touchend", ask);
         window.removeEventListener("click", ask);
-        Orientation.requestPermission!()
-          .then((state) => { if (state === "granted" && detach) listen(); })
-          .catch(() => { /* refused or unsupported: touch fallback stays on */ });
+        Orientation.requestPermission!().catch(() => {
+          /* refused or unsupported: the finger-drag fallback stays on */
+        });
       };
       window.addEventListener("touchend", ask, { once: true });
       window.addEventListener("click", ask, { once: true });
@@ -130,8 +130,6 @@ function attach(): () => void {
         window.removeEventListener("touchend", ask);
         window.removeEventListener("click", ask);
       });
-    } else {
-      listen();
     }
   }
 

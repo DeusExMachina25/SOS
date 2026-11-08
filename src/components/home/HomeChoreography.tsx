@@ -77,6 +77,16 @@ export default function HomeChoreography() {
       }
     };
 
+    // The animation layer is pinned to the screen. Hide it once you scroll past
+    // the story, so anything placed below (extra blocks, footer) shows cleanly.
+    const layerTrigger = ScrollTrigger.create({
+      trigger: scrollRef.current,
+      start: "top top",
+      end: "bottom bottom",
+      onLeave: () => gsap.set(containerRef.current, { autoAlpha: 0 }),
+      onEnterBack: () => gsap.set(containerRef.current, { autoAlpha: 1 }),
+    });
+
     const mm = gsap.matchMedia();
 
     // ── Wide screens: copy and visuals trade places left and right ──────
@@ -168,7 +178,7 @@ export default function HomeChoreography() {
 
     return () => {
       mm.revert();
-      ScrollTrigger.getAll().forEach(t => t.kill());
+      layerTrigger.kill();
     };
   }, []);
 
