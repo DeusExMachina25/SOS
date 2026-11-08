@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Book an hour with a vetted architect or designer for a second opinion on your plans.",
   openGraph: {
     title: "SOS | Expert Consultation",
-    description: "Book an hour with a vetted architect or designer for a second opinion on your plans.",
+    description: "End-to-end strategy, planning, execution and consulting.",
     type: "website",
   },
 };
