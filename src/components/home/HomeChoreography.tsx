@@ -9,6 +9,7 @@ import Compass from "./Compass";
 import NineDotLoop from "../shared/NineDotLoop";
 import PositionTrackerBackground from "../shared/PositionTrackerBackground";
 import VideoDiorama from "./VideoDiorama";
+import FloorplanSketch from "./FloorplanSketch";
 import { HOME_BEATS, type HomeBeat, type HomeVisual } from "./homeBeats";
 import { HOME_STORY } from "@/config/homeStory";
 
@@ -37,6 +38,7 @@ export default function HomeChoreography() {
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [compassTiltMode, setCompassTiltMode] = useState<"2d" | "2.5d" | "3d">("2d");
+  const [activeVisual, setActiveVisual] = useState<HomeVisual | null>(null);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -57,6 +59,8 @@ export default function HomeChoreography() {
         const k = Math.min(story.length - 1, Math.max(0, Math.floor((self.progress * TOTAL + 0.1) / STEP)));
         const tilt = story[k]?.compassTilt;
         if (tilt) setCompassTiltMode(tilt);
+        // Which picture is on screen (none before the logo has flown through)
+        setActiveVisual(self.progress * TOTAL < 0.5 ? null : story[k]?.visual ?? null);
       },
     };
 
@@ -166,6 +170,11 @@ export default function HomeChoreography() {
           {visualsUsed.includes("compass") && (
             <div ref={(el) => { visualRefs.current.compass = el; }} className="absolute z-10 pointer-events-auto opacity-0 scale-75 xl:scale-100">
               <Compass tiltMode={compassTiltMode} />
+            </div>
+          )}
+          {visualsUsed.includes("floorplan") && (
+            <div ref={(el) => { visualRefs.current.floorplan = el; }} className="absolute z-10 pointer-events-auto">
+              <FloorplanSketch playing={activeVisual === "floorplan"} />
             </div>
           )}
           {visualsUsed.includes("diorama") && (

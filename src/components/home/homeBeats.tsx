@@ -11,7 +11,7 @@ import { BOOKING_STEPS } from "../blocks/platter/HowBooking";
  * picture beside it. The order they play in is set in src/config/homeStory.ts.
  */
 
-export type HomeVisual = "compass" | "diorama" | "ninedot";
+export type HomeVisual = "compass" | "floorplan" | "diorama" | "ninedot";
 
 export interface HomeBeat {
   /** The picture beside the copy. Beats in a row with the same one share it. */
@@ -78,7 +78,7 @@ export const HOME_BEATS = {
     ),
   },
   H5: {
-    visual: "diorama",
+    visual: "floorplan",
     copyClass: STORY_COPY,
     content: (
       <MinimalStoryBox title="How a Session Works" paragraphs={["Three steps from a question to a second opinion."]}>
@@ -96,7 +96,7 @@ export const HOME_BEATS = {
     ),
   },
   H6: {
-    visual: "diorama",
+    visual: "floorplan",
     copyClass: STORY_COPY,
     content: (
       <MinimalStoryBox

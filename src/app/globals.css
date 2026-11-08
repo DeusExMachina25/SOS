@@ -815,3 +815,52 @@ html.sos-seen .sos-preloader { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .animate-wave-slow, .animate-wave-fast { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   FLOORPLAN SKETCH (home page, "How a Session Works")
+   Lines draw in, rooms tint, labels fade, then the
+   expert's note. Delays are set inline per element.
+════════════════════════════════════════════════════════*/
+.plan-line {
+  fill: none;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  stroke-linecap: square;
+  animation: plan-draw 0.9s ease-out forwards;
+}
+.plan-wall-outer { stroke: var(--text-primary); stroke-width: 5; animation-duration: 1.4s; }
+.plan-wall { stroke: var(--text-primary); stroke-width: 3; }
+.plan-window { stroke: var(--text-muted); stroke-width: 7; opacity: 0.9; }
+.plan-door { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 1; }
+.plan-dim { fill: none; stroke: var(--text-faint); stroke-width: 1; }
+.plan-note { stroke: var(--color-green); stroke-width: 1.6; stroke-linecap: round; }
+.plan-fill { opacity: 0; animation: plan-tint 1.2s ease-out forwards; }
+.plan-fade { opacity: 0; animation: plan-show 0.8s ease-out forwards; }
+.plan-room {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  fill: var(--text-primary);
+}
+.plan-size {
+  font-family: 'Space Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  fill: var(--text-muted);
+}
+.plan-note-text {
+  font-family: 'Bodoni Moda', Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  fill: var(--color-green);
+}
+@keyframes plan-draw { to { stroke-dashoffset: 0; } }
+@keyframes plan-tint { to { opacity: 0.12; } }
+@keyframes plan-show { to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-line { animation: none; stroke-dashoffset: 0; }
+  .plan-fill { animation: none; opacity: 0.12; }
+  .plan-fade { animation: none; opacity: 1; }
+}
