@@ -472,7 +472,7 @@ export default function LoginPage() {
                     disabled={loading || otp.length !== 6}
                     className="w-full bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos font-bold tracking-[0.3em] uppercase text-[12px] py-6 rounded-none transition-all hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
-                    {loading ? "Checking..." : "Sign in"}
+                    {loading ? "Verifying..." : "Verify & Sign In"}
                   </button>
                 </div>
 
@@ -549,7 +549,7 @@ export default function LoginPage() {
                   disabled={loading}
                   className="w-full bg-[var(--text-primary)] text-[var(--bg-base)] font-mono-sos font-bold tracking-[0.3em] uppercase text-[12px] py-6 rounded-none transition-all hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Signing in..." : "Sign in"}
+                  {loading ? "Authenticating..." : "Access Dashboard"}
                 </button>
               </div>
             </form>
