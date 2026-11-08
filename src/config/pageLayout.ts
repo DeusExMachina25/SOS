@@ -16,9 +16,7 @@ import type { BlockId } from "@/components/blocks/registry";
 
 export const PAGE_LAYOUT: Record<"home" | "us" | "platter", BlockId[]> = {
   /** Shown after the home page's scroll story, above the footer. */
-  home: [
-    "P5", // How booking works: Choose, Brief, Meet
-  ],
+  home: [],
 
   us: [
     "U1", // Hero: giant "US" over a drifting photo
@@ -44,4 +42,6 @@ export const PAGE_LAYOUT: Record<"home" | "us" | "platter", BlockId[]> = {
  *   U5  The Manifesto: four pillars build a temple
  *   U8  Let's Talk + contact form (Us version)
  *   P6  Investment: one rate per expert
+ *   P5  How booking works (its steps now sit inside the home page's
+ *       "How a Session Works" beat instead)
  */

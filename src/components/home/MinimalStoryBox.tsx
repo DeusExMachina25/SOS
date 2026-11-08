@@ -7,13 +7,16 @@ interface MinimalStoryBoxProps {
   paragraphs: string[];
   remark?: string;
   className?: string;
+  /** Extra content under the paragraphs, e.g. the booking steps */
+  children?: React.ReactNode;
 }
 
 export default function MinimalStoryBox({ 
   title, 
   paragraphs, 
   remark, 
-  className = ""
+  className = "",
+  children
 }: MinimalStoryBoxProps) {
   return (
     <div className={`max-w-2xl px-6 xl:px-12 flex flex-col justify-center ${className}`}>
@@ -33,6 +36,8 @@ export default function MinimalStoryBox({
           </p>
         ))}
       </div>
+
+      {children}
 
       {remark && (
         <div className="mt-12 pt-6 border-t border-[var(--border-strong)]">

@@ -12,6 +12,7 @@ import MinimalStoryBox from "./MinimalStoryBox";
 import NineDotLoop from "../shared/NineDotLoop";
 import PositionTrackerBackground from "../shared/PositionTrackerBackground";
 import VideoDiorama from "./VideoDiorama";
+import { BOOKING_STEPS } from "../blocks/platter/HowBooking";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -243,9 +244,20 @@ export default function HomeChoreography() {
             <MinimalStoryBox
               title="How a Session Works"
               paragraphs={[
-                "Choose an expert from the Platter. Pick a time. Share drawings, briefs and references to a private vault before you meet."
+                "Three steps from a question to a second opinion."
               ]}
-            />
+            >
+              {/* Booking steps, so how it works and how to book read as one beat */}
+              <ol className="mt-6 xl:mt-10 grid grid-cols-3 gap-3 xl:gap-6">
+                {BOOKING_STEPS.map((step) => (
+                  <li key={step.id} className="flex flex-col border-t border-[var(--border-strong)] pt-3 xl:pt-5">
+                    <span className="font-mono-sos text-[9px] xl:text-[10px] tracking-[0.3em] text-[var(--color-orange)] mb-2">{step.id}</span>
+                    <span className="font-editorial text-xl xl:text-3xl text-[var(--text-primary)] tracking-tight mb-1 xl:mb-2">{step.title}</span>
+                    <span className="font-inter text-[11px] xl:text-sm text-[var(--text-muted)] leading-snug font-light">{step.desc}</span>
+                  </li>
+                ))}
+              </ol>
+            </MinimalStoryBox>
           </div>
 
           <div ref={narrative2bRef} className="absolute z-20 pointer-events-auto w-full xl:w-auto">
