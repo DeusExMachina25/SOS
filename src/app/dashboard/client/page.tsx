@@ -20,6 +20,7 @@ import { generateSlotsForDate, todayDateInput, dayBoundsUtc, describeTimeZone, r
 import { formatInr, formatFileSize, formatMessageTime } from "@/lib/data/format";
 import type { Session, Expert, Payment, ChatThreadSummary, VaultFile, AvailabilityRule } from "@/lib/data/types";
 import PaymentModal from "@/components/dashboard/PaymentModal";
+import Receipt from "@/components/dashboard/Receipt";
 import LiquidWaveGauge from "@/components/dashboard/LiquidWaveGauge";
 import StatTile from "@/components/dashboard/StatTile";
 import Panel from "@/components/dashboard/Panel";
@@ -38,6 +39,8 @@ export default function ClientDashboard() {
   const [selectedExpertId, setSelectedExpertId] = useState("");
   const [bookingError, setBookingError] = useState("");
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  // The booking modal has two steps: fill in the form, then check a receipt-style summary.
+  const [bookingStep, setBookingStep] = useState<"form" | "review">("form");
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [dbExperts, setDbExperts] = useState<Expert[]>([]);
@@ -163,6 +166,27 @@ export default function ClientDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isBooking, selectedExpertId, sessionDate, expertZone]);
 
+  const openBooking = () => {
+    setBookingStep("form");
+    setBookingError("");
+    setIsBooking(true);
+  };
+
+  // Step 1 → 2: check the choices, then show the summary. Nothing is saved yet.
+  const handleReviewBooking = () => {
+    const targetExpert = dbExperts.find(e => e.id === selectedExpertId) ?? currentExpert;
+    if (!targetExpert) {
+      setBookingError("Choose an expert before booking.");
+      return;
+    }
+    if (!slots.some((t) => t.startsAt === selectedSlot)) {
+      setBookingError("Choose one of the available times.");
+      return;
+    }
+    setBookingError("");
+    setBookingStep("review");
+  };
+
   const handleConfirmBooking = async () => {
     const targetExpert = dbExperts.find(e => e.id === selectedExpertId) ?? currentExpert;
     if (!targetExpert) {
@@ -257,7 +281,7 @@ export default function ClientDashboard() {
           href="/dashboard/client/sessions"
           action={
             <button
-              onClick={() => setIsBooking(true)}
+              onClick={openBooking}
               className="border border-[var(--border-strong)] px-3 py-1.5 font-mono-sos text-[9px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
             >
               BOOK
@@ -297,7 +321,7 @@ export default function ClientDashboard() {
             <div className="flex flex-col items-center justify-center h-full text-center py-6 gap-4">
               <p className="font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-faint)]">NO SCHEDULED MEETINGS</p>
               <button
-                onClick={() => setIsBooking(true)}
+                onClick={openBooking}
                 className="border border-[var(--border-strong)] bg-[var(--bg-surface-2)] px-4 py-2.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
               >
                 SCHEDULE SESSION
@@ -387,6 +411,20 @@ export default function ClientDashboard() {
                 })()}
               </p>
               
+              {bookingStep === "review" ? (
+                <BookingReview
+                  expert={dbExperts.find((e) => e.id === selectedExpertId) ?? currentExpert}
+                  sessionType={sessionType}
+                  slot={slots.find((t) => t.startsAt === selectedSlot) ?? null}
+                  sessionDate={sessionDate}
+                  zoneLabel={describeTimeZone(expertZone)}
+                  error={bookingError}
+                  submitting={bookingSubmitting}
+                  onBack={() => setBookingStep("form")}
+                  onConfirm={handleConfirmBooking}
+                />
+              ) : (
+              <>
               <div className="space-y-6 mb-10">
                 <div>
                   <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest">SESSION TYPE</label>
@@ -465,12 +503,14 @@ export default function ClientDashboard() {
               )}
 
               <button
-                onClick={handleConfirmBooking}
-                disabled={bookingSubmitting}
+                onClick={handleReviewBooking}
+                disabled={slotsState !== "ready"}
                 className="btn-sos-filled w-full py-5 text-lg text-center justify-center rounded-2xl tracking-widest mt-8 shadow-lg disabled:opacity-50"
               >
-                {bookingSubmitting ? "Booking…" : "Confirm Booking"}
+                Review Booking
               </button>
+              </>
+              )}
             </motion.div>
           </motion.div>
         )}
@@ -483,6 +523,7 @@ export default function ClientDashboard() {
           amountInr={paymentSession.amountInr}
           expertName={paymentSession.expertName}
           expertUpiId={dbExperts.find(e => e.id === paymentSession.expertId)?.upiId ?? null}
+          session={paymentSession}
           onClose={() => setPaymentSession(null)}
           onPaid={() => {
             Promise.all([getMySessions(), getMyPayments()])
@@ -491,6 +532,80 @@ export default function ClientDashboard() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+/** Step 2 of booking: a receipt of what the client is about to book, before anything is saved or paid. */
+function BookingReview({
+  expert,
+  sessionType,
+  slot,
+  sessionDate,
+  zoneLabel,
+  error,
+  submitting,
+  onBack,
+  onConfirm,
+}: {
+  expert: Expert | null;
+  sessionType: string;
+  slot: Slot | null;
+  sessionDate: string;
+  zoneLabel: string;
+  error: string;
+  submitting: boolean;
+  onBack: () => void;
+  onConfirm: () => void;
+}) {
+  const fee = expert?.sessionRateInr ?? null;
+  const dateLabel = new Date(`${sessionDate}T12:00:00`).toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  return (
+    <div>
+      <div className="max-h-[55vh] overflow-y-auto scrollbar-thin -mx-1 px-1">
+        <Receipt
+          heading="Booking summary"
+          details={[
+            { label: "Expert", value: expert?.fullName ?? "—" },
+            { label: "Session", value: sessionType },
+            { label: "Date", value: dateLabel },
+            { label: "Time", value: slot ? `${slot.label}${slot.viewerLabel ? ` (${slot.viewerLabel} for you)` : ""}` : "—" },
+            { label: "Timezone", value: zoneLabel },
+            { label: "Duration", value: "60 min" },
+          ]}
+          lines={[{ label: "Session fee (1 × 60 min)", value: formatInr(fee) }]}
+          total={{ label: "Due now", value: formatInr(fee) }}
+          stamp={{ text: "Not paid", tone: "due" }}
+          note="Nothing is charged yet. You'll choose how to pay on the next step, and your payment is held until the session is delivered."
+        />
+      </div>
+
+      {error && <p className="text-sm text-[var(--color-orange)] font-mono-sos mt-6 text-center">{error}</p>}
+
+      <div className="mt-8 flex gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={submitting}
+          className="flex-1 border border-[var(--border-strong)] rounded-2xl py-4 font-mono-sos text-xs tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-50"
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={submitting}
+          className="btn-sos-filled flex-[2] py-4 text-sm text-center justify-center rounded-2xl tracking-widest disabled:opacity-50"
+        >
+          {submitting ? "Booking…" : "Confirm & pay"}
+        </button>
+      </div>
     </div>
   );
 }

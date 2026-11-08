@@ -5,10 +5,12 @@ import { Check, Copy, Loader2 } from "lucide-react";
 import { listPayouts, markPayoutSent, type AdminPayout } from "@/lib/data/admin";
 import { isOwed, payoutReadiness, summarisePayouts, TRANSFER_LABEL } from "@/lib/data/adminRules";
 import { formatInr } from "@/lib/data/format";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Filter = "owed" | "sent" | "all";
 
 export default function AdminPayoutsPage() {
+  const confirm = useConfirm();
   const [payouts, setPayouts] = useState<AdminPayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,7 +30,7 @@ export default function AdminPayoutsPage() {
   }, []);
 
   const send = async (p: AdminPayout) => {
-    if (!window.confirm(`Record that you sent ${formatInr(p.amountInr)} to ${p.expertName}?\n\nDo this only after the money has actually left your account. It can't be undone here.`)) return;
+    if (!(await confirm({ title: `Record that you sent ${formatInr(p.amountInr)} to ${p.expertName}?`, message: "Do this only after the money has actually left your account. It can't be undone here.", action: "Record payout", tone: "primary" }))) return;
     setError("");
     setBusy(p.id);
     try {

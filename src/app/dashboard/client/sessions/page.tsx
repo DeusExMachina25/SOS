@@ -8,8 +8,10 @@ import type { Session, Payment } from "@/lib/data/types";
 import PaymentModal from "@/components/dashboard/PaymentModal";
 import PaymentBadgeChip from "@/components/dashboard/PaymentBadgeChip";
 import { paymentBadge } from "@/lib/data/paymentBadge";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export default function ClientSessionsPage() {
+  const confirm = useConfirm();
   const [activeFilter, setActiveFilter] = useState("all");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [paymentsBySession, setPaymentsBySession] = useState<Map<string, Payment>>(new Map());
@@ -55,7 +57,7 @@ export default function ClientSessionsPage() {
   };
 
   const handleCancel = async (session: Session) => {
-    if (!window.confirm(`Cancel "${session.title}"? You haven't paid, so there is nothing to refund.`)) return;
+    if (!(await confirm({ title: `Cancel "${session.title}"?`, message: "You haven't paid, so there is nothing to refund.", action: "Cancel session" }))) return;
     setError("");
     setCancelling(session.id);
     try {
@@ -214,6 +216,7 @@ export default function ClientSessionsPage() {
           amountInr={payingSession.amountInr}
           expertName={payingSession.expertName}
           expertUpiId={payingExpertUpiId}
+          session={payingSession}
           onClose={() => setPayingSession(null)}
           onPaid={(payment) => {
             setPaymentsBySession((prev) => new Map(prev).set(payment.sessionId, payment));

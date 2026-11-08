@@ -28,6 +28,7 @@ import { COMMON_TIME_ZONES, describeTimeZone, resolveTimeZone, viewerTimeZone } 
 import Sidebar, { type NavGroup } from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import { useUnreadThreads } from "@/components/dashboard/useUnreadThreads";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import ExpertApplicationBanner from "@/components/dashboard/ExpertApplicationBanner";
 import type { ExpertStatus } from "@/lib/data/types";
 import { totalUnread, badgeText, unreadLabel } from "@/lib/data/unread";
@@ -285,7 +286,7 @@ export default function DashboardLayout({
 
         <main id="main" className="flex-1 min-h-0 overflow-y-auto p-5 lg:p-7 pb-28 lg:pb-7">
           {role === "expert" && !pathname.endsWith("/onboarding") && <ExpertApplicationBanner status={expertStatus} />}
-          {children}
+          <ConfirmProvider>{children}</ConfirmProvider>
         </main>
       </div>
 
