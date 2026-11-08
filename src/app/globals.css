@@ -864,3 +864,32 @@ html.sos-seen .sos-preloader { display: none !important; }
   .plan-fill { animation: none; opacity: 0.12; }
   .plan-fade { animation: none; opacity: 1; }
 }
+
+/* ============================================================================
+   FLOORPLAN SKETCHER (/sketch)
+   ========================================================================== */
+.plan-ed-room {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  fill: var(--text-primary);
+}
+.plan-ed-size,
+.plan-ed-len,
+.plan-ed-item {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  fill: var(--text-muted);
+}
+.plan-ed-len { fill: var(--text-primary); }
+.plan-ed-input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text-primary);
+  outline: none;
+}
+.plan-ed-input:focus { border-color: var(--color-primary); }

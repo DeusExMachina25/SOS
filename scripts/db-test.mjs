@@ -313,5 +313,31 @@ if (listed !== 0) { console.log("VULNERABLE: an invited placeholder is listed pu
 const anon = await db.query(`select count(*)::int n from public.public_experts`);
 console.log("public_experts rows:", anon.rows[0].n);
 
+// --- Saved floorplans: only the owner sees or changes them -------------------
+const plan = await expectOk("client saves a plan", C,
+  `insert into public.plans (name, kind, data) values ('Flat','interior','{"version":1}') returning id, owner_id`);
+const planId = plan?.rows?.[0]?.id;
+if (plan?.rows?.[0]?.owner_id !== C) { console.log("FAIL: plan owner not set from sign-in"); failures++; }
+await expectFail("client saves a plan as someone else", C,
+  `insert into public.plans (owner_id, name, kind, data) values ('${C2}','x','plot','{}')`);
+const strangerPlans = (await as(C2, `select count(*)::int n from public.plans`)).rows[0].n;
+if (strangerPlans !== 0) { console.log("VULNERABLE: stranger reads plans"); failures++; } else console.log("blocked   : stranger reads plans");
+await as(C2, `update public.plans set name='hacked' where id='${planId}'`).catch(() => {});
+await as(C2, `delete from public.plans where id='${planId}'`).catch(() => {});
+const kept = (await db.query(`select name from public.plans where id='${planId}'`)).rows[0];
+if (kept?.name !== "Flat") { console.log("VULNERABLE: stranger changed or deleted a plan"); failures++; } else console.log("blocked   : stranger changes or deletes a plan");
+await as(C, `update public.plans set owner_id='${C2}' where id='${planId}'`).catch(() => {});
+const owner = (await db.query(`select owner_id from public.plans where id='${planId}'`)).rows[0].owner_id;
+if (owner !== C) { console.log("VULNERABLE: plan handed to another account"); failures++; } else console.log("blocked   : owner hands a plan to another account");
+try {
+  await db.exec(`set role anon`);
+  await db.query(`select * from public.plans`);
+  console.log("VULNERABLE: signed-out visitor reads plans"); failures++;
+} catch (e) {
+  console.log("blocked   : signed-out visitor reads plans ->", e.message.slice(0, 50));
+} finally {
+  await db.exec(`reset role`);
+}
+
 console.log(failures ? `\n${failures} PROBLEM(S)` : "\nALL CHECKS PASSED");
 process.exit(failures ? 1 : 0);
