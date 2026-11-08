@@ -38,12 +38,12 @@ export const DEFAULT_EXPERTS: ExpertProfile[] = [
     role: "expert",
     field: "architecture",
     expert_role: "Principal Architect & Interior Designer",
-    bio: "Two decades of independent residential practice across town and country — from interiors and spatial flow in urban apartments, to structural planning and material selection on ground-up builds, to master planning across rural and peri-urban plots.",
+    bio: "Twenty years running an independent residential practice in the city and the countryside. Apartment interiors and how rooms connect, structure and materials on new builds, and master plans for larger plots outside town.",
     tags: ["RESIDENTIAL ARCHITECTURE", "INTERIOR DESIGN", "MASTER PLANNING"],
     disciplines: [
-      { id: "01", title: "Interiors & Spatial Flow", desc: "How a city footprint should actually be used — circulation, storage logic, and material honesty, room by room." },
-      { id: "02", title: "Site & Structural Strategy", desc: "Reading the plot, load paths, and foundations before a single wall is drawn, then detailing junctions that age well." },
-      { id: "03", title: "Master Planning & Compliance", desc: "Contours, drainage, and phased development across larger plots — planned so it survives contact with approval." }
+      { id: "01", title: "Interiors & Spatial Flow", desc: "How to use a city flat well: how you move through it, where things get stored and which materials to use, room by room." },
+      { id: "02", title: "Site & Structural Strategy", desc: "Reading the plot, the loads and the foundations before drawing any walls, then detailing joints that age well." },
+      { id: "03", title: "Master Planning & Compliance", desc: "Contours, drainage and building in phases on larger plots, planned so it gets through approval." }
     ]
   },
   {
@@ -54,12 +54,12 @@ export const DEFAULT_EXPERTS: ExpertProfile[] = [
     role: "expert",
     field: "sustainability",
     expert_role: "Renewable Systems Engineer",
-    bio: "Renewable energy, waste systems, and additive manufacturing — designed into a project from the start rather than retrofitted onto a finished one.",
+    bio: "Renewable energy, waste systems and 3D printing, planned into a project from day one instead of added once it's built.",
     tags: ["RENEWABLE SYSTEMS", "WASTE MANAGEMENT", "3D PRINTING"],
     disciplines: [
-      { id: "01", title: "Renewable Systems", desc: "Solar, storage, and load planning sized to what the building actually draws." },
-      { id: "02", title: "Waste Management", desc: "Segregation, composting, and water recovery designed in, not bolted on." },
-      { id: "03", title: "Additive Manufacturing", desc: "3D-printed components and formwork — and when printing is the wrong answer." }
+      { id: "01", title: "Renewable Systems", desc: "Solar panels, batteries and load planning sized to what the building uses." },
+      { id: "02", title: "Waste Management", desc: "Sorting, composting and water reuse, planned in from the start." },
+      { id: "03", title: "Additive Manufacturing", desc: "3D-printed parts and formwork, and how to tell when printing is the wrong choice." }
     ]
   },
   {
@@ -70,12 +70,12 @@ export const DEFAULT_EXPERTS: ExpertProfile[] = [
     role: "expert",
     field: "travel",
     expert_role: "Travel Experience Curator",
-    bio: "Curated travel — routing and pacing built around the places actually worth stopping for, and the ground logistics that decide whether the trip holds together.",
+    bio: "Trip planning built around the places worth stopping for, plus the transport and paperwork that decide whether a trip works.",
     tags: ["ITINERARY DESIGN", "ROUTE PLANNING", "CURATED STAYS"],
     disciplines: [
       { id: "01", title: "Route & Pacing", desc: "How far to move each day, and when the answer is to stay put." },
-      { id: "02", title: "Curated Stays", desc: "Choosing places worth the detour rather than the ones with the best rating." },
-      { id: "03", title: "Ground Logistics", desc: "Permits, transfers, and the parts of a trip that quietly go wrong." }
+      { id: "02", title: "Curated Stays", desc: "Places worth the detour, which aren't always the best rated." },
+      { id: "03", title: "Ground Logistics", desc: "Permits, transfers and the small things that go wrong on a trip." }
     ]
   }
 ];

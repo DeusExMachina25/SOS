@@ -3,11 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  title: "SOS | Expert Consultation",
-  description: "End-to-end strategy, planning, execution and consulting.",
+  title: "SOS | Second Opinions",
+  description: "Book an hour with a vetted architect or designer for a second opinion on your plans.",
   openGraph: {
-    title: "SOS | Expert Consultation",
-    description: "End-to-end strategy, planning, execution and consulting.",
+    title: "SOS | Second Opinions",
+    description: "Book an hour with a vetted architect or designer for a second opinion on your plans.",
     type: "website",
   },
 };

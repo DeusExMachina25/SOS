@@ -14,14 +14,14 @@ const EDITORIAL_POSTS = [
     date: "May 28, 2026",
     category: "Strategy",
     excerpt:
-      "Asking someone to poke holes in your work is not an admission that it's broken. It's how you find out which parts actually hold."
+      "Asking someone to poke holes in your work doesn't mean it's broken. It's the quickest way to learn which parts hold."
   },
   {
     title: "Reading a Site Before You Draw on It",
     date: "May 15, 2026",
     category: "Site",
     excerpt:
-      "Contours, drainage, and where the light actually falls in December. The plot tells you what it wants long before the first sketch does."
+      "Contours, drainage and where the light falls in December. The plot tells you what it wants long before the first sketch does."
   },
   {
     title: "The Rooms People Actually Use",

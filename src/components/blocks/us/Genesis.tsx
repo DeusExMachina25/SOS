@@ -25,7 +25,7 @@ const BEATS: Record<"render" | "collective" | "standard", Beat> = {
     eyebrow: "Why we built it",
     title: "Every render hides a section.",
     content:
-      "We built a place where the second opinion is the product, not an upsell — free of the jargon and generic templates of traditional consulting.",
+      "Most advice on a project comes attached to something being sold. Here the second opinion is the whole service, given in plain words by someone who has built the thing before.",
     Graphic: FacadeSectionCut,
   },
   collective: {
@@ -33,7 +33,7 @@ const BEATS: Record<"render" | "collective" | "standard", Beat> = {
     eyebrow: "The collective",
     title: "Invited, not listed.",
     content:
-      "Strategy, architecture, design and execution. Every expert here is invited, not listed — vetted on built work before they take a single session.",
+      "Architects, designers and engineers join by invitation. We check what they've built before they take their first session.",
     Graphic: VeneerStack,
   },
   standard: {
@@ -41,7 +41,7 @@ const BEATS: Record<"render" | "collective" | "standard", Beat> = {
     eyebrow: "The standard",
     title: "Measured on what stands.",
     content:
-      "No portfolios of intent. We look at what was permitted, what was built, and what is still standing — then we ask the people who worked alongside them.",
+      "Renders of things that never got built don't count. We look at what was approved, what was built and what's still standing, and then we call the people who worked with them.",
     Graphic: VettingColumns,
   },
 };

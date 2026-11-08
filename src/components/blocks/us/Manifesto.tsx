@@ -12,12 +12,12 @@ const MANIFESTO_PILLARS = [
   {
     short: "Calibration.",
     title: "Refine, don't reduce.",
-    description: "A second opinion isn't a cage or a compromise. We adapt to the rhythm of your project and sharpen what's already there — never flattening the vision to fit a template."
+    description: "A second opinion shouldn't flatten your idea into a template. We work at your project's pace and sharpen what's already there."
   },
   {
     short: "Clarity.",
     title: "Clarity over complexity.",
-    description: "In an ocean of noise, we prioritize signal. We strip away the unnecessary until only the essential truth of your vision remains, architecting foundations that endure."
+    description: "We cut what doesn't matter and keep what does, so you leave with fewer, clearer decisions."
   },
   {
     short: "Security.",
@@ -27,7 +27,7 @@ const MANIFESTO_PILLARS = [
   {
     short: "Standard.",
     title: "Measured on what stands.",
-    description: "Every expert here is vetted on built work, not portfolios of intent — permits cleared, projects delivered, peers who'll vouch for them before they take a single session."
+    description: "Every expert is checked on built work: approvals they got, projects they finished and people who'll vouch for them."
   }
 ];
 

@@ -63,12 +63,12 @@ export default function LetsTalk({ source, spacious = false }: LetsTalkProps) {
               &ldquo;
             </div>
             <p className={`font-editorial text-[var(--text-primary)] opacity-90 leading-tight font-normal italic max-w-3xl mx-auto relative z-10 ${spacious ? "text-2xl md:text-4xl" : "text-xl md:text-3xl"}`}>
-              &ldquo;Every relationship begins with a great idea...&rdquo;
+              &ldquo;Good projects start with a conversation.&rdquo;
             </p>
           </div>
 
           <p className={`font-inter text-[var(--text-muted)] leading-relaxed font-light max-w-xl mx-auto ${spacious ? "text-lg md:text-xl mb-20" : "text-base md:text-lg mb-12"}`}>
-            You bring the ideas, we build a great relation and the ship sets sail. Drop us a line below to initiate the dialogue.
+            Tell us what you&apos;re working on. We reply within two working days.
           </p>
           <div className={`w-px bg-[var(--border-strong)] mx-auto ${spacious ? "h-24" : "h-16"}`}></div>
         </div>
@@ -103,7 +103,7 @@ export default function LetsTalk({ source, spacious = false }: LetsTalkProps) {
                 maxLength={5000}
                 required
                 className={`${field} resize-none ${spacious ? "min-h-[120px]" : "min-h-[100px]"}`}
-                placeholder="Tell us about your vision..."
+                placeholder="What are you working on?"
               ></textarea>
             </div>
 
@@ -132,7 +132,7 @@ export default function LetsTalk({ source, spacious = false }: LetsTalkProps) {
                 aria-live="polite"
                 className={`font-inter text-sm min-h-[20px] ${state === "error" ? "text-[var(--color-orange)]" : "text-[var(--text-muted)]"}`}
               >
-                {state === "sent" && "Thanks — we've got it. We'll reply within two working days."}
+                {state === "sent" && "Thanks, we've got it. We'll reply within two working days."}
                 {state === "error" && error}
               </p>
             </div>

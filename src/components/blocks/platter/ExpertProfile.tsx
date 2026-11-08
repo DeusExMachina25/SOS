@@ -8,7 +8,7 @@ import { useExperts } from "../experts/useExperts";
 
 /**
  * P4: the picked expert's profile card: portrait (or initials), bio, tags,
- * "Areas of Influence" drop-down and the Secure slot button. Follows the
+ * "What they cover" drop-down and the Secure slot button. Follows the
  * slice picked in the field pie (P3).
  */
 export default function ExpertProfile() {
@@ -101,7 +101,7 @@ export default function ExpertProfile() {
                   }}
                   className="text-[var(--text-primary)] font-mono-sos text-sm hover:text-[var(--color-primary)] transition-colors border-b border-[var(--text-primary)] pb-2 w-max tracking-[0.2em] text-left"
                 >
-                  SECURE SLOT &rarr;
+                  BOOK A SESSION &rarr;
                 </button>
               </div>
             </div>
@@ -122,10 +122,10 @@ export default function ExpertProfile() {
                 >
                   <div className="flex flex-col">
                     <span className="font-editorial text-3xl md:text-4xl tracking-tight text-[var(--text-primary)]">
-                      Areas of Influence
+                      What they cover
                     </span>
                     <span className="font-mono-sos text-[9px] tracking-[0.2em] text-[var(--text-muted)] uppercase mt-2 opacity-60">
-                      Core operational capabilities and tactical deliverables
+                      Topics you can bring to a session
                     </span>
                   </div>
                   <div className="relative w-8 h-8 flex items-center justify-center">

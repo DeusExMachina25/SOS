@@ -19,7 +19,7 @@ export default function EyesOnThePrize() {
 
       {/* Text Below */}
       <p className="font-inter text-lg md:text-xl text-[var(--text-muted)] max-w-md mt-8 z-10 relative text-center">
-        Seeking counsel is never a surrender of your vision.
+        Asking for advice doesn&apos;t mean giving up on your idea.
       </p>
 
     </section>

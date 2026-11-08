@@ -58,8 +58,8 @@ export const HOME_BEATS = {
       <MinimalStoryBox
         title="Too Close to the Canvas"
         paragraphs={[
-          "Every project is a leap of faith. You can either jump or hold on for dear life…",
-          "If you're too close to the canvas, you restrict yourself from reaching out… and the further you carry it without any direction, the harder it becomes to make others see what you do.",
+          "Every project starts with a jump. Some people take it. Others spend months standing at the edge.",
+          "Stand too close to your own plan and you stop asking for help. The longer you carry it alone, the harder it gets to show anyone else what you see.",
         ]}
       />
     ),
@@ -72,7 +72,7 @@ export const HOME_BEATS = {
       <MinimalStoryBox
         title="Why a Second Opinion"
         paragraphs={[
-          "Second Opinions see beyond the original facade and a fresh set of eyes can be the veneer to your plywood. Speak to one of our vetted experts who has no stake in your plan except making it truly yours.",
+          "Someone who didn't draw the plan will spot what you stopped noticing weeks ago. Our experts have nothing to sell you after the call. Their only job is to make the plan work for you.",
         ]}
       />
     ),
@@ -102,7 +102,7 @@ export const HOME_BEATS = {
       <MinimalStoryBox
         title="Grounded in Trust"
         paragraphs={[
-          "You meet over secure video with your files at hand. Payment is held in escrow and released around the session. We believe that a true partnership can only be grounded in trust…",
+          "You meet over secure video with your files open. We hold the payment until the session is done, so nobody pays for a call that didn't happen.",
           "Why don't we reassess our borders?",
         ]}
       />
