@@ -7,6 +7,7 @@ import InviteExpertPanel, { CopyLink } from "@/components/dashboard/InviteExpert
 import { expertActions, sortExperts, pendingReviewCount, EXPERT_STATUS_LABEL } from "@/lib/data/adminRules";
 import { formatInr } from "@/lib/data/format";
 import type { ExpertStatus } from "@/lib/data/types";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Filter = "review" | "invited" | "approved" | "other" | "all";
 
@@ -19,6 +20,7 @@ const STATUS_STYLE: Record<ExpertStatus, string> = {
 };
 
 export default function AdminExpertsPage() {
+  const confirm = useConfirm();
   const [experts, setExperts] = useState<AdminExpert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -51,7 +53,7 @@ export default function AdminExpertsPage() {
   };
 
   const cancel = async (e: AdminExpert) => {
-    if (!window.confirm(`Cancel the invitation for ${e.fullName}?\n\nTheir account is deleted and the link stops working. You can invite them again later.`)) return;
+    if (!(await confirm({ title: `Cancel the invitation for ${e.fullName}?`, message: "Their account is deleted and the link stops working. You can invite them again later.", action: "Cancel invite" }))) return;
     setError("");
     setBusy(e.id);
     try {
@@ -64,8 +66,8 @@ export default function AdminExpertsPage() {
     }
   };
 
-  const change = async (expert: AdminExpert, to: ExpertStatus, confirmText?: string) => {
-    if (confirmText && !window.confirm(`${expert.fullName}\n\n${confirmText}`)) return;
+  const change = async (expert: AdminExpert, to: ExpertStatus, confirmText?: string, actionLabel = "Confirm") => {
+    if (confirmText && !(await confirm({ title: expert.fullName, message: confirmText, action: actionLabel, tone: to === "approved" ? "primary" : "danger" }))) return;
     setError("");
     setBusy(expert.id);
     try {
@@ -211,7 +213,7 @@ export default function AdminExpertsPage() {
                     {actions.map((a) => (
                       <button
                         key={a.to}
-                        onClick={() => change(e, a.to, a.confirm)}
+                        onClick={() => change(e, a.to, a.confirm, a.label)}
                         disabled={busy === e.id}
                         className={`flex items-center gap-2 px-4 py-2.5 font-mono-sos text-[10px] tracking-[0.2em] border transition-colors disabled:opacity-50 ${
                           a.tone === "primary"

@@ -893,3 +893,28 @@ html.sos-seen .sos-preloader { display: none !important; }
   outline: none;
 }
 .plan-ed-input:focus { border-color: var(--color-primary); }
+
+/* Receipt: torn, zig-zag bottom edge (see components/dashboard/Receipt.tsx). */
+.receipt-edge {
+  --tooth: 10px;
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) 51% repeat-x,
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tooth) / 2) no-repeat;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) 51% repeat-x,
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tooth) / 2) no-repeat;
+}
+
+/* "Print / save as PDF" on a receipt prints only the receipt. */
+@media print {
+  body * { visibility: hidden !important; }
+  .print-receipt, .print-receipt * { visibility: visible !important; }
+  .print-receipt {
+    position: fixed !important;
+    inset: 0 auto auto 0;
+    width: 80mm;
+    transform: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

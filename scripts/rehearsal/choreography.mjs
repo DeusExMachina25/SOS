@@ -63,7 +63,6 @@ for (const s of SIZES) {
       kids.forEach((e) => {
         const op = parseFloat(getComputedStyle(e).opacity);
         if (op < 0.25) return;
-        const r = e.getBoundingClientRect();
         // measure real content, not the (possibly full-width) wrapper
         const inner = e.firstElementChild ?? e;
         const ir = inner.getBoundingClientRect();

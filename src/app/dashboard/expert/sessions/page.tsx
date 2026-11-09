@@ -7,8 +7,10 @@ import { getMySessions, getMyPayments, getMyPayoutRows, confirmUpiPaymentReceive
 import PaymentBadgeChip from "@/components/dashboard/PaymentBadgeChip";
 import { paymentBadge, payoutProgressBySession, type PayoutProgress } from "@/lib/data/paymentBadge";
 import type { Session, Payment } from "@/lib/data/types";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export default function ExpertSessionsPage() {
+  const confirm = useConfirm();
   const [activeFilter, setActiveFilter] = useState("all");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [paymentsBySession, setPaymentsBySession] = useState<Map<string, Payment>>(new Map());
@@ -68,7 +70,7 @@ export default function ExpertSessionsPage() {
   };
 
   const handleComplete = async (session: Session) => {
-    if (!window.confirm(`Mark "${session.title}" as completed? This can't be undone.`)) return;
+    if (!(await confirm({ title: `Mark "${session.title}" as completed?`, message: "This can't be undone.", action: "Complete", tone: "primary" }))) return;
     setError("");
     setCompleting(session.id);
     try {
