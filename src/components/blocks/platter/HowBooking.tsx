@@ -3,7 +3,7 @@ import BlockFrame from "../shared/BlockFrame";
 
 /** The three booking steps. Also shown inside "How a Session Works" on the home page. */
 export const BOOKING_STEPS = [
-  { id: "01", title: "Choose", desc: "Pick an expert whose work matches your project." },
+  { id: "01", title: "Choose", desc: "Pick an expert whose work matches your project or field of interest." },
   { id: "02", title: "Brief", desc: "Upload drawings and references to a private vault before the session." },
   { id: "03", title: "Meet", desc: "Secure video, one hour, with payment held in escrow until it's done." },
 ];

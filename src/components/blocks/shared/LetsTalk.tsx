@@ -12,7 +12,7 @@ interface LetsTalkProps {
 }
 
 /**
- * "Let's Talk." quote and the inquiry form (blocks U8 and P8).
+ * "We've got a lot to talk about." heading, quote and the inquiry form (blocks U8 and P8).
  * One component, so a fix to the form lands on every page that shows it.
  */
 export default function LetsTalk({ source, spacious = false }: LetsTalkProps) {
@@ -51,7 +51,7 @@ export default function LetsTalk({ source, spacious = false }: LetsTalkProps) {
       >
         <div className={`flex flex-col items-center w-full max-w-4xl text-center ${spacious ? "mb-24 md:mb-32" : "mb-16"}`}>
           <h2 className={`font-display font-normal text-[var(--text-primary)] tracking-tight ${spacious ? "text-5xl md:text-7xl mb-24" : "text-5xl md:text-7xl mb-12"}`}>
-            Let&apos;s Talk.
+            We&apos;ve got a lot to talk about.
           </h2>
 
           <div className={`relative flex flex-col items-center w-full ${spacious ? "mb-16" : "mb-8"}`}>
@@ -67,9 +67,6 @@ export default function LetsTalk({ source, spacious = false }: LetsTalkProps) {
             </p>
           </div>
 
-          <p className={`font-inter text-[var(--text-muted)] leading-relaxed font-light max-w-xl mx-auto ${spacious ? "text-lg md:text-xl mb-20" : "text-base md:text-lg mb-12"}`}>
-            Tell us what you&apos;re working on. We reply within two working days.
-          </p>
           <div className={`w-px bg-[var(--border-strong)] mx-auto ${spacious ? "h-24" : "h-16"}`}></div>
         </div>
 

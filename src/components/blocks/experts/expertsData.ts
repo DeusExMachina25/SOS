@@ -38,7 +38,7 @@ export const DEFAULT_EXPERTS: ExpertProfile[] = [
     role: "expert",
     field: "architecture",
     expert_role: "Principal Architect & Interior Designer",
-    bio: "Ten years running an independent residential practice in the city and the countryside. Apartment interiors and how rooms connect, structure and materials on new builds, and master plans for larger plots outside town.",
+    bio: "Ten years running an independent residential practice in the city and the countryside. Apartment interiors and how rooms connect, structure and materials on new builds, and master plans for larger plots outside town, including farmhouses, cottages, apartments, villas, restaurants and other commercial spaces.",
     tags: ["RESIDENTIAL ARCHITECTURE", "INTERIOR DESIGN", "MASTER PLANNING"],
     disciplines: [
       { id: "01", title: "Interiors & Spatial Flow", desc: "How to use a city flat well: how you move through it, where things get stored and which materials to use, room by room." },
@@ -54,7 +54,7 @@ export const DEFAULT_EXPERTS: ExpertProfile[] = [
     role: "expert",
     field: "sustainability",
     expert_role: "Renewable Systems Engineer",
-    bio: "Renewable energy, waste systems and 3D printing, planned into a project from day one instead of added once it's built.",
+    bio: "Renewable energy, waste systems and 3D printing, brainstorming, ESG reporting and sustainable alternatives.",
     tags: ["RENEWABLE SYSTEMS", "WASTE MANAGEMENT", "3D PRINTING"],
     disciplines: [
       { id: "01", title: "Renewable Systems", desc: "Solar panels, batteries and load planning sized to what the building uses." },
@@ -73,9 +73,9 @@ export const DEFAULT_EXPERTS: ExpertProfile[] = [
     bio: "Trip planning built around the places worth stopping for, plus the transport and paperwork that decide whether a trip works.",
     tags: ["ITINERARY DESIGN", "ROUTE PLANNING", "CURATED STAYS"],
     disciplines: [
-      { id: "01", title: "Route & Pacing", desc: "How far to move each day, and when the answer is to stay put." },
-      { id: "02", title: "Curated Stays", desc: "Places worth the detour, which aren't always the best rated." },
-      { id: "03", title: "Ground Logistics", desc: "Permits, transfers and the small things that go wrong on a trip." }
+      { id: "01", title: "Route & Pacing", desc: "How far to go each day, and when to stay put. Places off the beaten path, for those with a penchant for exploration." },
+      { id: "02", title: "Curated Stays", desc: "Locations worth the detour, which aren't always the best rated, but always highly experiential." },
+      { id: "03", title: "Ground Logistics", desc: "Permits, transfers and the small things that go wrong on a trip. All of your logistics handled end to end. BY A HUMAN BEING..." }
     ]
   }
 ];

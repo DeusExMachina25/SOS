@@ -2,7 +2,7 @@ import PlanEditor from "@/components/plan/PlanEditor";
 
 export const metadata = {
   title: "Sketch Your Space | SOS",
-  description: "Draw a quick floorplan of your home, garden or plot in metres, then share it with an expert for a second opinion.",
+  description: "Draw a quick floorplan of your home, garden or plot in metres, then share it with an expert for a second opinion. Feel free to experiment with the Sketch tab and play with it before sharing it with our experts.",
 };
 
 /** The floorplan sketcher. Free to use; signing in saves plans and lifts the limits. */

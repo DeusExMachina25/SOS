@@ -58,8 +58,8 @@ export const HOME_BEATS = {
       <MinimalStoryBox
         title="Too Close to the Canvas"
         paragraphs={[
-          "Every project starts with a jump. Some people take it. Others spend months standing at the edge.",
-          "Stand too close to your own plan and you stop asking for help. The longer you carry it alone, the harder it gets to show anyone else what you see.",
+          "Every project starts with a jump. Some people take it. Others spend months standing at the edge fine-tuning every single aspect.",
+          "Standing too close to your own plan can narrow your vision as you stop asking for help.",
         ]}
       />
     ),
@@ -72,7 +72,7 @@ export const HOME_BEATS = {
       <MinimalStoryBox
         title="Why a Second Opinion"
         paragraphs={[
-          "Someone who didn't draw the plan will spot what you stopped noticing weeks ago. Our experts have nothing to sell you after the call. Their only job is to make the plan work for you.",
+          "Someone who didn't draw the plan will spot what you stopped noticing weeks ago. Our experts have an eye for taste and a taste for aesthetics, with no further motive than to be there for you when you need some direction. Share your vision with one of them. Their only job is to make the plan work for you.",
         ]}
       />
     ),
@@ -135,7 +135,7 @@ export const HOME_BEATS = {
             Already a member? Log in
           </Link>
           <p className="font-display text-sm md:text-base text-[var(--text-faint)] tracking-[0.2em] uppercase">
-            Find a Compass
+            Or Sign In and Find Your Compass
           </p>
         </div>
       </>

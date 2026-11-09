@@ -37,7 +37,7 @@ export const BLOCKS = {
   P4: { name: "Expert profile card", Component: ExpertProfile },
   P5: { name: "How booking works", Component: HowBooking },
   P6: { name: "Investment", Component: Investment },
-  P7: { name: "We've got a lot to talk about", Component: TalkAbout },
+  P7: { name: "Colour boxes", Component: TalkAbout },
   P8: { name: "Let's Talk (Platter version)", Component: () => <LetsTalk source="platter" /> },
 } satisfies Record<string, { name: string; Component: ComponentType }>;
 

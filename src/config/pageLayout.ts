@@ -31,7 +31,7 @@ export const PAGE_LAYOUT: Record<"home" | "us" | "platter", BlockId[]> = {
     "P2", // "The Platter" title and intro
     "P3", // The Collective: field pie (picks the expert for P4)
     "P4", // Expert profile card
-    "P7", // We've got a lot to talk about
+    "P7", // colour boxes
     "P8", // Let's Talk + contact form (Platter version)
   ],
 };

@@ -25,7 +25,7 @@ const BEATS: Record<"render" | "collective" | "standard", Beat> = {
     eyebrow: "Why we built it",
     title: "Every render hides a section.",
     content:
-      "Most advice on a project comes attached to something being sold. Here the second opinion is the whole service, given in plain words by someone who has built the thing before.",
+      "Most advice on a project comes attached to something being sold. Here, at the second opinion, we focus on the whole service, given in plain words by someone who has built the thing before.",
     Graphic: FacadeSectionCut,
   },
   collective: {
@@ -33,7 +33,7 @@ const BEATS: Record<"render" | "collective" | "standard", Beat> = {
     eyebrow: "The collective",
     title: "Invited, not listed.",
     content:
-      "Architects, designers and engineers join by invitation. We check what they've built before they take their first session.",
+      "Architects, designers and engineers join by invitation. We check what they've built before they take their first session. This ensures a bespoke level of quality that can only be connected with through the thought of a Second Opinion.",
     Graphic: VeneerStack,
   },
   standard: {
