@@ -25,9 +25,11 @@ Dev-only login shortcuts (`test@sos.com`, phone `0000000000` / OTP `123456`) are
 
 ## Deploying (Vercel + Supabase)
 
+For a step-by-step launch checklist (domain, email, live Razorpay and LiveKit keys, Sentry, experts), see [`docs/LAUNCH-SETUP.md`](docs/LAUNCH-SETUP.md).
+
 ### 1. Supabase
 1. Create a project. In **Authentication → Providers** enable Email and Phone (OTP) as needed; set **Site URL** and **Redirect URLs** to your production domain.
-2. Run every file in `supabase/migrations/` **in order** (`0000` → `0015`) in the SQL editor, or run `supabase/deploy/all_migrations.sql` once. They are idempotent and run from an empty database.
+2. Run every file in `supabase/migrations/` **in order** (`0000` → `0021`, oldest first) in the SQL editor, or run `supabase/deploy/all_migrations.sql` once. They are idempotent and run from an empty database.
 3. Create the private storage bucket: `node scripts/setup-storage.mjs` (needs `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`).
 4. Make yourself an admin (the only way to get the `admin` role; the API cannot do it):
    `update public.profiles set role = 'admin' where id = '<your auth user id>';`
@@ -76,7 +78,13 @@ Until a real portrait exists, each expert shows a monogram. To add one:
 
 A photo stored on the expert in the database (`expert_profiles.avatar_url`) takes priority over that list. It appears on the Platter profile card and on the pie's expert cards.
 
+## Emails and error tracking
+- **Booking emails:** when a Razorpay payment is recorded, the client and the expert each get a confirmation with a calendar invite (`src/lib/email/`). Off until `RESEND_API_KEY` and `EMAIL_FROM` are set. Direct-UPI bookings don't send one yet.
+- **Error tracking:** Sentry captures browser, server and edge errors once `NEXT_PUBLIC_SENTRY_DSN` is set (`src/instrumentation*.ts`, `src/sentry.shared.ts`).
+- **CI:** `.github/workflows/ci.yml` runs lint, typecheck, unit and database tests, and a production build on every pull request.
+
 ## Known limitations
 - Expert payouts are manual (see Razorpay above).
+- No session reminder emails yet (only the confirmation when payment lands).
 - No rate limiting on the public contact form beyond length checks; add Vercel/WAF rules if spam appears.
 - The marketing pages load many Google Fonts families; trimming them would improve first paint.

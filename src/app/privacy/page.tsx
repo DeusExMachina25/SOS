@@ -59,6 +59,8 @@ export default function PrivacyPage() {
           <li><strong>LiveKit</strong> &mdash; real-time video and audio.</li>
           <li><strong>Razorpay</strong> &mdash; payment processing.</li>
           <li><strong>Vercel</strong> &mdash; website hosting.</li>
+          <li><strong>Sentry</strong> &mdash; error reports when something breaks, without your IP address or cookies.</li>
+          <li><strong>Resend</strong> &mdash; sends booking and payment emails.</li>
           <li><strong>Google Fonts</strong> &mdash; loads typefaces, which means your browser contacts Google when you visit.</li>
         </ul>
         <p>

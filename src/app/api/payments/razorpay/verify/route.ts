@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
+import { notifyBookingPaid } from "@/lib/email/notifyBookingPaid";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import {
@@ -55,7 +56,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await markOrderPaid(orderId, paymentId);
+    // Email only on the call that actually recorded the payment, after the
+    // response is sent so the client isn't kept waiting.
+    if (await markOrderPaid(orderId, paymentId)) after(() => notifyBookingPaid(orderId));
   } catch (e) {
     console.error("markOrderPaid failed", e);
     return NextResponse.json({ error: "Could not record payment" }, { status: 500 });

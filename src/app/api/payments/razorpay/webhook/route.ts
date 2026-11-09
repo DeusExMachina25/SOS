@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
+import { notifyBookingPaid } from "@/lib/email/notifyBookingPaid";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { markOrderPaid, verifyWebhookSignature } from "@/lib/payments/razorpay";
 
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest) {
 
   try {
     if (event.event === "payment.captured" || event.event === "order.paid") {
-      await markOrderPaid(p.order_id, p.id);
+      const orderId = p.order_id;
+      if (await markOrderPaid(orderId, p.id)) after(() => notifyBookingPaid(orderId));
     } else if (event.event === "payment.failed") {
       await createSupabaseAdminClient()
         .from("payments")
