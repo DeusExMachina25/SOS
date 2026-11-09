@@ -12,6 +12,10 @@ import {
 } from "@/lib/data/queries";
 import { formatFileSize, fileKindOf } from "@/lib/data/format";
 import type { VaultFile, Session } from "@/lib/data/types";
+import MagneticDropZone from "./MagneticDropZone";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+
+const MAX_BYTES = 50 * 1024 * 1024;
 
 export default function VaultWorkspace({ role }: { role: "client" | "expert" }) {
   const [activeTab, setActiveTab] = useState("All Files");
@@ -22,7 +26,9 @@ export default function VaultWorkspace({ role }: { role: "client" | "expert" }) 
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
+  // "2 of 3" while a batch of files uploads; null when idle.
+  const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
+  const confirm = useConfirm();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,30 +51,49 @@ export default function VaultWorkspace({ role }: { role: "client" | "expert" }) 
     fileInputRef.current?.click();
   };
 
-  const handleFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const chosen = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file || !selectedSessionId) return;
+    uploadFiles(chosen);
+  };
 
-    setError("");
-    setUploading(true);
-    try {
-      const uploaded = await uploadVaultFile(selectedSessionId, file);
-      setFiles((prev) => [uploaded, ...prev]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploading(false);
+  // Shared by the file picker and drag-and-drop. Uploads one at a time so a failure names the file.
+  const uploadFiles = async (chosen: File[]) => {
+    if (chosen.length === 0) return;
+    if (!selectedSessionId) {
+      handlePickFile(); // shows the "book a session first" message
+      return;
     }
+    const tooBig = chosen.filter((f) => f.size > MAX_BYTES);
+    const ok = chosen.filter((f) => f.size <= MAX_BYTES);
+    setError(tooBig.length ? `${tooBig.map((f) => f.name).join(", ")} ${tooBig.length === 1 ? "is" : "are"} over 50MB and wasn't uploaded.` : "");
+    if (ok.length === 0) return;
+
+    setUploading({ done: 0, total: ok.length });
+    for (let i = 0; i < ok.length; i++) {
+      try {
+        const uploaded = await uploadVaultFile(selectedSessionId, ok[i]);
+        setFiles((prev) => [uploaded, ...prev]);
+      } catch (err) {
+        setError(`${ok[i].name}: ${err instanceof Error ? err.message : "Upload failed"}`);
+      }
+      setUploading({ done: i + 1, total: ok.length });
+    }
+    setUploading(null);
   };
 
   const handleDeleteFile = async (file: VaultFile) => {
-    if (!confirm("Are you sure you want to delete this encrypted file from the vault?")) return;
+    const ok = await confirm({
+      title: `Delete ${file.name}?`,
+      message: "It is removed from the vault for you and your expert.",
+      action: "Delete",
+    });
+    if (!ok) return;
     try {
       await deleteVaultFile(file.id, file.storagePath);
       setFiles((prev) => prev.filter((f) => f.id !== file.id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete file");
+      setError(err instanceof Error ? err.message : "Failed to delete file");
     }
   };
 
@@ -77,7 +102,7 @@ export default function VaultWorkspace({ role }: { role: "client" | "expert" }) 
       const url = await getVaultFileUrl(file.storagePath);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to generate download link");
+      setError(err instanceof Error ? err.message : "Failed to generate download link");
     }
   };
 
@@ -146,25 +171,32 @@ export default function VaultWorkspace({ role }: { role: "client" | "expert" }) 
       )}
 
       {/* DROPZONE */}
-      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChosen} />
-      <div
+      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChosen} />
+      <MagneticDropZone
         onClick={handlePickFile}
-        className="w-full border-2 border-dashed border-[var(--border-strong)] rounded-[32px] p-12 text-center hover:border-[var(--color-green)] transition-all cursor-pointer bg-[var(--bg-surface-2)] flex flex-col items-center justify-center mb-12 group"
+        onFiles={uploadFiles}
+        disabled={uploading !== null}
+        icon={
+          uploading ? (
+            <Loader2 size={32} className="text-[var(--color-green)] animate-spin" />
+          ) : (
+            <FileUp size={32} className="text-[var(--text-muted)] group-hover:text-[var(--color-green)] transition-colors" />
+          )
+        }
+        title={uploading ? (uploading.total > 1 ? `Uploading ${uploading.done + 1} of ${uploading.total}…` : "Uploading…") : "Upload to Vault"}
+        hint={
+          sessions.length > 0
+            ? `Drag files here, or click to choose, for the selected ${role === "client" ? "session" : "consultation"}.`
+            : role === "client"
+              ? "Book a session first — files attach to a session."
+              : "No consultations yet — files attach to a session."
+        }
       >
-        <div className="w-20 h-20 rounded-full bg-[var(--bg-surface)] border border-[var(--border-strong)] flex items-center justify-center mb-6 group-hover:bg-[var(--color-green)]/10 group-hover:border-[var(--color-green)]/30 transition-all">
-          {uploading ? <Loader2 size={32} className="text-[var(--color-green)] animate-spin" /> : <FileUp size={32} className="text-[var(--text-muted)] group-hover:text-[var(--color-green)] transition-colors" />}
-        </div>
-        <h2 className="font-display text-2xl font-bold mb-2 text-[var(--text-primary)] group-hover:text-[var(--color-green)] transition-colors">
-          {uploading ? "Uploading…" : "Upload to Vault"}
-        </h2>
-        <p className="text-sm text-[var(--text-muted)] font-inter mb-6">
-          {sessions.length > 0 ? `Click to choose a file for the selected ${role === "client" ? "session" : "consultation"}.` : role === "client" ? "Book a session first — files attach to a session." : "No consultations yet — files attach to a session."}
-        </p>
-        <div className="flex gap-4 text-xs font-mono-sos text-[var(--text-faint)] tracking-widest">
+        <div className="flex gap-4 text-xs font-mono-sos text-[var(--text-faint)] tracking-widest pointer-events-none">
           <span className="bg-[var(--bg-base)] px-4 py-2 rounded-full border border-[var(--border)]">MAX 50MB</span>
           <span className="bg-[var(--bg-base)] px-4 py-2 rounded-full border border-[var(--border)] text-[var(--color-green)]/70">PRIVATE STORAGE</span>
         </div>
-      </div>
+      </MagneticDropZone>
 
       {/* TABS */}
       <div className="flex gap-8 mb-8 border-b border-[var(--border)]">

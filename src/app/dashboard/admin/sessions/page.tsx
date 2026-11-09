@@ -8,10 +8,12 @@ import { paymentBadge, payoutProgressBySession, type PayoutProgress } from "@/li
 import { canRefund, refundWarning } from "@/lib/data/adminRules";
 import { formatInr } from "@/lib/data/format";
 import type { Session } from "@/lib/data/types";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Filter = "all" | "paid" | "unpaid" | "refunded";
 
 export default function AdminSessionsPage() {
+  const confirm = useConfirm();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [progress, setProgress] = useState<Map<string, PayoutProgress>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ export default function AdminSessionsPage() {
   }, []);
 
   const refund = async (s: Session) => {
-    if (!window.confirm(`Refund "${s.title}" (${formatInr(s.amountInr)})?\n\n${refundWarning(s)}`)) return;
+    if (!(await confirm({ title: `Refund "${s.title}" (${formatInr(s.amountInr)})?`, message: refundWarning(s), action: "Refund" }))) return;
     setError("");
     setBusy(s.id);
     try {

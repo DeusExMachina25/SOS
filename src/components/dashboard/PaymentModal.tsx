@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CreditCard, Smartphone, Copy, Check, Loader2 } from "lucide-react";
+import { X, CreditCard, Smartphone, Copy, Check, Loader2, Printer } from "lucide-react";
 import { payWithRazorpay, payMockRazorpay, markUpiPaymentSent, getPaymentForSession } from "@/lib/data/queries";
 import { formatInr } from "@/lib/data/format";
-import type { Payment } from "@/lib/data/types";
+import type { Payment, Session } from "@/lib/data/types";
+import Receipt from "./Receipt";
 
 /**
  * Post-booking payment step. Two paths:
@@ -13,12 +14,15 @@ import type { Payment } from "@/lib/data/types";
  *    doesn't have yet — see supabase/migrations/0009_payments_phase2.sql).
  *  - Direct UPI: real, functional today. Client pays the expert directly
  *    and self-reports; the expert confirms receipt from their side.
+ *
+ * Either way the modal ends on a printed receipt the client can print or save as PDF.
  */
 export default function PaymentModal({
   sessionId,
   amountInr,
   expertName,
   expertUpiId,
+  session,
   onClose,
   onPaid,
 }: {
@@ -26,10 +30,14 @@ export default function PaymentModal({
   amountInr: number | null;
   expertName: string;
   expertUpiId: string | null;
+  /** The session being paid for, printed on the receipt. */
+  session?: Pick<Session, "title" | "date" | "time" | "duration">;
   onClose: () => void;
   onPaid?: (payment: Payment) => void;
 }) {
-  const [mode, setMode] = useState<"choose" | "upi_sent">("choose");
+  const [mode, setMode] = useState<"choose" | "receipt">("choose");
+  const [payment, setPayment] = useState<Payment | null>(null);
+  const [paidAt, setPaidAt] = useState<Date | null>(null);
   const [loading, setLoading] = useState<"razorpay" | "upi" | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -50,9 +58,9 @@ export default function PaymentModal({
     try {
       const paid = await payWithRazorpay(sessionId);
       if (paid) {
-        const payment = await getPaymentForSession(sessionId);
-        if (payment) onPaid?.(payment);
-        onClose();
+        const p = await getPaymentForSession(sessionId);
+        if (p) onPaid?.(p);
+        showReceipt(p);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment failed");
@@ -65,9 +73,9 @@ export default function PaymentModal({
     setError("");
     setLoading("razorpay");
     try {
-      const payment = await payMockRazorpay(sessionId);
-      onPaid?.(payment);
-      onClose();
+      const p = await payMockRazorpay(sessionId);
+      onPaid?.(p);
+      showReceipt(p);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment failed");
     } finally {
@@ -79,14 +87,20 @@ export default function PaymentModal({
     setError("");
     setLoading("upi");
     try {
-      const payment = await markUpiPaymentSent(sessionId, amountInr ?? 0);
-      onPaid?.(payment);
-      setMode("upi_sent");
+      const p = await markUpiPaymentSent(sessionId, amountInr ?? 0);
+      onPaid?.(p);
+      showReceipt(p);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to record payment");
     } finally {
       setLoading(null);
     }
+  };
+
+  const showReceipt = (p: Payment | null) => {
+    setPayment(p);
+    setPaidAt(new Date());
+    setMode("receipt");
   };
 
   const handleCopy = () => {
@@ -210,21 +224,103 @@ export default function PaymentModal({
               </div>
             </>
           ) : (
-            <div className="text-center py-6">
-              <h2 className="font-display text-3xl font-bold mb-4 text-[var(--text-primary)]">Payment Sent</h2>
-              <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-10">
-                We&apos;ve notified your expert. Once they confirm receipt, this session will be marked as paid.
-              </p>
-              <button
-                onClick={onClose}
-                className="btn-sos-filled w-full py-4 text-sm text-center justify-center rounded-2xl tracking-widest"
-              >
-                Done
-              </button>
-            </div>
+            <PaidReceipt
+              payment={payment}
+              paidAt={paidAt}
+              amountInr={amountInr}
+              expertName={expertName}
+              session={session}
+              onClose={onClose}
+            />
           )}
         </motion.div>
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+const METHOD_LABEL: Record<Payment["method"], string> = {
+  razorpay: "Razorpay (online)",
+  razorpay_mock: "Razorpay (test)",
+  upi_direct: "UPI, direct to expert",
+};
+
+/** The full receipt shown once a payment is made or reported. */
+function PaidReceipt({
+  payment,
+  paidAt,
+  amountInr,
+  expertName,
+  session,
+  onClose,
+}: {
+  payment: Payment | null;
+  paidAt: Date | null;
+  amountInr: number | null;
+  expertName: string;
+  session?: Pick<Session, "title" | "date" | "time" | "duration">;
+  onClose: () => void;
+}) {
+  // A direct UPI payment is only "paid" once the expert confirms they received it.
+  const confirmed = payment?.status === "paid";
+  const amount = payment?.amountInr ?? amountInr;
+  const ref = payment?.razorpayPaymentId ?? payment?.razorpayOrderId ?? null;
+
+  return (
+    <div>
+      <h2 className="font-display text-3xl font-bold mb-2 text-[var(--text-primary)]">
+        {confirmed ? "Payment received" : "Payment recorded"}
+      </h2>
+      <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-6">
+        {confirmed
+          ? "Your receipt is below. You can also find this session under Sessions."
+          : "We've told your expert. The session is marked paid once they confirm the money arrived."}
+      </p>
+
+      <div className="max-h-[50vh] overflow-y-auto scrollbar-thin">
+        <Receipt
+          printing
+          heading="Payment receipt"
+          reference={payment ? `No. ${payment.id.slice(0, 8).toUpperCase()}` : undefined}
+          details={[
+            { label: "Paid on", value: (paidAt ?? new Date()).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) },
+            { label: "Expert", value: expertName },
+            ...(session
+              ? [
+                  { label: "Session", value: session.title },
+                  { label: "When", value: `${session.date} · ${session.time}` },
+                ]
+              : []),
+            { label: "Method", value: payment ? METHOD_LABEL[payment.method] : "—" },
+            ...(ref ? [{ label: "Reference", value: ref }] : []),
+          ]}
+          lines={[{ label: `Session fee${session ? ` (${session.duration})` : ""}`, value: formatInr(amount) }]}
+          total={{ label: confirmed ? "Paid" : "Sent", value: formatInr(amount) }}
+          stamp={confirmed ? { text: "Paid", tone: "paid" } : { text: "Pending", tone: "pending" }}
+          note={
+            payment?.method === "upi_direct"
+              ? "Paid directly to your expert over UPI. Thank you."
+              : "Held securely and released to your expert around the session. Thank you."
+          }
+        />
+      </div>
+
+      <div className="mt-8 flex gap-3">
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="flex-1 flex items-center justify-center gap-2 border border-[var(--border-strong)] rounded-2xl py-4 font-mono-sos text-xs tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+        >
+          <Printer size={14} /> Print / PDF
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="btn-sos-filled flex-1 py-4 text-sm text-center justify-center rounded-2xl tracking-widest"
+        >
+          Done
+        </button>
+      </div>
+    </div>
   );
 }
