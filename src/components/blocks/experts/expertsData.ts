@@ -38,7 +38,7 @@ export const DEFAULT_EXPERTS: ExpertProfile[] = [
     role: "expert",
     field: "architecture",
     expert_role: "Principal Architect & Interior Designer",
-    bio: "Twenty years running an independent residential practice in the city and the countryside. Apartment interiors and how rooms connect, structure and materials on new builds, and master plans for larger plots outside town.",
+    bio: "Ten years running an independent residential practice in the city and the countryside. Apartment interiors and how rooms connect, structure and materials on new builds, and master plans for larger plots outside town.",
     tags: ["RESIDENTIAL ARCHITECTURE", "INTERIOR DESIGN", "MASTER PLANNING"],
     disciplines: [
       { id: "01", title: "Interiors & Spatial Flow", desc: "How to use a city flat well: how you move through it, where things get stored and which materials to use, room by room." },
