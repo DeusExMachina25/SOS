@@ -10,8 +10,9 @@ import { useEffect, useRef, useState } from "react";
 const NAV_ITEMS = [
   { path: "/", label: "Home", num: "001//" },
   { path: "/platter", label: "Platter", num: "002//" },
-  { path: "/us", label: "Us", num: "003//" },
-  { path: "/login", label: "Login", num: "004//" },
+  { path: "/sketch", label: "Sketch", num: "003//" },
+  { path: "/us", label: "Us", num: "004//" },
+  { path: "/login", label: "Login", num: "005//" },
 ];
 
 export default function Navbar() {

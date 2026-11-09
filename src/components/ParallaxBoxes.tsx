@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import { subscribePointer } from "@/lib/motion/pointer";
 
 const BOX_COLORS = [
   "bg-[var(--color-primary)]",
@@ -34,11 +35,11 @@ export default function ParallaxBoxes() {
     const box2XTo = gsap.quickTo(box2Ref.current, "x", { duration: 0.9, ease: "power2.out" });
     const box2YTo = gsap.quickTo(box2Ref.current, "y", { duration: 0.9, ease: "power2.out" });
 
-    // 3. Mouse Tracking Event
-    const handleMouseMove = (e: MouseEvent) => {
-      // Normalize mouse coordinates to a center origin (-0.5 to 0.5)
-      const centerX = e.clientX / window.innerWidth - 0.5;
-      const centerY = e.clientY / window.innerHeight - 0.5;
+    // 3. Mouse on a computer, tilt on a phone
+    const unsubscribePointer = subscribePointer(({ x, y }) => {
+      // Normalize to a center origin (-0.5 to 0.5)
+      const centerX = x / window.innerWidth - 0.5;
+      const centerY = y / window.innerHeight - 0.5;
       
       // Shift box 1 backwards (opposite of mouse)
       box1XTo(centerX * -30); 
@@ -47,13 +48,11 @@ export default function ParallaxBoxes() {
       // Shift box 2 forwards (with the mouse)
       box2XTo(centerX * 40); 
       box2YTo(centerY * 40);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
+    });
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener("mousemove", handleMouseMove);
+      unsubscribePointer();
     };
   }, []);
 

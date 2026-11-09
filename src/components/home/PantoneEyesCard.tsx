@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { subscribePointer } from "@/lib/motion/pointer";
 
 export default function PantoneEyesCard() {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -17,20 +18,11 @@ export default function PantoneEyesCard() {
   });
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      state.current.targetX = (e.clientX / window.innerWidth) * 2 - 1;
-      state.current.targetY = (e.clientY / window.innerHeight) * 2 - 1;
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length > 0) {
-        state.current.targetX = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-        state.current.targetY = (e.touches[0].clientY / window.innerHeight) * 2 - 1;
-      }
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("touchmove", handleTouchMove);
+    // Mouse on a computer; tilt on a phone, or a dragged finger if tilt is off
+    const unsubscribePointer = subscribePointer(({ x, y }) => {
+      state.current.targetX = (x / window.innerWidth) * 2 - 1;
+      state.current.targetY = (y / window.innerHeight) * 2 - 1;
+    });
 
     let animationFrameId: number;
 
@@ -85,8 +77,7 @@ export default function PantoneEyesCard() {
     animate();
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("touchmove", handleTouchMove);
+      unsubscribePointer();
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
