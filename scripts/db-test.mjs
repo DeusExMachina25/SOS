@@ -339,5 +339,14 @@ try {
   await db.exec(`reset role`);
 }
 
+// --- Email log: only the server reads or writes it ----------------------------
+await expectFail("client reads the email log", C, `select * from public.email_log`);
+await expectFail("client marks an email as sent", C, `insert into public.email_log (session_id, kind) values ('${s3}','session_reminder')`);
+await db.exec(`set role service_role`);
+const claim1 = await db.query(`insert into public.email_log (session_id, kind) values ('${s3}','booking_paid') on conflict do nothing returning session_id`);
+const claim2 = await db.query(`insert into public.email_log (session_id, kind) values ('${s3}','booking_paid') on conflict do nothing returning session_id`);
+await db.exec(`reset role`);
+if (claim1.rows.length !== 1 || claim2.rows.length !== 0) { console.log("FAIL: an email could be claimed twice"); failures++; } else console.log("allowed   : server claims an email once; a second claim finds it taken");
+
 console.log(failures ? `\n${failures} PROBLEM(S)` : "\nALL CHECKS PASSED");
 process.exit(failures ? 1 : 0);
