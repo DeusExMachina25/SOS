@@ -607,6 +607,18 @@ export async function confirmUpiPaymentReceived(sessionId: string): Promise<void
   if (paymentError) throw new Error(`Failed to confirm payment: ${paymentError.message}`);
 
   // sessions.payment_status is derived from the payment by a DB trigger.
+
+  // Ask the server to email both sides the booking confirmation. The payment
+  // is already confirmed, so a failure here is logged and otherwise ignored.
+  try {
+    await fetch("/api/payments/confirmed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId }),
+    });
+  } catch (e) {
+    console.warn("Could not request the booking confirmation email", e);
+  }
 }
 
 /**
