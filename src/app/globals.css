@@ -918,3 +918,47 @@ html.sos-seen .sos-preloader { display: none !important; }
     print-color-adjust: exact;
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD CARDS
+   Four tinted card fills, one per --field step, so cards read as
+   distinct colours (the reference's pastels) without a new hue.
+   Rounded cards, square chips: --dash-radius is for cards only;
+   buttons, chips and inputs inside them stay hard-edged.
+════════════════════════════════════════════════════════*/
+:root,
+[data-theme="dark"] {
+  --dash-radius: 24px;
+  --tint-1: color-mix(in srgb, var(--field-1) 13%, var(--bg-base));
+  --tint-2: color-mix(in srgb, var(--field-2) 22%, var(--bg-base));
+  --tint-3: color-mix(in srgb, var(--field-3) 15%, var(--bg-base));
+  --tint-4: color-mix(in srgb, var(--field-4) 14%, var(--bg-base));
+  --tint-plain: color-mix(in srgb, var(--field-1) 5%, var(--bg-base));
+  --tint-track: rgba(255, 218, 185, 0.14);
+}
+
+[data-theme="light"] {
+  --tint-1: color-mix(in srgb, #FFFFFF 55%, var(--bg-base));
+  --tint-2: color-mix(in srgb, var(--field-1) 16%, var(--bg-base));
+  --tint-3: color-mix(in srgb, #FFFFFF 30%, var(--bg-base));
+  --tint-4: color-mix(in srgb, var(--field-3) 18%, var(--bg-base));
+  --tint-plain: color-mix(in srgb, #FFFFFF 70%, var(--bg-base));
+  --tint-track: rgba(19, 15, 28, 0.12);
+}
+
+.dash-card {
+  border-radius: var(--dash-radius);
+  border: 1px solid var(--border);
+}
+
+@keyframes dash-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.dash-bar-fill {
+  transform-origin: left center;
+  animation: dash-fill 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-bar-fill { animation: none; }
+}

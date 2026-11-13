@@ -7,8 +7,10 @@ import NotificationBell from "./NotificationBell";
 import type { UnreadThread } from "@/lib/data/unread";
 
 interface TopBarProps {
-  /** Breadcrumb tail — the current page name */
-  pageName: string;
+  /** The big heading: "Welcome back, Priya" on Overview, the page name elsewhere */
+  title: string;
+  /** Small line above the heading: the greeting and time, or the role */
+  eyebrow?: string;
   role: string;
   theme: string;
   onToggleTheme: () => void;
@@ -21,8 +23,14 @@ interface TopBarProps {
   unreadThreads?: UnreadThread[];
 }
 
+/**
+ * The dashboard header, laid out like the reference: a large editorial
+ * heading on the left, search, bell, theme and account on the right.
+ * It sits on the page itself rather than in a bar, so there is no border.
+ */
 export default function TopBar({
-  pageName,
+  title,
+  eyebrow,
   role,
   theme,
   onToggleTheme,
@@ -33,12 +41,14 @@ export default function TopBar({
 }: TopBarProps) {
   const dashboardRole = role === "expert" ? "expert" : "client";
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--bg-surface)] px-5 lg:px-7 h-[72px] shrink-0">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 font-mono-sos text-[10px] tracking-[0.2em] min-w-0">
-        <span className="text-[var(--text-faint)] capitalize hidden sm:inline">{role}</span>
-        <span className="text-[var(--color-primary)] hidden sm:inline">/</span>
-        <span className="text-[var(--text-primary)] truncate">{pageName}</span>
+    <header className="flex items-center justify-between gap-4 px-5 lg:px-8 pt-6 pb-4 lg:pt-8 shrink-0">
+      <div className="min-w-0">
+        {eyebrow && (
+          <p className="font-mono-sos text-[9px] tracking-[0.25em] text-[var(--text-faint)] truncate">{eyebrow}</p>
+        )}
+        <h1 className="mt-1.5 font-editorial text-[28px] sm:text-[40px] lg:text-[46px] leading-[1.05] tracking-tight text-[var(--text-primary)] break-words">
+          {title}
+        </h1>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
@@ -54,7 +64,7 @@ export default function TopBar({
           type="button"
           onClick={onToggleTheme}
           aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-          className="flex h-9 w-9 items-center justify-center border border-[var(--border)] text-[var(--text-muted)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
+          className="flex h-10 w-10 items-center justify-center border border-[var(--border)] text-[var(--text-muted)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
         >
           {theme === "dark" ? <Sun size={14} strokeWidth={1.75} /> : <Moon size={14} strokeWidth={1.75} />}
         </button>
@@ -64,7 +74,7 @@ export default function TopBar({
           type="button"
           onClick={onOpenProfile}
           aria-label="Open account settings"
-          className="flex h-9 w-9 items-center justify-center border border-[var(--border)] overflow-hidden transition-colors hover:border-[var(--color-primary)]"
+          className="flex h-10 w-10 items-center justify-center border border-[var(--border)] overflow-hidden transition-colors hover:border-[var(--color-primary)]"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

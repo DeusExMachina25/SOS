@@ -9,6 +9,9 @@ import PaymentModal from "@/components/dashboard/PaymentModal";
 import PaymentBadgeChip from "@/components/dashboard/PaymentBadgeChip";
 import { paymentBadge } from "@/lib/data/paymentBadge";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import Panel from "@/components/dashboard/Panel";
+import MonthlyBarChart from "@/components/dashboard/MonthlyBarChart";
+import { lastMonths } from "@/components/dashboard/metrics";
 
 export default function ClientSessionsPage() {
   const confirm = useConfirm();
@@ -100,6 +103,16 @@ export default function ClientSessionsPage() {
           </Link>
         </div>
       </header>
+
+      {/* Moved here from the Overview, which now leads with what needs you today */}
+      {!loading && sessions.length > 0 && (
+        <Panel title="Sessions over time" subtitle="LAST 6 MONTHS" className="mb-8">
+          <MonthlyBarChart
+            data={lastMonths(sessions.filter((s) => s.status !== "cancelled").map((s) => ({ at: s.startsAt, value: 1 })), 6)}
+            caption="Sessions booked per month over the last six months"
+          />
+        </Panel>
+      )}
 
       {/* FILTERS */}
       <div className="flex gap-4 mb-8">

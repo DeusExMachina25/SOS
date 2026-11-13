@@ -19,10 +19,10 @@ interface PanelProps {
 }
 
 /**
- * The dashboard's panel chrome: a titled, hard-edged surface.
+ * The dashboard's panel chrome: a titled surface.
  *
- * Deliberately square — the brutalist edge treatment the marketing pages
- * use — rather than the rounded cards of a typical SaaS console.
+ * Rounded like every dashboard card (--dash-radius); the controls inside
+ * it, such as the corner arrow, stay square.
  */
 export default function Panel({
   title,
@@ -35,7 +35,7 @@ export default function Panel({
 }: PanelProps) {
   return (
     <section
-      className={`flex flex-col border border-[var(--border)] bg-[var(--bg-surface)] ${className}`}
+      className={`dash-card flex flex-col overflow-hidden bg-[var(--tint-plain)] ${className}`}
     >
       <header className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-5 py-4 shrink-0">
         <div className="min-w-0">
