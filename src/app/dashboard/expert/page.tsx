@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, Video, Timer, Wallet, BellRing, CalendarCheck } from "lucide-react";
-import Link from "next/link";
+import { CalendarClock, DraftingCompass } from "lucide-react";
 import {
-  getMyProfile,
   getMySessions,
   getMyPayments,
   getMyAvailabilityRules,
@@ -15,16 +13,26 @@ import {
 import { generateSlotsForDate, dayBoundsUtc, dateInputInZone, addDaysToDateInput } from "@/lib/data/slots";
 import { formatInr } from "@/lib/data/format";
 import type { Session, Payment } from "@/lib/data/types";
+import { isoToDayKey, relativeDay } from "@/lib/data/calendar";
 import HoursLineChart from "@/components/dashboard/HoursLineChart";
 import StatTile from "@/components/dashboard/StatTile";
 import Panel from "@/components/dashboard/Panel";
-import ClientRoster from "@/components/dashboard/ClientRoster";
+import TodayCard from "@/components/dashboard/TodayCard";
+import ProgressCard from "@/components/dashboard/ProgressCard";
+import MiniCalendar from "@/components/dashboard/MiniCalendar";
+import ScheduleList from "@/components/dashboard/ScheduleList";
+import SectionHeading from "@/components/dashboard/SectionHeading";
+import { toneAt } from "@/components/dashboard/tones";
 import { monthDelta } from "@/components/dashboard/metrics";
 
+/**
+ * Expert Overview, in the same layout as the client's: what needs you,
+ * your practice in numbers, one progress card per client, and on the
+ * right a calendar with your upcoming consultations.
+ */
 export default function ExpertDashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [expertName, setExpertName] = useState("");
   const [loadError, setLoadError] = useState("");
   // null = not loaded (or failed); the tile then says so instead of showing 0
   const [openSlots, setOpenSlots] = useState<number | null>(null);
@@ -32,12 +40,10 @@ export default function ExpertDashboard() {
   useEffect(() => {
     async function loadExpertDashboard() {
       try {
-        const [profile, mySessions, myPayments] = await Promise.all([
-          getMyProfile(),
+        const [mySessions, myPayments] = await Promise.all([
           getMySessions(),
           getMyPayments(),
         ]);
-        if (profile) setExpertName(profile.fullName);
         setSessions(mySessions);
         setPayments(myPayments);
       } catch (err) {
@@ -104,78 +110,154 @@ export default function ExpertDashboard() {
     completed.map(x => ({ at: x.startsAt, value: x.durationMinutes / 60 }))
   );
 
+  const live = sessions.filter(s => s.status !== "cancelled");
+  const upcoming = sessions.filter(s => s.status === "scheduled");
+  const awaitingClientPay = live.filter(s => s.paymentStatus === "unpaid" && (s.amountInr ?? 0) > 0);
+  const toDays = (list: Session[]) =>
+    new Set(list.map(s => isoToDayKey(s.startsAt)).filter((k): k is string => !!k));
+
+  // One progress card per client, like the client's per-expert cards.
+  const clients = (() => {
+    const byClient = new Map<string, Session[]>();
+    for (const s of live) byClient.set(s.clientId, [...(byClient.get(s.clientId) ?? []), s]);
+    return [...byClient.entries()].map(([clientId, list]) => {
+      const billable = list.filter(s => (s.amountInr ?? 0) > 0);
+      const next = list.filter(s => s.status === "scheduled").sort((a, b) => (a.startsAt ?? "").localeCompare(b.startsAt ?? ""))[0];
+      return {
+        clientId,
+        name: list[0].clientName,
+        done: list.filter(s => s.status === "completed").length,
+        total: list.length,
+        paidPct: billable.length ? (billable.filter(s => s.paymentStatus !== "unpaid").length / billable.length) * 100 : 100,
+        next,
+      };
+    });
+  })();
+
+  const plateCount = upcoming.length + toConfirm;
+
   return (
-    <div className="w-full flex flex-col gap-5">
-      <div>
-        <p className="font-mono-sos text-[10px] tracking-[0.25em] text-[var(--text-faint)]">
-          Welcome back{expertName ? `, ${expertName}` : ""}
-        </p>
-        {loadError && <p className="font-mono-sos text-xs text-[var(--color-orange)] mt-2">{loadError}</p>}
-      </div>
+    <div className="grid grid-cols-1 gap-8 pt-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] lg:gap-10">
+      {/* ── Main column ─────────────────────────────── */}
+      <div className="flex min-w-0 flex-col gap-10">
+        {loadError && <p className="font-mono-sos text-xs text-[var(--color-orange)]">{loadError}</p>}
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatTile label="HOURS" value={totalHours.toFixed(1)} unit="hrs" icon={Timer} delta={hoursDelta} note="Completed consultations" />
-        <StatTile label="EARNED" value={formatInr(earned)} icon={Wallet} note="Paid by clients" />
-        <div className={toConfirm > 0 ? "border border-[var(--color-primary)]" : ""}>
-          <StatTile label="TO CONFIRM" value={String(toConfirm)} unit={toConfirm === 1 ? "payment" : "payments"} icon={BellRing} note="UPI payments awaiting you" />
-        </div>
-        <StatTile
-          label="OPEN SLOTS"
-          value={openSlots === null ? "—" : String(openSlots)}
-          unit={openSlots === null ? undefined : "next 14 days"}
-          icon={CalendarCheck}
-          note={openSlots === null ? "Availability unavailable" : openSlots === 0 ? "Set your weekly hours" : "Bookable by clients"}
-        />
-      </div>
+        <section aria-labelledby="today-heading" className="flex flex-col gap-5">
+          <SectionHeading id="today-heading" count={plateCount}>On your plate</SectionHeading>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {nextSession ? (
+              <TodayCard
+                tone={1}
+                eyebrow={`${nextSession.date} • ${nextSession.time}`}
+                title={nextSession.title}
+                status={nextSession.paymentStatus === "unpaid" ? "Awaiting payment" : relativeDay(nextSession.startsAt) || "Booked"}
+                people={[nextSession.clientName]}
+                {...(nextSession.paymentStatus === "unpaid"
+                  ? { actionLabel: "Open sessions", href: "/dashboard/expert/sessions" }
+                  : {
+                      actionLabel: `Start the call for ${nextSession.title}`,
+                      href: `/dashboard/video-call?sessionId=${nextSession.id}&sessionName=${encodeURIComponent(nextSession.title)}`,
+                    })}
+              />
+            ) : (
+              <TodayCard
+                tone={1}
+                eyebrow="Nothing scheduled"
+                title="No consultations booked yet"
+                actionLabel="Open sessions"
+                href="/dashboard/expert/sessions"
+              />
+            )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Panel title="Hours consulted" subtitle="LAST 7 DAYS" className="xl:col-span-2">
-          <HoursLineChart data={dayHours} days={dayLabels} />
-        </Panel>
+            {toConfirm > 0 ? (
+              <TodayCard
+                tone={4}
+                eyebrow="UPI payments"
+                title={`${toConfirm} ${toConfirm === 1 ? "payment" : "payments"} to confirm`}
+                status="Needs you"
+                actionLabel="Confirm payments"
+                href="/dashboard/expert/sessions"
+              />
+            ) : (
+              <TodayCard
+                tone={4}
+                eyebrow="Availability • next 14 days"
+                title={
+                  openSlots === null
+                    ? "Check your weekly hours"
+                    : openSlots === 0
+                    ? "Set your weekly hours so clients can book"
+                    : `${openSlots} open ${openSlots === 1 ? "slot" : "slots"} for clients`
+                }
+                actionLabel="Edit availability"
+                href="/dashboard/expert/availability"
+              />
+            )}
+          </div>
+        </section>
 
-        <Panel title="Next consultation" subtitle="UP NEXT" href="/dashboard/expert/sessions">
-          {nextSession ? (
-            <div className="flex flex-col h-full gap-4">
-              <div>
-                <h3 className="font-editorial text-2xl text-[var(--text-primary)] leading-tight">{nextSession.title}</h3>
-                <p className="font-mono-sos text-[11px] text-[var(--color-primary)] flex items-center gap-2 mt-3">
-                  <Clock size={13} /> {nextSession.date} • {nextSession.time}
-                </p>
-                <p className="font-inter text-xs text-[var(--text-muted)] mt-2">Client: {nextSession.clientName}</p>
-              </div>
-              <div className="mt-auto">
-                {nextSession.paymentStatus === "unpaid" ? (
-                  <p className="font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-muted)] border border-dashed border-[var(--border)] px-4 py-4 text-center">
-                    The call room opens once the client has paid
-                  </p>
-                ) : (
-                  <Link
-                    href={`/dashboard/video-call?sessionId=${nextSession.id}&sessionName=${encodeURIComponent(nextSession.title)}`}
-                    className="group/join flex w-full items-center justify-center gap-2 border border-[var(--border-strong)] bg-[var(--bg-surface-2)] py-3.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
-                  >
-                    <Video size={14} className="text-[var(--text-muted)] group-hover/join:text-[var(--color-primary)] transition-colors" /> START VIDEO CALL
-                  </Link>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center py-6">
-              <p className="font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-faint)]">NO SCHEDULED CONSULTATIONS</p>
-              <Link href="/dashboard/expert/sessions" className="mt-4 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--color-primary)] hover:underline">
-                VIEW ALL SESSIONS &rarr;
-              </Link>
+        <section aria-labelledby="practice-heading" className="flex flex-col gap-5">
+          <SectionHeading id="practice-heading">Your practice</SectionHeading>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatTile tone={1} label="Hours" value={totalHours.toFixed(1)} unit="hrs" delta={hoursDelta} note="Completed consultations" href="/dashboard/expert/sessions" />
+            <StatTile tone={3} label="Earned" value={formatInr(earned)} note="Paid by clients" href="/dashboard/expert/sessions" />
+            <StatTile
+              tone={2}
+              label="Open slots"
+              value={openSlots === null ? "—" : String(openSlots)}
+              unit={openSlots === null ? undefined : "next 14 days"}
+              note={openSlots === null ? "Availability unavailable" : openSlots === 0 ? "Set your weekly hours" : "Bookable by clients"}
+              href="/dashboard/expert/availability"
+            />
+          </div>
+
+          {clients.length > 0 && (
+            <div className="grid grid-cols-1 gap-4">
+              {clients.map((c, i) => (
+                <ProgressCard
+                  key={c.clientId}
+                  tone={toneAt(i + 2)}
+                  icon={DraftingCompass}
+                  category={c.next ? `Next: ${c.next.date} • ${c.next.time}` : "No upcoming session"}
+                  meta={`${c.done} of ${c.total} ${c.total === 1 ? "session" : "sessions"} done`}
+                  title={c.name}
+                  bars={[
+                    { label: "Sessions done", pct: c.total ? (c.done / c.total) * 100 : 0 },
+                    { label: "Paid", pct: c.paidPct },
+                  ]}
+                  href="/dashboard/expert/sessions"
+                />
+              ))}
             </div>
           )}
-        </Panel>
-
-        <Panel
-          title="Your clients"
-          subtitle="ROSTER"
-          className="xl:col-span-3"
-        >
-          <ClientRoster sessions={sessions} />
-        </Panel>
+        </section>
       </div>
+
+      {/* ── Right column ────────────────────────────── */}
+      <aside aria-labelledby="schedule-heading" className="flex min-w-0 flex-col gap-5">
+        <SectionHeading id="schedule-heading">Schedule</SectionHeading>
+        <MiniCalendar
+          sessionDays={toDays(live)}
+          dueDays={toDays(awaitingClientPay)}
+          legend={{ session: "Consultation", due: "Awaiting payment" }}
+        />
+        <h3 className="mt-2 font-mono-sos text-[9px] tracking-[0.25em] text-[var(--text-faint)]">Coming up</h3>
+        <ScheduleList
+          empty="No upcoming consultations."
+          items={upcoming.slice(0, 5).map((s, i) => ({
+            id: s.id,
+            icon: CalendarClock,
+            title: s.title,
+            detail: `${s.clientName} • ${s.time}`,
+            when: relativeDay(s.startsAt) || s.date,
+            href: "/dashboard/expert/sessions",
+            tone: toneAt(i),
+          }))}
+        />
+        <Panel title="Hours consulted" subtitle="LAST 7 DAYS" className="mt-2">
+          <HoursLineChart data={dayHours} days={dayLabels} />
+        </Panel>
+      </aside>
     </div>
   );
 }

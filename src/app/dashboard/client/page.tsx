@@ -1,611 +1,294 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Video, X, Clock, CreditCard, CalendarClock, FolderLock, MessageSquare, FileText } from "lucide-react";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { CalendarClock, MessageSquare, FileText, Video, DraftingCompass } from "lucide-react";
 import {
   getApprovedExperts,
   getMySessions,
-  bookSession,
-  getOrCreateThread,
-  getCurrentUserId,
-  getMyPayments,
   getMyChatThreads,
   getMyVaultFiles,
-  getExpertAvailabilityRules,
-  getExpertBusyRanges,
 } from "@/lib/data/queries";
-import { generateSlotsForDate, todayDateInput, dayBoundsUtc, describeTimeZone, resolveTimeZone, type Slot } from "@/lib/data/slots";
 import { formatInr, formatFileSize, formatMessageTime } from "@/lib/data/format";
-import type { Session, Expert, Payment, ChatThreadSummary, VaultFile, AvailabilityRule } from "@/lib/data/types";
+import { isoToDayKey, relativeDay } from "@/lib/data/calendar";
+import type { Session, Expert, ChatThreadSummary, VaultFile } from "@/lib/data/types";
 import PaymentModal from "@/components/dashboard/PaymentModal";
-import Receipt from "@/components/dashboard/Receipt";
-import LiquidWaveGauge from "@/components/dashboard/LiquidWaveGauge";
+import BookingModal from "@/components/dashboard/BookingModal";
 import StatTile from "@/components/dashboard/StatTile";
-import Panel from "@/components/dashboard/Panel";
-import MonthlyBarChart from "@/components/dashboard/MonthlyBarChart";
-import { monthDelta, lastMonths } from "@/components/dashboard/metrics";
+import TodayCard from "@/components/dashboard/TodayCard";
+import ProgressCard from "@/components/dashboard/ProgressCard";
+import MiniCalendar from "@/components/dashboard/MiniCalendar";
+import ScheduleList, { type ScheduleItem } from "@/components/dashboard/ScheduleList";
+import SectionHeading from "@/components/dashboard/SectionHeading";
+import { toneAt } from "@/components/dashboard/tones";
+import { monthDelta } from "@/components/dashboard/metrics";
 
+const callHref = (s: Session) =>
+  `/dashboard/video-call?sessionId=${s.id}&sessionName=${encodeURIComponent(s.title)}`;
+
+/**
+ * Client Overview. Layout: what needs you today, your project in numbers,
+ * one progress card per expert; on the right, a calendar and what is coming up.
+ * The welcome heading, search and account live in the shared TopBar.
+ */
 export default function ClientDashboard() {
-  const [isBooking, setIsBooking] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState("");
-  const [slots, setSlots] = useState<Slot[]>([]);
-  const [slotsState, setSlotsState] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const [rulesByExpert, setRulesByExpert] = useState<Record<string, AvailabilityRule[]>>({});
-
-  const [sessionType, setSessionType] = useState("Architecture Review");
-  const [sessionDate, setSessionDate] = useState(todayDateInput());
-  const [selectedExpertId, setSelectedExpertId] = useState("");
-  const [bookingError, setBookingError] = useState("");
-  const [bookingSubmitting, setBookingSubmitting] = useState(false);
-  // The booking modal has two steps: fill in the form, then check a receipt-style summary.
-  const [bookingStep, setBookingStep] = useState<"form" | "review">("form");
-
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [dbExperts, setDbExperts] = useState<Expert[]>([]);
+  const [experts, setExperts] = useState<Expert[]>([]);
   const [currentExpert, setCurrentExpert] = useState<Expert | null>(null);
-  const [loadError, setLoadError] = useState("");
-
-  // Payment step, shown after a successful booking.
-  const [paymentSession, setPaymentSession] = useState<Session | null>(null);
-
-  // Real data for the overview panels
-  const [payments, setPayments] = useState<Payment[]>([]);
   const [threads, setThreads] = useState<ChatThreadSummary[]>([]);
   const [files, setFiles] = useState<VaultFile[]>([]);
+  const [loadError, setLoadError] = useState("");
 
-  // Time of Day and Timezone Offsets
-  const [greeting, setGreeting] = useState("Hello");
-  const [localTimeStr, setLocalTimeStr] = useState("");
-
-  const nextSession = sessions.filter(s => s.status === "scheduled")[0];
-  const paidTotal = payments.filter(p => p.status === "paid").reduce((n, p) => n + p.amountInr, 0);
-  const unpaidSessions = sessions.filter(
-    s => s.status !== "cancelled" && s.paymentStatus === "unpaid" && (s.amountInr ?? 0) > 0
-  );
-  const dueTotal = unpaidSessions.reduce((n, s) => n + (s.amountInr ?? 0), 0);
-  const settledPct = paidTotal + dueTotal > 0 ? (paidTotal / (paidTotal + dueTotal)) * 100 : 0;
-  const recentThreads = threads.filter(t => t.lastMessage).slice(0, 3);
-  const recentFiles = files.slice(0, 4);
+  const [isBooking, setIsBooking] = useState(false);
+  // Payment step, shown after a successful booking or from a "pay" arrow.
+  const [paymentSession, setPaymentSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    // Dynamic Greeting & Time Clock
-    const updateTimeContext = () => {
-      const now = new Date();
-      const hrs = now.getHours();
-      if (hrs < 12) setGreeting("Good morning");
-      else if (hrs < 17) setGreeting("Good afternoon");
-      else setGreeting("Good evening");
-
-      setLocalTimeStr(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }));
-    };
-
-    updateTimeContext();
-    const interval = setInterval(updateTimeContext, 30000);
-
     async function loadDashboardData() {
       try {
-        const [experts, mySessions, myPayments, myThreads, myFiles] = await Promise.all([
+        const [approved, mySessions, myThreads, myFiles] = await Promise.all([
           getApprovedExperts(),
           getMySessions(),
-          getMyPayments(),
           getMyChatThreads(),
           getMyVaultFiles(),
         ]);
-        setDbExperts(experts);
+        setExperts(approved);
         setSessions(mySessions);
-        setPayments(myPayments);
         setThreads(myThreads);
         setFiles(myFiles);
 
+        // Preselect for booking: the expert picked on Platter, else the one you last booked.
         const platterSelected = localStorage.getItem("platter_selected_expert");
-        let targetExpert = experts[0] ?? null;
-
+        let target = approved[0] ?? null;
         if (platterSelected) {
-          const match = experts.find(e => e.id === platterSelected);
-          if (match) targetExpert = match;
+          target = approved.find((e) => e.id === platterSelected) ?? target;
           localStorage.removeItem("platter_selected_expert");
         } else if (mySessions.length > 0) {
-          const match = experts.find(e => e.id === mySessions[0].expertId);
-          if (match) targetExpert = match;
+          target = approved.find((e) => e.id === mySessions[0].expertId) ?? target;
         }
-
-        if (targetExpert) {
-          setCurrentExpert(targetExpert);
-          setSelectedExpertId(targetExpert.id);
-        }
+        setCurrentExpert(target);
       } catch (err) {
         console.error("Error loading client dashboard data", err);
         setLoadError(err instanceof Error ? err.message : "Failed to load dashboard");
       }
     }
-
     loadDashboardData();
-    return () => clearInterval(interval);
   }, []);
 
-  // Availability is written in the expert's timezone, so that is the clock a date and its times are read on.
-  const expertZone = resolveTimeZone((dbExperts.find((e) => e.id === selectedExpertId) ?? currentExpert)?.timezone);
+  /* ── Derived numbers ───────────────────────────── */
+  const live = sessions.filter((s) => s.status !== "cancelled");
+  const upcoming = sessions.filter((s) => s.status === "scheduled");
+  const nextSession = upcoming[0];
+  const unpaidSessions = live.filter((s) => s.paymentStatus === "unpaid" && (s.amountInr ?? 0) > 0);
+  const dueTotal = unpaidSessions.reduce((n, s) => n + (s.amountInr ?? 0), 0);
+  const latestThread = threads.find((t) => t.lastMessage);
+  const sessionsDelta = monthDelta(live.map((s) => ({ at: s.startsAt, value: 1 })));
 
-  // Real bookable times: the expert's weekly availability minus what is already booked.
-  useEffect(() => {
-    if (!isBooking || !selectedExpertId || !sessionDate) return;
-    let cancelled = false;
-    (async () => {
-      setSlotsState("loading");
-      setSelectedSlot("");
-      try {
-        let rules = rulesByExpert[selectedExpertId];
-        if (!rules) {
-          rules = await getExpertAvailabilityRules(selectedExpertId);
-          if (cancelled) return;
-          setRulesByExpert((prev) => ({ ...prev, [selectedExpertId]: rules! }));
-        }
-        const bounds = dayBoundsUtc(sessionDate, expertZone);
-        if (!bounds) {
-          if (!cancelled) {
-            setSlots([]);
-            setSlotsState("ready");
-          }
-          return;
-        }
-        const busy = await getExpertBusyRanges(selectedExpertId, bounds.from, bounds.to);
-        if (cancelled) return;
-        setSlots(generateSlotsForDate(sessionDate, rules, busy, 60, expertZone));
-        setSlotsState("ready");
-      } catch (err) {
-        console.error("Failed to load availability", err);
-        if (!cancelled) setSlotsState("error");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // rulesByExpert is a cache; re-running when it fills would refetch busy ranges needlessly
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBooking, selectedExpertId, sessionDate, expertZone]);
+  // One progress card per expert you work with.
+  const engagements = (() => {
+    const byExpert = new Map<string, Session[]>();
+    for (const s of live) byExpert.set(s.expertId, [...(byExpert.get(s.expertId) ?? []), s]);
+    return [...byExpert.entries()].map(([expertId, list]) => {
+      const done = list.filter((s) => s.status === "completed").length;
+      const billable = list.filter((s) => (s.amountInr ?? 0) > 0);
+      const paid = billable.filter((s) => s.paymentStatus !== "unpaid").length;
+      return {
+        expertId,
+        name: list[0].expertName,
+        title: experts.find((e) => e.id === expertId)?.professionalTitle || "Your expert",
+        done,
+        total: list.length,
+        paidPct: billable.length ? (paid / billable.length) * 100 : 100,
+      };
+    });
+  })();
 
-  const openBooking = () => {
-    setBookingStep("form");
-    setBookingError("");
-    setIsBooking(true);
-  };
+  const toDays = (list: Session[]) =>
+    new Set(list.map((s) => isoToDayKey(s.startsAt)).filter((k): k is string => !!k));
+  const sessionDays = toDays(live);
+  const dueDays = toDays(unpaidSessions);
 
-  // Step 1 → 2: check the choices, then show the summary. Nothing is saved yet.
-  const handleReviewBooking = () => {
-    const targetExpert = dbExperts.find(e => e.id === selectedExpertId) ?? currentExpert;
-    if (!targetExpert) {
-      setBookingError("Choose an expert before booking.");
-      return;
-    }
-    if (!slots.some((t) => t.startsAt === selectedSlot)) {
-      setBookingError("Choose one of the available times.");
-      return;
-    }
-    setBookingError("");
-    setBookingStep("review");
-  };
-
-  const handleConfirmBooking = async () => {
-    const targetExpert = dbExperts.find(e => e.id === selectedExpertId) ?? currentExpert;
-    if (!targetExpert) {
-      setBookingError("Choose an expert before booking.");
-      return;
-    }
-
-    // The slot carries its own absolute start; nothing is re-derived from a label.
-    const chosen = slots.find((t) => t.startsAt === selectedSlot);
-    if (!chosen) {
-      setBookingError("Choose one of the available times.");
-      return;
-    }
-
-    setBookingError("");
-    setBookingSubmitting(true);
-    try {
-      const created = await bookSession({
-        expertId: targetExpert.id,
-        title: sessionType,
-        startsAt: chosen.startsAt,
-        durationMinutes: 60,
-      });
-
-      setSessions(prev => [created, ...prev]);
-
-      // Best-effort: open a chat thread with the expert so Messages isn't
-      // empty right after booking. Never block the booking on this.
-      getCurrentUserId()
-        .then((uid) => (uid ? getOrCreateThread(uid, targetExpert.id) : null))
-        .catch((err) => console.error("Failed to open chat thread", err));
-
-      setIsBooking(false);
-      setPaymentSession(created);
-    } catch (err) {
-      setBookingError(err instanceof Error ? err.message : "Failed to book session");
-    } finally {
-      setBookingSubmitting(false);
-    }
-  };
-
-  const upcoming = sessions.filter(s => s.status === "scheduled");
-  const sessionSeries = sessions
-    .filter(s => s.status !== "cancelled")
-    .map(s => ({ at: s.startsAt, value: 1 }));
-  const sessionsDelta = monthDelta(sessionSeries);
-
-  // One chronological feed from chat and vault, newest first.
-  const activity = [
-    ...recentThreads.map(t => ({
-      id: `m-${t.id}`,
-      at: t.lastMessageAt ?? "",
-      kind: "message" as const,
-      title: t.counterpartName,
-      detail: t.lastMessage ?? "",
-      href: "/dashboard/client/chat",
+  // Coming up: next sessions first, then the latest messages and files.
+  const comingUp: ScheduleItem[] = [
+    ...upcoming.slice(0, 3).map((s) => ({
+      id: `s-${s.id}`,
+      icon: CalendarClock,
+      title: s.title,
+      detail: `${s.expertName} • ${s.time}`,
+      when: relativeDay(s.startsAt) || s.date,
+      href: "/dashboard/client/sessions",
+      tone: 1 as const,
     })),
-    ...recentFiles.map(f => ({
-      id: `f-${f.id}`,
-      at: f.createdAt,
-      kind: "file" as const,
-      title: `${f.uploaderName} added ${f.name}`,
-      detail: formatFileSize(f.sizeBytes),
-      href: "/dashboard/client/vault",
-    })),
-  ].sort((x, y) => y.at.localeCompare(x.at)).slice(0, 6);
+    ...[
+      ...threads.filter((t) => t.lastMessage).slice(0, 2).map((t) => ({
+        at: t.lastMessageAt ?? "",
+        item: {
+          id: `m-${t.id}`,
+          icon: MessageSquare,
+          title: t.counterpartName,
+          detail: t.lastMessage ?? "",
+          when: formatMessageTime(t.lastMessageAt),
+          href: "/dashboard/client/chat",
+          tone: 2 as const,
+        },
+      })),
+      ...files.slice(0, 2).map((f) => ({
+        at: f.createdAt,
+        item: {
+          id: `f-${f.id}`,
+          icon: FileText,
+          title: f.name,
+          detail: `${f.uploaderName} • ${formatFileSize(f.sizeBytes)}`,
+          when: formatMessageTime(f.createdAt),
+          href: "/dashboard/client/vault",
+          tone: 3 as const,
+        },
+      })),
+    ]
+      .sort((x, y) => y.at.localeCompare(x.at))
+      .map((x) => x.item),
+  ].slice(0, 5);
+
+  const plateCount = upcoming.length + unpaidSessions.length;
 
   return (
-    <div className="w-full flex flex-col gap-5">
-      <div>
-        <p className="font-mono-sos text-[10px] tracking-[0.25em] text-[var(--text-faint)]">
-          {greeting}{localTimeStr ? ` • ${localTimeStr}` : ""}
-        </p>
-        {loadError && <p className="font-mono-sos text-xs text-[var(--color-orange)] mt-2">{loadError}</p>}
+    <div className="grid grid-cols-1 gap-8 pt-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] lg:gap-10">
+      {/* ── Main column ─────────────────────────────── */}
+      <div className="flex min-w-0 flex-col gap-10">
+        {loadError && <p className="font-mono-sos text-xs text-[var(--color-orange)]">{loadError}</p>}
+
+        <section aria-labelledby="today-heading" className="flex flex-col gap-5">
+          <SectionHeading id="today-heading" count={plateCount}>On your plate</SectionHeading>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {nextSession ? (
+              <TodayCard
+                tone={1}
+                eyebrow={`${nextSession.date} • ${nextSession.time}`}
+                title={nextSession.title}
+                status={nextSession.paymentStatus === "unpaid" ? "Pay to unlock" : relativeDay(nextSession.startsAt) || "Booked"}
+                people={[nextSession.expertName]}
+                actionLabel={nextSession.paymentStatus === "unpaid" ? `Pay for ${nextSession.title}` : `Join the call for ${nextSession.title}`}
+                {...(nextSession.paymentStatus === "unpaid"
+                  ? { onAction: () => setPaymentSession(nextSession) }
+                  : { href: callHref(nextSession) })}
+              />
+            ) : (
+              <TodayCard
+                tone={1}
+                eyebrow="Nothing scheduled"
+                title="Book a session with an expert"
+                actionLabel="Book a session"
+                onAction={() => setIsBooking(true)}
+              />
+            )}
+
+            {dueTotal > 0 ? (
+              <TodayCard
+                tone={4}
+                eyebrow="Held until delivered"
+                title={`${formatInr(dueTotal)} awaiting payment`}
+                status={`${unpaidSessions.length} due`}
+                people={unpaidSessions.map((s) => s.expertName)}
+                actionLabel="Pay the oldest session due"
+                onAction={() => setPaymentSession(unpaidSessions[0])}
+              />
+            ) : latestThread ? (
+              <TodayCard
+                tone={4}
+                eyebrow={`Message • ${formatMessageTime(latestThread.lastMessageAt)}`}
+                title={latestThread.lastMessage ?? ""}
+                people={[latestThread.counterpartName]}
+                actionLabel={`Open your conversation with ${latestThread.counterpartName}`}
+                href="/dashboard/client/chat"
+              />
+            ) : (
+              <TodayCard
+                tone={4}
+                eyebrow="Vault"
+                title="Share your floor plans and photos"
+                actionLabel="Open the vault"
+                href="/dashboard/client/vault"
+              />
+            )}
+          </div>
+        </section>
+
+        <section aria-labelledby="project-heading" className="flex flex-col gap-5">
+          <SectionHeading id="project-heading">Your project</SectionHeading>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatTile tone={1} label="Sessions" value={String(live.length)} delta={sessionsDelta} note={`${upcoming.length} upcoming`} href="/dashboard/client/sessions" />
+            <StatTile tone={3} label="Due now" value={formatInr(dueTotal)} note={unpaidSessions.length ? `${unpaidSessions.length} awaiting payment` : "Nothing due"} href="/dashboard/client/sessions" />
+            <StatTile tone={2} label="Vault files" value={String(files.length)} note="Shared with your experts" href="/dashboard/client/vault" />
+          </div>
+
+          {engagements.length > 0 && (
+            <div className="grid grid-cols-1 gap-4">
+              {engagements.map((e, i) => (
+                <ProgressCard
+                  key={e.expertId}
+                  tone={toneAt(i + 2)}
+                  icon={DraftingCompass}
+                  category={e.title}
+                  meta={`${e.done} of ${e.total} ${e.total === 1 ? "session" : "sessions"} done`}
+                  title={e.name}
+                  bars={[
+                    { label: "Sessions done", pct: e.total ? (e.done / e.total) * 100 : 0 },
+                    { label: "Paid", pct: e.paidPct },
+                  ]}
+                  href="/dashboard/client/sessions"
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatTile label="SESSIONS" value={String(sessionSeries.length)} icon={Video} delta={sessionsDelta} note="Booked to date" />
-        <StatTile label="UPCOMING" value={String(upcoming.length)} icon={CalendarClock} note={nextSession ? `Next: ${nextSession.date}` : "Nothing scheduled"} />
-        <StatTile label="VAULT FILES" value={String(files.length)} icon={FolderLock} note="Shared with your experts" />
-        <StatTile label="DUE NOW" value={formatInr(dueTotal)} icon={CreditCard} note={unpaidSessions.length ? `${unpaidSessions.length} awaiting payment` : "Nothing due"} />
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Panel title="Sessions over time" subtitle="LAST 6 MONTHS" className="xl:col-span-2">
-          <MonthlyBarChart data={lastMonths(sessionSeries, 6)} caption="Sessions booked per month over the last six months" />
-        </Panel>
-
-        <Panel
-          title="Next session"
-          subtitle="UP NEXT"
-          href="/dashboard/client/sessions"
+      {/* ── Right column ────────────────────────────── */}
+      <aside aria-labelledby="schedule-heading" className="flex min-w-0 flex-col gap-5">
+        <SectionHeading
+          id="schedule-heading"
           action={
             <button
-              onClick={openBooking}
-              className="border border-[var(--border-strong)] px-3 py-1.5 font-mono-sos text-[9px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
+              type="button"
+              onClick={() => setIsBooking(true)}
+              className="flex items-center gap-2 border border-[var(--border-strong)] bg-[var(--bg-base)] px-3 py-2 font-mono-sos text-[9px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
             >
-              BOOK
+              <Video size={12} strokeWidth={1.75} /> Book
             </button>
           }
         >
-          {nextSession ? (
-            <div className="flex flex-col h-full gap-4">
-              <div>
-                <p className="font-mono-sos text-[9px] tracking-[0.25em] text-[var(--text-faint)] truncate">
-                  {currentExpert?.fullName ?? nextSession.expertName}
-                </p>
-                <h3 className="font-editorial text-2xl text-[var(--text-primary)] leading-tight mt-2">{nextSession.title}</h3>
-                <p className="font-mono-sos text-[11px] text-[var(--color-primary)] flex items-center gap-2 mt-3">
-                  <Clock size={13} className="shrink-0" /> {nextSession.date} • {nextSession.time}
-                </p>
-              </div>
-              <div className="mt-auto">
-                {nextSession.paymentStatus === "unpaid" ? (
-                  <button
-                    onClick={() => setPaymentSession(nextSession)}
-                    className="flex w-full items-center justify-center gap-2 border border-[var(--color-primary)] bg-[var(--bg-surface-2)] py-3.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-base)]"
-                  >
-                    <CreditCard size={14} /> PAY {formatInr(nextSession.amountInr)} TO UNLOCK THE CALL
-                  </button>
-                ) : (
-                  <Link
-                    href={`/dashboard/video-call?sessionId=${nextSession.id}&sessionName=${encodeURIComponent(nextSession.title)}`}
-                    className="group/join flex w-full items-center justify-center gap-2 border border-[var(--border-strong)] bg-[var(--bg-surface-2)] py-3.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
-                  >
-                    <Video size={14} className="text-[var(--text-muted)] group-hover/join:text-[var(--color-primary)] transition-colors" /> JOIN VIDEO CALL
-                  </Link>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center py-6 gap-4">
-              <p className="font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-faint)]">NO SCHEDULED MEETINGS</p>
-              <button
-                onClick={openBooking}
-                className="border border-[var(--border-strong)] bg-[var(--bg-surface-2)] px-4 py-2.5 font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-primary)] transition-colors hover:border-[var(--color-primary)]"
-              >
-                SCHEDULE SESSION
-              </button>
-            </div>
-          )}
-        </Panel>
+          Schedule
+        </SectionHeading>
+        <MiniCalendar sessionDays={sessionDays} dueDays={dueDays} legend={{ session: "Session", due: "Payment due" }} />
+        <h3 className="mt-2 font-mono-sos text-[9px] tracking-[0.25em] text-[var(--text-faint)]">Coming up</h3>
+        <ScheduleList items={comingUp} empty="Nothing yet. Sessions, messages and shared files appear here." />
+      </aside>
 
-        <Panel title="Payments" subtitle="HELD UNTIL DELIVERED" href="/dashboard/client/sessions">
-          <LiquidWaveGauge percentage={settledPct} balance={paidTotal} />
-          <div className="mt-5 border-t border-[var(--border)] pt-4">
-            <div className="font-mono-sos text-[9px] tracking-[0.25em] text-[var(--text-faint)] mb-3">AWAITING PAYMENT</div>
-            <div className="max-h-[160px] overflow-y-auto scrollbar-thin space-y-2">
-              {unpaidSessions.length === 0 && (
-                <p className="font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-faint)] py-2">NOTHING DUE</p>
-              )}
-              {unpaidSessions.map((sess) => (
-                <div key={sess.id} className="flex items-center justify-between gap-3 border border-[var(--border)] bg-[var(--bg-surface-2)] p-3">
-                  <div className="min-w-0">
-                    <p className="font-inter text-[11px] font-semibold text-[var(--text-primary)] truncate">{sess.title}</p>
-                    <p className="font-mono-sos text-[9px] tracking-wider text-[var(--text-faint)] mt-0.5 truncate">{sess.expertName} • {sess.date}</p>
-                  </div>
-                  <button
-                    onClick={() => setPaymentSession(sess)}
-                    className="shrink-0 border border-[var(--color-primary)] px-3 py-1.5 font-mono-sos text-[10px] text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-base)]"
-                  >
-                    Pay {formatInr(sess.amountInr)}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Panel>
+      <BookingModal
+        open={isBooking}
+        onClose={() => setIsBooking(false)}
+        experts={experts}
+        defaultExpert={currentExpert}
+        onBooked={(created) => {
+          setSessions((prev) => [created, ...prev]);
+          setPaymentSession(created);
+        }}
+      />
 
-        <Panel title="Recent activity" subtitle="MESSAGES AND VAULT" className="xl:col-span-2" flush>
-          {activity.length === 0 ? (
-            <p className="font-mono-sos text-[10px] tracking-[0.2em] text-[var(--text-faint)] p-5">NOTHING YET — MESSAGES AND SHARED FILES APPEAR HERE</p>
-          ) : (
-            <ul className="divide-y divide-[var(--border)]">
-              {activity.map((a) => (
-                <li key={a.id}>
-                  <Link href={a.href} className="flex items-start gap-4 px-5 py-3.5 transition-colors hover:bg-[var(--bg-surface-2)]">
-                    <span className="mt-0.5 shrink-0 text-[var(--text-faint)]">
-                      {a.kind === "message" ? <MessageSquare size={14} strokeWidth={1.75} /> : <FileText size={14} strokeWidth={1.75} />}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-inter text-xs font-semibold text-[var(--text-primary)] truncate">{a.title}</span>
-                      <span className="block font-inter text-[12px] font-light text-[var(--text-muted)] line-clamp-1 mt-0.5">{a.detail}</span>
-                    </span>
-                    <span className="shrink-0 font-mono-sos text-[9px] tracking-wider text-[var(--text-faint)]">{formatMessageTime(a.at || null)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      </div>
-
-      {/* Book New Modal Overlay */}
-      <AnimatePresence>
-        {isBooking && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-[var(--bg-overlay)] backdrop-blur-md flex items-center justify-center p-4"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 250 }}
-              className="glass-panel p-10 max-w-lg w-full relative border-organic shadow-[0_40px_80px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
-            >
-              <button 
-                onClick={() => setIsBooking(false)}
-                className="absolute top-8 right-8 text-[var(--text-muted)] hover:text-white transition-colors p-2 rounded-full hover:bg-[var(--bg-surface-2)] z-50"
-              >
-                <X size={24} />
-              </button>
-              
-              <h2 className="font-inter text-3xl font-light tracking-[0.10em] uppercase mb-4 text-embossed">Book a Session</h2>
-              <p className="text-xs text-[var(--text-muted)] mb-10 uppercase font-mono-sos tracking-widest">
-                {(() => {
-                  const ex = dbExperts.find((e) => e.id === selectedExpertId);
-                  return ex ? `${formatInr(ex.sessionRateInr)} per 60-minute session · paid after you book` : "Choose an expert to see the session fee";
-                })()}
-              </p>
-              
-              {bookingStep === "review" ? (
-                <BookingReview
-                  expert={dbExperts.find((e) => e.id === selectedExpertId) ?? currentExpert}
-                  sessionType={sessionType}
-                  slot={slots.find((t) => t.startsAt === selectedSlot) ?? null}
-                  sessionDate={sessionDate}
-                  zoneLabel={describeTimeZone(expertZone)}
-                  error={bookingError}
-                  submitting={bookingSubmitting}
-                  onBack={() => setBookingStep("form")}
-                  onConfirm={handleConfirmBooking}
-                />
-              ) : (
-              <>
-              <div className="space-y-6 mb-10">
-                <div>
-                  <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest">SESSION TYPE</label>
-                  <select value={sessionType} onChange={(e) => setSessionType(e.target.value)} className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-lg outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer">
-                    <option>Architecture Review</option>
-                    <option>Design Consultation</option>
-                    <option>Follow-up</option>
-                  </select>
-                </div>
-                 <div>
-                  <label className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest">ASSIGNED EXPERT</label>
-                  <select value={selectedExpertId} onChange={(e) => setSelectedExpertId(e.target.value)} className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-lg outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] transition-colors shadow-inner appearance-none cursor-pointer">
-                    {dbExperts.map(exp => (
-                      <option key={exp.id} value={exp.id}>{exp.fullName}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="booking-date" className="block text-xs font-mono-sos text-[var(--text-faint)] mb-3 tracking-widest">DATE</label>
-                  <input
-                    id="booking-date"
-                    type="date"
-                    min={todayDateInput()}
-                    value={sessionDate}
-                    onChange={(e) => setSessionDate(e.target.value)}
-                    className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-2xl px-6 py-4 text-sm outline-none focus:border-[var(--color-primary)] text-[var(--text-primary)] [color-scheme:dark] transition-colors shadow-inner font-bold"
-                  />
-
-                  <div className="mt-6" aria-live="polite">
-                    <span className="block text-xs font-mono-sos text-[var(--text-faint)] mb-1 tracking-widest">AVAILABLE TIMES</span>
-                    <span className="block text-[11px] text-[var(--text-faint)] mb-3">
-                      The date and times are in {describeTimeZone(expertZone)}, your expert&apos;s timezone.
-                    </span>
-                    {slotsState === "loading" && (
-                      <p className="text-sm text-[var(--text-muted)]">Checking availability…</p>
-                    )}
-                    {slotsState === "error" && (
-                      <p className="text-sm text-[var(--color-orange)]">We couldn&apos;t load this expert&apos;s times. Please try again.</p>
-                    )}
-                    {slotsState === "ready" && slots.length === 0 && (
-                      <p className="text-sm text-[var(--text-muted)]">
-                        {rulesByExpert[selectedExpertId]?.length
-                          ? "No free times on this date. Try another day."
-                          : "This expert hasn't published availability yet. Try another expert, or check back soon."}
-                      </p>
-                    )}
-                    {slotsState === "ready" && slots.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Available times">
-                        {slots.map((t) => (
-                          <button
-                            key={t.startsAt}
-                            type="button"
-                            role="radio"
-                            aria-checked={selectedSlot === t.startsAt}
-                            onClick={() => setSelectedSlot(t.startsAt)}
-                            className={`py-3 rounded-xl border text-sm font-bold transition-all ${
-                              selectedSlot === t.startsAt
-                                ? "bg-[var(--text-primary)] text-[var(--bg-base)] border-[var(--text-primary)]"
-                                : "bg-[var(--bg-base)] text-[var(--text-primary)] border-[var(--border-strong)] hover:border-[var(--color-primary)]"
-                            }`}
-                          >
-                            {t.label}
-                            {t.viewerLabel && (
-                              <span className="block text-[10px] font-normal opacity-70 mt-0.5">{t.viewerLabel} for you</span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {bookingError && (
-                <p className="text-sm text-[var(--color-orange)] font-mono-sos mb-4 text-center">{bookingError}</p>
-              )}
-
-              <button
-                onClick={handleReviewBooking}
-                disabled={slotsState !== "ready"}
-                className="btn-sos-filled w-full py-5 text-lg text-center justify-center rounded-2xl tracking-widest mt-8 shadow-lg disabled:opacity-50"
-              >
-                Review Booking
-              </button>
-              </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Payment step, shown right after a successful booking */}
       {paymentSession && (
         <PaymentModal
           sessionId={paymentSession.id}
           amountInr={paymentSession.amountInr}
           expertName={paymentSession.expertName}
-          expertUpiId={dbExperts.find(e => e.id === paymentSession.expertId)?.upiId ?? null}
+          expertUpiId={experts.find((e) => e.id === paymentSession.expertId)?.upiId ?? null}
           session={paymentSession}
           onClose={() => setPaymentSession(null)}
           onPaid={() => {
-            Promise.all([getMySessions(), getMyPayments()])
-              .then(([ss, ps]) => { setSessions(ss); setPayments(ps); })
+            getMySessions()
+              .then(setSessions)
               .catch((err) => console.error("Refresh after payment failed", err));
           }}
         />
       )}
-    </div>
-  );
-}
-
-/** Step 2 of booking: a receipt of what the client is about to book, before anything is saved or paid. */
-function BookingReview({
-  expert,
-  sessionType,
-  slot,
-  sessionDate,
-  zoneLabel,
-  error,
-  submitting,
-  onBack,
-  onConfirm,
-}: {
-  expert: Expert | null;
-  sessionType: string;
-  slot: Slot | null;
-  sessionDate: string;
-  zoneLabel: string;
-  error: string;
-  submitting: boolean;
-  onBack: () => void;
-  onConfirm: () => void;
-}) {
-  const fee = expert?.sessionRateInr ?? null;
-  const dateLabel = new Date(`${sessionDate}T12:00:00`).toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
-  return (
-    <div>
-      <div className="max-h-[55vh] overflow-y-auto scrollbar-thin -mx-1 px-1">
-        <Receipt
-          heading="Booking summary"
-          details={[
-            { label: "Expert", value: expert?.fullName ?? "—" },
-            { label: "Session", value: sessionType },
-            { label: "Date", value: dateLabel },
-            { label: "Time", value: slot ? `${slot.label}${slot.viewerLabel ? ` (${slot.viewerLabel} for you)` : ""}` : "—" },
-            { label: "Timezone", value: zoneLabel },
-            { label: "Duration", value: "60 min" },
-          ]}
-          lines={[{ label: "Session fee (1 × 60 min)", value: formatInr(fee) }]}
-          total={{ label: "Due now", value: formatInr(fee) }}
-          stamp={{ text: "Not paid", tone: "due" }}
-          note="Nothing is charged yet. You'll choose how to pay on the next step, and your payment is held until the session is delivered."
-        />
-      </div>
-
-      {error && <p className="text-sm text-[var(--color-orange)] font-mono-sos mt-6 text-center">{error}</p>}
-
-      <div className="mt-8 flex gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={submitting}
-          className="flex-1 border border-[var(--border-strong)] rounded-2xl py-4 font-mono-sos text-xs tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-50"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={submitting}
-          className="btn-sos-filled flex-[2] py-4 text-sm text-center justify-center rounded-2xl tracking-widest disabled:opacity-50"
-        >
-          {submitting ? "Booking…" : "Confirm & pay"}
-        </button>
-      </div>
     </div>
   );
 }

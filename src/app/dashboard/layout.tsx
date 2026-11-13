@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { getMyExpertProfile, getMyProfile, setMyUpiId, setMyTimezone, setMyDisplayName } from "@/lib/data/queries";
 import { COMMON_TIME_ZONES, describeTimeZone, resolveTimeZone, viewerTimeZone } from "@/lib/data/slots";
-import Sidebar, { type NavGroup } from "@/components/dashboard/Sidebar";
+import IconRail, { type NavGroup } from "@/components/dashboard/IconRail";
 import TopBar from "@/components/dashboard/TopBar";
 import { useUnreadThreads } from "@/components/dashboard/useUnreadThreads";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
@@ -56,6 +56,21 @@ export default function DashboardLayout({
   const [zoneSaving, setZoneSaving] = useState(false);
   const [zoneSaved, setZoneSaved] = useState(false);
   const [zoneError, setZoneError] = useState("");
+  // "Good evening • 6:40 PM IST", refreshed every 30s. Empty until mounted so server and client render the same.
+  const [greeting, setGreeting] = useState("");
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const hrs = now.getHours();
+      const part = hrs < 12 ? "Good morning" : hrs < 17 ? "Good afternoon" : "Good evening";
+      const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+      setGreeting(`${part} • ${time}`);
+    };
+    update();
+    const id = setInterval(update, 30000);
+    return () => clearInterval(id);
+  }, []);
 
   // Load saved theme on mount
   useEffect(() => {
@@ -188,8 +203,14 @@ export default function DashboardLayout({
     ? "Video Call"
     : "Overview";
 
-  /* Grouped like a console rail: the work you do daily, the live room,
-     then the account. Mirrors the sidebar grammar of the reference. */
+  // Overview gets the welcome heading; every other page is titled by its name.
+  const isOverview = pathname === basePath;
+  const firstName = displayName.trim().split(/\s+/)[0] ?? "";
+  const headerTitle = isOverview ? `Welcome back${firstName ? `, ${firstName}` : ""}` : pageName;
+  const headerEyebrow = isOverview ? greeting : `${role} / ${pageName}`;
+
+  /* Grouped like a console rail: the work you do daily, the workspace,
+     then the account (pinned to the foot of the icon rail). */
   const adminNav: NavGroup[] = [
     {
       label: "Admin",
@@ -238,41 +259,24 @@ export default function DashboardLayout({
   return (
     <div className="h-[100dvh] overflow-hidden flex relative bg-transparent">
 
-      <Sidebar
+      <IconRail
         groups={navGroups}
-        role={role}
         footer={
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 shrink-0 border border-[var(--border-strong)] overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://api.dicebear.com/7.x/shapes/svg?seed=SOS_${role}&backgroundColor=transparent`}
-                alt=""
-                className="h-full w-full p-1 opacity-80"
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-inter text-[12px] text-[var(--text-primary)] truncate">
-                {displayName || `${role.charAt(0).toUpperCase()}${role.slice(1)} account`}
-              </p>
-              <p className="font-mono-sos text-[8px] tracking-[0.2em] text-[var(--text-faint)]">
-                Online &amp; secure
-              </p>
-            </div>
-            <Link
-              href="/login"
-              aria-label="Sign out"
-              className="flex h-7 w-7 items-center justify-center border border-[var(--border)] text-[var(--text-faint)] transition-colors hover:border-[var(--color-orange)] hover:text-[var(--color-orange)]"
-            >
-              <LogOut size={12} strokeWidth={1.75} />
-            </Link>
-          </div>
+          <Link
+            href="/login"
+            aria-label="Sign out"
+            title="Sign out"
+            className="flex h-12 w-12 items-center justify-center text-[var(--text-faint)] transition-colors hover:bg-[var(--bg-surface-2)] hover:text-[var(--color-orange)]"
+          >
+            <LogOut size={17} strokeWidth={1.75} />
+          </Link>
         }
       />
 
       <div className="flex flex-1 flex-col min-w-0">
         <TopBar
-          pageName={pageName}
+          title={headerTitle}
+          eyebrow={headerEyebrow}
           role={role}
           theme={theme}
           onToggleTheme={toggleTheme}
@@ -284,7 +288,7 @@ export default function DashboardLayout({
             .map((item) => ({ name: item.name, href: item.path }))}
         />
 
-        <main id="main" className="flex-1 min-h-0 overflow-y-auto p-5 lg:p-7 pb-28 lg:pb-7">
+        <main id="main" className="flex-1 min-h-0 overflow-y-auto px-5 lg:px-8 pt-2 pb-28 lg:pb-8">
           {role === "expert" && !pathname.endsWith("/onboarding") && <ExpertApplicationBanner status={expertStatus} />}
           <ConfirmProvider>{children}</ConfirmProvider>
         </main>
