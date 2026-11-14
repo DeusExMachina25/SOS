@@ -894,6 +894,160 @@ html.sos-seen .sos-preloader { display: none !important; }
 }
 .plan-ed-input:focus { border-color: var(--color-primary); }
 
+/* Sketcher chrome. Same rule as the dashboard: rounded cards, hard-edged
+   chips, buttons and inputs. Tints mix the --field series, so no new hue. */
+:root,
+[data-theme="dark"] {
+  --plan-radius: 20px;
+  --plan-card: color-mix(in srgb, var(--field-1) 5%, var(--bg-base));
+  --plan-card-2: color-mix(in srgb, var(--field-2) 14%, var(--bg-base));
+  --plan-tile: color-mix(in srgb, var(--field-1) 8%, var(--bg-base));
+}
+[data-theme="light"] {
+  --plan-card: color-mix(in srgb, #FFFFFF 60%, var(--bg-base));
+  --plan-card-2: color-mix(in srgb, var(--field-1) 10%, var(--bg-base));
+  --plan-tile: color-mix(in srgb, #FFFFFF 40%, var(--bg-base));
+}
+.plan-ed .plan-ed-input { border-radius: 0; }
+.plan-card {
+  border-radius: var(--plan-radius);
+  border: 1px solid var(--border);
+  background: var(--plan-card);
+}
+.plan-float {
+  border: 1px solid var(--border-strong);
+  background: color-mix(in srgb, var(--field-1) 4%, var(--bg-base));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.plan-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.plan-chip:hover { color: var(--text-primary); border-color: var(--text-primary); }
+.plan-chip[aria-pressed="true"],
+.plan-chip[aria-checked="true"] {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--bg-base);
+}
+.plan-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.plan-btn:hover { border-color: var(--text-primary); background: var(--bg-surface-2); }
+.plan-btn:disabled { opacity: 0.35; pointer-events: none; }
+.plan-btn-filled { background: var(--text-primary); border-color: var(--text-primary); color: var(--bg-base); }
+.plan-btn-filled:hover { background: var(--text-muted); border-color: var(--text-muted); }
+.plan-tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 56px;
+  height: 52px;
+  padding: 0 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.plan-tool:hover { color: var(--text-primary); background: var(--bg-surface); }
+.plan-tool[aria-pressed="true"] {
+  color: var(--bg-base);
+  background: var(--text-primary);
+}
+.plan-tile {
+  border: 1px solid var(--border);
+  background: var(--plan-tile);
+  transition: border-color 0.2s;
+}
+.plan-tile:hover { border-color: var(--border-strong); }
+.plan-tile[aria-pressed="true"] { border-color: var(--color-orange); }
+.plan-meter { height: 3px; background: var(--border); overflow: hidden; }
+.plan-meter > span { display: block; height: 100%; background: var(--text-primary); }
+.plan-meter.is-full > span { background: var(--color-orange); }
+.plan-ed-len[data-wall],
+.plan-ed-len-bg[data-wall] { cursor: text; }
+.plan-ed-len-bg { fill: var(--bg-base); }
+.plan-dim-input {
+  position: absolute;
+  width: 84px;
+  transform: translate(-50%, -50%);
+  padding: 4px 6px;
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-base);
+  border: 1px solid var(--color-orange);
+  outline: none;
+}
+
+/* Library and properties: side panels from md up, bottom sheets on phones. */
+@media (max-width: 767px) {
+  .plan-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    /* Tailwind's space-y adds a bottom margin, which would lift the sheet */
+    margin: 0 !important;
+    max-height: 62svh;
+    overflow-y: auto;
+    border-radius: var(--plan-radius) var(--plan-radius) 0 0;
+    border: 1px solid var(--border-strong);
+    border-bottom: 0;
+    background: color-mix(in srgb, var(--field-1) 4%, var(--bg-base));
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
+    animation: plan-sheet-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+@keyframes plan-sheet-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (min-width: 768px) {
+  .plan-drawer { animation: plan-drawer-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+}
+@keyframes plan-drawer-in {
+  from { transform: translateX(-12px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plan-sheet, .plan-drawer { animation: none; }
+}
+@media (max-width: 767px) {
+  .plan-tool { flex: 1 1 0; min-width: 0; }
+}
+
 /* Receipt: torn, zig-zag bottom edge (see components/dashboard/Receipt.tsx). */
 .receipt-edge {
   --tooth: 10px;

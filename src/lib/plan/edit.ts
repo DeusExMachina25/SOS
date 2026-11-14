@@ -115,6 +115,41 @@ export function rotateItem(plan: Plan, id: string, by = 90): Plan {
   return { ...plan, items: plan.items.map((i) => (i.id === id ? { ...i, rotation: (i.rotation + by + 360) % 360 } : i)) };
 }
 
+/** Resizes an item, within 10 cm and 30 m a side. */
+export function resizeItem(plan: Plan, id: string, w: number, h: number): Plan {
+  const fit = (n: number) => Math.max(0.1, Math.min(30, round(n)));
+  return { ...plan, items: plan.items.map((i) => (i.id === id ? { ...i, w: fit(w), h: fit(h) } : i)) };
+}
+
+/** Copies an item half a metre down and to the right. */
+export function duplicateItem(plan: Plan, id: string): Plan {
+  const it = plan.items.find((i) => i.id === id);
+  if (!it) return plan;
+  const copy: Item = { ...it, id: newId("i"), x: round(it.x + 0.5), y: round(it.y + 0.5) };
+  return { ...plan, items: [...plan.items, copy] };
+}
+
+/**
+ * Resizes a room from its top-left corner. Its own walls stretch with it,
+ * so doors and windows keep their place along each wall.
+ */
+export function resizeRoom(plan: Plan, id: string, w: number, h: number): Plan {
+  const room = plan.rooms.find((r) => r.id === id);
+  if (!room) return plan;
+  const nw = Math.max(0.5, Math.min(200, round(w)));
+  const nh = Math.max(0.5, Math.min(200, round(h)));
+  const own = new Set(room.wallIds);
+  const stretch = (p: Point): Point => ({
+    x: round(room.x + ((p.x - room.x) * nw) / room.w),
+    y: round(room.y + ((p.y - room.y) * nh) / room.h),
+  });
+  return {
+    ...plan,
+    rooms: plan.rooms.map((r) => (r.id === id ? { ...r, w: nw, h: nh } : r)),
+    walls: plan.walls.map((wl) => (own.has(wl.id) ? { ...wl, a: stretch(wl.a), b: stretch(wl.b) } : wl)),
+  };
+}
+
 /** Sets a wall's length, keeping its first end where it is. */
 export function setWallLength(plan: Plan, id: string, length: number): Plan {
   const len = Math.max(0.1, Math.min(200, round(length)));
@@ -176,4 +211,17 @@ export function undo(h: History): History {
 export function redo(h: History): History {
   if (!h.future.length) return h;
   return { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1) };
+}
+
+/**
+ * What typing a number on a wall's dimension does. A wall that belongs to a
+ * room resizes the room (so the room stays a closed rectangle); any other
+ * wall changes length from its first end.
+ */
+export function setDimension(plan: Plan, wallId: string, length: number): Plan {
+  const wall = plan.walls.find((w) => w.id === wallId);
+  const room = plan.rooms.find((r) => r.wallIds.includes(wallId));
+  if (!wall || !room) return setWallLength(plan, wallId, length);
+  const across = Math.abs(wall.b.x - wall.a.x) >= Math.abs(wall.b.y - wall.a.y);
+  return across ? resizeRoom(plan, room.id, length, room.h) : resizeRoom(plan, room.id, room.w, length);
 }

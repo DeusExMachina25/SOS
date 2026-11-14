@@ -50,6 +50,9 @@ export interface Item {
   y: number;
   /** Degrees, clockwise. */
   rotation: number;
+  /** Size in metres, when resized away from the library size. */
+  w?: number;
+  h?: number;
 }
 
 export interface Plan {

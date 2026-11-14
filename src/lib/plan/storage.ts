@@ -36,7 +36,15 @@ export function parsePlan(raw: unknown): Plan | null {
       .map((m) => ({ id: m.id, name: m.name.slice(0, 40), x: m.x, y: m.y, w: m.w, h: m.h, wallIds: list(m.wallIds).filter((id) => wallIds.has(id)) })),
     items: list(r.items)
       .filter((i) => str(i?.id) && str(i.type) && num(i.x) && num(i.y))
-      .map((i) => ({ id: i.id, type: i.type, x: i.x, y: i.y, rotation: num(i.rotation) ? i.rotation : 0 })),
+      .map((i) => ({
+        id: i.id,
+        type: i.type,
+        x: i.x,
+        y: i.y,
+        rotation: num(i.rotation) ? i.rotation : 0,
+        ...(num(i.w) && i.w > 0 ? { w: i.w } : {}),
+        ...(num(i.h) && i.h > 0 ? { h: i.h } : {}),
+      })),
   };
 }
 
