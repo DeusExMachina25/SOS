@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { PLAN_KINDS, itemsFor } from "@/lib/plan/catalog";
-import { addItem, addOpening, addRoom, addWall, commit, move, redo, remove, setWallLength, startHistory, undo } from "@/lib/plan/edit";
+import { CATEGORIES, ITEMS, PLAN_KINDS, itemSize, itemsFor } from "@/lib/plan/catalog";
+import { addItem, addOpening, addRoom, addWall, commit, duplicateItem, move, redo, remove, resizeItem, resizeRoom, setDimension, setWallLength, startHistory, undo } from "@/lib/plan/edit";
 import { examplePlan } from "@/lib/plan/examples";
 import { formatLength, nearestWall, snap, straighten } from "@/lib/plan/geometry";
 import { GUEST_LIMITS, blockedReason } from "@/lib/plan/limits";
@@ -125,5 +125,47 @@ describe("reading stored plans", () => {
   it("keeps items", () => {
     const p = addItem(emptyPlan("garden"), "tree", { x: 1, y: 1 });
     expect(parsePlan(p)?.items).toHaveLength(1);
+  });
+});
+
+describe("resizing and copying", () => {
+  it("resizes a room from its top-left corner, walls and all", () => {
+    const base = addRoom(emptyPlan(), { x: 1, y: 1 }, { x: 4, y: 3 }, "Den");
+    const r = base.rooms[0];
+    const next = resizeRoom(base, r.id, 5, 4);
+    expect(next.rooms[0]).toMatchObject({ x: 1, y: 1, w: 5, h: 4 });
+    const xs = next.walls.flatMap((w) => [w.a.x, w.b.x]);
+    const ys = next.walls.flatMap((w) => [w.a.y, w.b.y]);
+    expect(Math.max(...xs)).toBe(6);
+    expect(Math.max(...ys)).toBe(5);
+  });
+
+  it("typing a room wall's length resizes the room along that wall", () => {
+    const base = addRoom(emptyPlan(), { x: 0, y: 0 }, { x: 4, y: 3 }, "Den");
+    const top = base.walls[0];
+    const side = base.walls[1];
+    expect(setDimension(base, top.id, 5).rooms[0]).toMatchObject({ w: 5, h: 3 });
+    expect(setDimension(base, side.id, 2.5).rooms[0]).toMatchObject({ w: 4, h: 2.5 });
+  });
+
+  it("typing a loose wall's length changes only that wall", () => {
+    const base = addWall(emptyPlan(), { x: 0, y: 0 }, { x: 2, y: 0 });
+    expect(setDimension(base, base.walls[0].id, 3).walls[0].b).toEqual({ x: 3, y: 0 });
+  });
+
+  it("resizes and duplicates items, and stored plans keep the size", () => {
+    let p = addItem(emptyPlan(), "sofa", { x: 1, y: 1 });
+    const id = p.items[0].id;
+    p = resizeItem(p, id, 2.4, 0.97);
+    expect(itemSize(p.items[0])).toEqual({ w: 2.4, h: 1 });
+    p = duplicateItem(p, id);
+    expect(p.items).toHaveLength(2);
+    expect(p.items[1]).toMatchObject({ x: 1.5, y: 1.5, w: 2.4 });
+    expect(p.items[1].id).not.toBe(id);
+    expect(parsePlan(JSON.parse(JSON.stringify(p)))?.items[0]).toMatchObject({ w: 2.4, h: 1 });
+  });
+
+  it("every library item sits on a known shelf", () => {
+    for (const i of ITEMS) expect(Object.keys(CATEGORIES)).toContain(i.category);
   });
 });

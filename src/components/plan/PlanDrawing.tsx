@@ -1,6 +1,6 @@
 import React from "react";
 
-import { itemDef } from "@/lib/plan/catalog";
+import { itemDef, itemSize } from "@/lib/plan/catalog";
 import { formatArea, formatLength, pointAt, wallLength } from "@/lib/plan/geometry";
 import type { Plan, Point, Selection, Wall } from "@/lib/plan/types";
 
@@ -24,9 +24,13 @@ interface PlanDrawingProps {
   selection?: Selection | null;
   /** Show every wall's length, not only the selected wall's. */
   showLengths?: boolean;
+  /** Mark length labels as editable (the editor types new lengths into them). */
+  editableLengths?: boolean;
+  /** Hide one wall's label while its length is being typed. */
+  editingWallId?: string | null;
 }
 
-export default function PlanDrawing({ plan, view, selection, showLengths = true }: PlanDrawingProps) {
+export default function PlanDrawing({ plan, view, selection, showLengths = true, editableLengths = false, editingWallId = null }: PlanDrawingProps) {
   const { scale, ox, oy } = view;
   const sx = (x: number) => x * scale + ox;
   const sy = (y: number) => y * scale + oy;
@@ -56,9 +60,10 @@ export default function PlanDrawing({ plan, view, selection, showLengths = true 
       {/* items sit under the walls */}
       {plan.items.map((it) => {
         const def = itemDef(it.type);
-        if (!def) return null;
-        const w = def.w * scale;
-        const h = def.h * scale;
+        const size = itemSize(it);
+        if (!def || !size) return null;
+        const w = size.w * scale;
+        const h = size.h * scale;
         const sel = isSel("item", it.id);
         const stroke = sel ? "var(--color-orange)" : "var(--text-muted)";
         const showName = Math.min(w, h) > 26 && w > def.name.length * 5.5;
@@ -165,10 +170,17 @@ export default function PlanDrawing({ plan, view, selection, showLengths = true 
         const upright = angle > 90 || angle < -90 ? angle + 180 : angle;
         const x = sx(mid.x - n.x);
         const y = sy(mid.y - n.y);
+        if (editingWallId === w.id) return null;
+        const label = formatLength(len);
         return (
-          <text key={`len-${w.id}`} x={x} y={y} textAnchor="middle" dominantBaseline="central" className="plan-ed-len" transform={`rotate(${upright} ${x} ${y})`}>
-            {formatLength(len)}
-          </text>
+          <g key={`len-${w.id}`} transform={`rotate(${upright} ${x} ${y})`}>
+            {editableLengths && (
+              <rect x={x - label.length * 3.4 - 5} y={y - 8} width={label.length * 6.8 + 10} height={16} className="plan-ed-len-bg" data-wall={w.id} />
+            )}
+            <text x={x} y={y} textAnchor="middle" dominantBaseline="central" className="plan-ed-len" data-wall={editableLengths ? w.id : undefined}>
+              {label}
+            </text>
+          </g>
         );
       })}
 
