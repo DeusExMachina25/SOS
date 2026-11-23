@@ -29,7 +29,7 @@ For a step-by-step launch checklist (domain, email, live Razorpay and LiveKit ke
 
 ### 1. Supabase
 1. Create a project. In **Authentication → Providers** enable Email and Phone (OTP) as needed; set **Site URL** and **Redirect URLs** to your production domain.
-2. Run every file in `supabase/migrations/` **in order** (`0000` → `0021`, oldest first) in the SQL editor, or run `supabase/deploy/all_migrations.sql` once. They are idempotent and run from an empty database.
+2. Run every file in `supabase/migrations/` **in order** (`0000` onwards, oldest first) in the SQL editor, or run `supabase/deploy/all_migrations.sql` once. They are idempotent and run from an empty database.
 3. Create the private storage bucket: `node scripts/setup-storage.mjs` (needs `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`).
 4. Make yourself an admin (the only way to get the `admin` role; the API cannot do it):
    `update public.profiles set role = 'admin' where id = '<your auth user id>';`
